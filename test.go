@@ -4,7 +4,9 @@ import "fmt"
 
 // hi
 var c, python, java bool
+var boolean float64
 var b int = 5
+???
 
 func main() {
   var i int = 1

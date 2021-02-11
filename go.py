@@ -8,24 +8,31 @@ tokens = (
     "WALRUS",
     "INT_LITERAL",
     "FLOAT_LITERAL",
-    "INT",
-    "FLOAT64",
-    "BOOL",
-    "PACKAGE",
-    "IMPORT",
-    "VAR",
-    "FUNC",
     "ROUND_START",
     "ROUND_END",
     "CURL_START",
     "CURL_END",
     "STRING",
-    "IDENTIFIER"
+    "IDENTIFIER",
+    "SINGLE_COMMENT",
+    "MULTI_COMMENT"
 )
+keywords = {
+    "package": "PACKAGE",
+    "import": "IMPORT",
+    "var": "VAR",
+    "func": "FUNC",
+}
+types = {
+    "int": "INT",
+    "float64": "FLOAT64",
+    "bool": "BOOL"
+}
+tokens = tokens + tuple(keywords.values()) + tuple(types.values())
 
 # Operators
 t_COMMA = r","
-t_DOT = r"."
+t_DOT = r"\."
 t_EQUAL = r"="
 t_WALRUS = r":="
 
@@ -52,12 +59,6 @@ t_INT = r"int"
 t_FLOAT64 = r"float64"
 t_BOOL = r"bool"
 
-# keywords
-t_PACKAGE = r"package"
-t_IMPORT = r"import"
-t_VAR = r"var"
-t_FUNC = r"func"
-
 # parenthesis
 t_ROUND_START = r"\("
 t_ROUND_END = r"\)"
@@ -65,7 +66,20 @@ t_CURL_START = r"\{"
 t_CURL_END = r"\}"
 
 # identifier
-t_IDENTIFIER = r"[a-zA-Z]([a-zA-Z0-9_])*"
+def t_IDENTIFIER(t):
+    r"[a-zA-Z]([a-zA-Z0-9_])*"
+    t.type = keywords.get(t.value, "IDENTIFIER")
+    t.type = types.get(t.value, "IDENTIFIER")
+    return t
+
+
+# comments
+def t_SINGLE_COMMENT(t):
+    "//.*"
+
+
+def t_MULTI_COMMENT(t):
+    r"/\*(.|\n)*?\*/"
 
 
 # Define a rule so we can track line numbers
