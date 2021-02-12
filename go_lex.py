@@ -107,7 +107,7 @@ t_CURL_END = r"\}"
 def t_IDENTIFIER(t):
     r"[a-zA-Z]([a-zA-Z0-9_])*"
     t.type = keywords.get(t.value, "IDENTIFIER")
-    t.type = types.get(t.value, "IDENTIFIER")
+    if(t.type == "IDENTIFIER"): t.type = types.get(t.value, "IDENTIFIER")
     return t
 
 
