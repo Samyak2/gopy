@@ -23,6 +23,8 @@ tokens = (
     "ROUND_END",
     "CURL_START",
     "CURL_END",
+    "SQ_START",
+    "SQ_END",
 
     "IDENTIFIER",
     "SINGLE_COMMENT",
@@ -33,6 +35,10 @@ keywords = {
     "import": "IMPORT",
     "var": "VAR",
     "func": "FUNC",
+    "if": "IF",
+    "else": "ELSE",
+    "for": "FOR",
+    "const": "CONST"
 }
 types = {
     "int": "INT",
@@ -57,15 +63,15 @@ t_DIVIDE = r"/"
 t_STRING = r"\"[^\"]*\""
 
 
-def t_INT_LITERAL(t):
-    r"\d+"
-    t.value = int(t.value)
-    return t
-
-
 def t_FLOAT_LITERAL(t):
     r"\d*\.\d+"
     t.value = float(t.value)
+    return t
+
+
+def t_INT_LITERAL(t):
+    r"\d+"
+    t.value = int(t.value)
     return t
 
 
@@ -79,12 +85,19 @@ t_ROUND_START = r"\("
 t_ROUND_END = r"\)"
 t_CURL_START = r"\{"
 t_CURL_END = r"\}"
+t_SQ_START = r"\["
+t_SQ_END = r"\]"
+
 
 # identifier
 def t_IDENTIFIER(t):
     r"[a-zA-Z]([a-zA-Z0-9_])*"
-    t.type = keywords.get(t.value, "IDENTIFIER")
-    t.type = types.get(t.value, "IDENTIFIER")
+    if t.value in keywords:
+        t.type = keywords[t.value]
+    elif t.value in types:
+        t.type = types[t.value]
+    else:
+        t.type = "IDENTIFIER"
     return t
 
 
