@@ -1,9 +1,13 @@
 import sys
+from dataclasses import dataclass
+from typing import Dict, Tuple
 
 import colorama
 from colorama import Fore, Style
+from tabulate import tabulate
 
 from ply import lex
+from utils import Node
 
 colorama.init()
 
@@ -12,6 +16,53 @@ def find_column(inp_str, token):
     """Find column number of token"""
     line_start = inp_str.rfind("\n", 0, token.lexpos) + 1
     return (token.lexpos - line_start) + 1
+
+
+@dataclass
+class SymbolInfo:
+    """Stores information related to a symbol"""
+
+    depth: int
+    lineno: int
+    type_: str = None
+    storage: int = None
+    symbol: Node = None
+
+
+class SymbolTable:
+    """Stores all identifiers, literals and information
+    related to them"""
+
+    def __init__(self):
+        self.mapping: Dict[Tuple[str, int], SymbolInfo] = {}
+        self.depth = 0
+
+    def add(self, symbol: str, lineno: int) -> SymbolInfo:
+        if (symbol, self.depth) in self.mapping:
+            return self.mapping[symbol, self.depth]
+
+        new_symbol = SymbolInfo(self.depth, lineno)
+        self.mapping[symbol, self.depth] = new_symbol
+
+        return new_symbol
+
+    def check_exists(self, symbol) -> bool:
+        return (symbol, self.depth) in self.mapping
+
+    def get_if_exists(self, symbol) -> SymbolInfo:
+        return self.mapping.get((symbol, self.depth), None)
+
+    def __str__(self):
+        return str(
+            tabulate(
+                [
+                    [key[0], key[1], value.type_, value.storage]
+                    for key, value in self.mapping.items()
+                ],
+                headers=["Symbol", "Depth", "Type", "Storage"],
+                tablefmt="fancy_grid"
+            )
+        )
 
 
 # List of token names.   This is always required
@@ -25,12 +76,10 @@ tokens = (
     "MINUS",
     "MULTIPLY",
     "DIVIDE",
-
     # literals
     "INT_LITERAL",
     "FLOAT_LITERAL",
     "STRING",
-
     # parenthesis
     "ROUND_START",
     "ROUND_END",
@@ -38,10 +87,9 @@ tokens = (
     "CURL_END",
     "SQ_START",
     "SQ_END",
-
     "IDENTIFIER",
     "SINGLE_COMMENT",
-    "MULTI_COMMENT"
+    "MULTI_COMMENT",
 )
 
 keywords = {
@@ -71,13 +119,10 @@ keywords = {
     "var": "KW_VAR",
 }
 
-types = {
-    "int": "INT",
-    "float64": "FLOAT64",
-    "bool": "BOOL"
-}
+# types -> (symbol, storage in bytes)
+types = {"int": ("INT", 8), "float64": ("FLOAT64", 8), "bool": ("BOOL", 1)}
 
-tokens = tokens + tuple(keywords.values()) + tuple(types.values())
+tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 
 # Operators
 t_COMMA = r","
@@ -115,8 +160,18 @@ t_BOOL = r"bool"
 # parenthesis
 t_ROUND_START = r"\("
 t_ROUND_END = r"\)"
-t_CURL_START = r"\{"
-t_CURL_END = r"\}"
+
+
+def t_CURL_START(t):
+    r"\{"
+    symtab.depth += 1
+
+
+def t_CURL_END(t):
+    r"\}"
+    symtab.depth -= 1
+
+
 t_SQ_START = r"\["
 t_SQ_END = r"\]"
 
@@ -127,9 +182,11 @@ def t_IDENTIFIER(t):
     if t.value in keywords:
         t.type = keywords[t.value]
     elif t.value in types:
-        t.type = types[t.value]
+        t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
+        symtab.add(t.value, t.lineno)
+
     return t
 
 
@@ -144,17 +201,21 @@ def t_MULTI_COMMENT(t):
 
 # Define a rule so we can track line numbers
 def t_newline(t):
-    r'\n+'
+    r"\n+"
     t.lexer.lineno += len(t.value)
 
 
 # A string containing ignored characters (spaces and tabs)
-t_ignore = ' \t'
+t_ignore = " \t"
+
+
+def print_error(err_str):
+    print(f"ERROR: {Fore.RED}{err_str}{Style.RESET_ALL}")
 
 
 # Error handling rule
 def t_error(t):
-    print(f"{Fore.RED}Illegal character {t.value[0]}{Style.RESET_ALL}")
+    print_error(f"Illegal character {t.value[0]}")
     col = find_column(input_, t)
     print(f"at line {t.lineno}, column {col}")
     print(
@@ -171,6 +232,7 @@ def t_error(t):
 lexer = lex.lex()
 input_ = ""
 lines = []
+symtab = SymbolTable()
 
 
 # Give the lexer some input
@@ -183,6 +245,5 @@ if __name__ == "__main__":
     while True:
         tok = lexer.token()
         if not tok:
-            break      # No more input
+            break  # No more input
         print(tok)
-
