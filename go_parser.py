@@ -1,9 +1,14 @@
 import sys
 
 from pptree import print_tree
+import colorama
+from colorama import Fore, Style
 
 from ply import yacc
 from go_lex import tokens, lex
+
+
+colorama.init()
 
 
 class Node:
@@ -25,7 +30,7 @@ class Node:
         else:
             self.children = []
         self.node = node
-        print(str(self))
+        # print(str(self))
 
     def __str__(self):
         return f"<{self.type}, {self.node}>"
@@ -65,9 +70,8 @@ class Node:
 
 
 def find_column(inp_str, token):
-    """Find column number of token
-    """
-    line_start = inp_str.rfind('\n', 0, token.lexpos) + 1
+    """Find column number of token"""
+    line_start = inp_str.rfind("\n", 0, token.lexpos) + 1
     return (token.lexpos - line_start) + 1
 
 
@@ -229,11 +233,8 @@ def p_var_spec(p):
     | identifier_list type
     """
     if len(p) == 3:
-        p[0] = [
-            Node("identifier", node=(i, p[2])) for i in p[1]
-        ]
+        p[0] = [Node("identifier", node=(i, p[2])) for i in p[1]]
     elif len(p) == 4:
-        print(p[1], p[3])
         assert len(p[1]) == len(p[3]), "Variable initialisations don't match variables"
         p[0] = [
             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
@@ -272,8 +273,18 @@ def p_empty(p):
 
 
 def p_error(p: lex.LexToken):
-    print("syntax error go brr!")
-    print(f"\tat line {p.lineno}, column {find_column(input_, p)}")
+    print(f"{Fore.RED}SYNTAX ERROR:{Style.RESET_ALL}")
+    if p is not None:
+        col = find_column(input_, p)
+        print(f"at line {p.lineno}, column {col}")
+        print(
+            f"{Fore.GREEN}{p.lineno:>10}:\t{Style.RESET_ALL}",
+            lines[p.lineno - 1],
+            sep="",
+        )
+        print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+    else:
+        print("Unexpected end of file")
 
 
 parser = yacc.yacc(debug=True)
@@ -282,6 +293,7 @@ parser = yacc.yacc(debug=True)
 if __name__ == "__main__":
     with open(sys.argv[1], "rt") as f:
         input_ = f.read()
+        lines = input_.split("\n")
         result = parser.parse(input_)
-        print(result)
+        # print(result)
         print_tree(ast)
