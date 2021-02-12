@@ -5,10 +5,8 @@ import colorama
 from colorama import Fore, Style
 
 from ply import yacc
-from go_lex import tokens, lex
-
-
-colorama.init()
+import go_lex
+from go_lex import tokens, lex, find_column
 
 
 class Node:
@@ -67,12 +65,6 @@ class Node:
                 self.children.append(Node(type(child), node=child))
             else:
                 self.children.append(child)
-
-
-def find_column(inp_str, token):
-    """Find column number of token"""
-    line_start = inp_str.rfind("\n", 0, token.lexpos) + 1
-    return (token.lexpos - line_start) + 1
 
 
 ast = Node("start", node="start")
@@ -293,7 +285,9 @@ parser = yacc.yacc(debug=True)
 if __name__ == "__main__":
     with open(sys.argv[1], "rt") as f:
         input_ = f.read()
+        go_lex.input_ = input_
         lines = input_.split("\n")
+        go_lex.lines = lines
         result = parser.parse(input_)
         # print(result)
         print_tree(ast)

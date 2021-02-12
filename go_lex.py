@@ -1,5 +1,18 @@
 import sys
+
+import colorama
+from colorama import Fore, Style
+
 from ply import lex
+
+colorama.init()
+
+
+def find_column(inp_str, token):
+    """Find column number of token"""
+    line_start = inp_str.rfind("\n", 0, token.lexpos) + 1
+    return (token.lexpos - line_start) + 1
+
 
 # List of token names.   This is always required
 tokens = (
@@ -141,12 +154,23 @@ t_ignore = ' \t'
 
 # Error handling rule
 def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    print(f"{Fore.RED}Illegal character {t.value[0]}{Style.RESET_ALL}")
+    col = find_column(input_, t)
+    print(f"at line {t.lineno}, column {col}")
+    print(
+        f"{Fore.GREEN}{t.lineno:>10}:\t{Style.RESET_ALL}",
+        lines[t.lineno - 1],
+        sep="",
+    )
+    print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+
     t.lexer.skip(1)
 
 
 # Build the lexer
 lexer = lex.lex()
+input_ = ""
+lines = []
 
 
 # Give the lexer some input
