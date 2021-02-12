@@ -110,7 +110,7 @@ t_SQ_END = r"\]"
 
 # identifier
 def t_IDENTIFIER(t):
-    r"[a-zA-Z]([a-zA-Z0-9_])*"
+    r"([a-zA-Z]([a-zA-Z0-9_])*)|_"
     if t.value in keywords:
         t.type = keywords[t.value]
     elif t.value in types:

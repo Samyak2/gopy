@@ -64,6 +64,13 @@ class Node:
                 self.children.append(child)
 
 
+def find_column(inp_str, token):
+    """Find column number of token
+    """
+    line_start = inp_str.rfind('\n', 0, token.lexpos) + 1
+    return (token.lexpos - line_start) + 1
+
+
 ast = Node("start", node="start")
 
 
@@ -149,7 +156,8 @@ def p_array_type(p):
 
 
 def p_declaration(p):
-    """declaration : const_decl"""
+    """declaration : const_decl
+    | var_decl"""
     p[0] = p[1]
 
 
@@ -195,6 +203,49 @@ def p_const_spec(p):
         ]
 
 
+def p_var_decl(p):
+    """var_decl : KW_VAR var_spec
+    | KW_VAR ROUND_START var_specs ROUND_END
+    """
+    if len(p) == 3:
+        p[0] = Node("var_decl", children=p[2])
+    elif len(p) == 5:
+        p[0] = Node("var_decl", children=p[3])
+
+
+def p_var_specs(p):
+    """var_specs : var_specs var_spec
+    | var_spec
+    """
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = p[1] + p[2]
+
+
+def p_var_spec(p):
+    """var_spec : identifier_list EQUAL expression_list
+    | identifier_list type EQUAL expression_list
+    | identifier_list type
+    """
+    if len(p) == 3:
+        p[0] = [
+            Node("identifier", node=(i, p[2])) for i in p[1]
+        ]
+    elif len(p) == 4:
+        print(p[1], p[3])
+        assert len(p[1]) == len(p[3]), "Variable initialisations don't match variables"
+        p[0] = [
+            Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
+        ]
+
+    elif len(p) == 5:
+        assert len(p[1]) == len(p[4]), "Variable initialisations don't match variables"
+        p[0] = [
+            Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
+        ]
+
+
 def p_identifier_list(p):
     """identifier_list : IDENTIFIER
     | identifier_list COMMA IDENTIFIER
@@ -222,7 +273,7 @@ def p_empty(p):
 
 def p_error(p: lex.LexToken):
     print("syntax error go brr!")
-    print(f"\tat line {p.lineno}, position {p.lexpos}")
+    print(f"\tat line {p.lineno}, column {find_column(input_, p)}")
 
 
 parser = yacc.yacc(debug=True)
@@ -230,6 +281,7 @@ parser = yacc.yacc(debug=True)
 
 if __name__ == "__main__":
     with open(sys.argv[1], "rt") as f:
-        result = parser.parse(f.read())
+        input_ = f.read()
+        result = parser.parse(input_)
         print(result)
         print_tree(ast)
