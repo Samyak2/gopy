@@ -1,18 +1,29 @@
+import sys
 from ply import lex
 
 # List of token names.   This is always required
 tokens = (
+    # operators
     "COMMA",
     "DOT",
     "EQUAL",
     "WALRUS",
+    "PLUS",
+    "MINUS",
+    "MULTIPLY",
+    "DIVIDE",
+
+    # literals
     "INT_LITERAL",
     "FLOAT_LITERAL",
+    "STRING",
+
+    # parenthesis
     "ROUND_START",
     "ROUND_END",
     "CURL_START",
     "CURL_END",
-    "STRING",
+
     "IDENTIFIER",
     "SINGLE_COMMENT",
     "MULTI_COMMENT"
@@ -35,6 +46,10 @@ t_COMMA = r","
 t_DOT = r"\."
 t_EQUAL = r"="
 t_WALRUS = r":="
+t_PLUS = r"\+"
+t_MINUS = r"\-"
+t_MULTIPLY = r"\*"
+t_DIVIDE = r"/"
 
 # Literals
 # t_INT_LITERAL = r"[0-9]+"
@@ -103,14 +118,15 @@ lexer = lex.lex()
 
 
 # Give the lexer some input
-with open("test.go", "rt") as f:
+with open(sys.argv[1], "rt") as f:
     lexer.input(f.read())
 
 
-# Tokenize
-while True:
-    tok = lexer.token()
-    if not tok:
-        break      # No more input
-    print(tok)
+if __name__ == "__main__":
+    # Tokenize
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break      # No more input
+        print(tok)
 
