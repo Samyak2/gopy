@@ -30,21 +30,40 @@ tokens = (
     "SINGLE_COMMENT",
     "MULTI_COMMENT"
 )
+
 keywords = {
-    "package": "PACKAGE",
-    "import": "IMPORT",
-    "var": "VAR",
-    "func": "FUNC",
-    "if": "IF",
-    "else": "ELSE",
-    "for": "FOR",
-    "const": "CONST"
+    "default": "KW_DEFAULT",
+    "func": "KW_FUNC",
+    "interface": "KW_INTERFACE",
+    "select": "KW_SELECT",
+    "case": "KW_CASE",
+    "defer": "KW_DEFER",
+    "go": "KW_GO",
+    "map": "KW_MAP",
+    "struct": "KW_STRUCT",
+    "chan": "KW_CHAN",
+    "else": "KW_ELSE",
+    "goto": "KW_GOTO",
+    "package": "KW_PACKAGE",
+    "switch": "KW_SWITCH",
+    "const": "KW_CONST",
+    "fallthrough": "KW_FALLTHROUGH",
+    "if": "KW_IF",
+    "range": "KW_RANGE",
+    "type": "KW_TYPE",
+    "continue": "KW_CONTINUE",
+    "for": "KW_FOR",
+    "import": "KW_IMPORT",
+    "return": "KW_RETURN",
+    "var": "KW_VAR",
 }
+
 types = {
     "int": "INT",
     "float64": "FLOAT64",
     "bool": "BOOL"
 }
+
 tokens = tokens + tuple(keywords.values()) + tuple(types.values())
 
 # Operators

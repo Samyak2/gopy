@@ -159,8 +159,8 @@ def p_top_declaration(p):
 
 
 def p_const_decl(p):
-    """const_decl : CONST const_spec
-    | CONST ROUND_START const_specs ROUND_END
+    """const_decl : KW_CONST const_spec
+    | KW_CONST ROUND_START const_specs ROUND_END
     """
     if len(p) == 3:
         p[0] = Node("const_decl", children=p[2])
