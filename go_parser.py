@@ -1,4 +1,5 @@
 import sys
+import operator
 
 from pptree import print_tree
 import colorama
@@ -34,6 +35,30 @@ def print_marker(pos, width=1):
     )
 
 
+def eval_numeric_op(p1, p2=None, op=None):
+    if op is None:
+        return None
+    if p2 is None:
+        if is_numeric(p1):
+            return Node("numeric", node=(p1.node[0], op(p1.node[1])))
+    if is_numeric(p1) and is_numeric(p2):
+        if p2.node[0] == p2.node[0]:
+            return Node("numeric", node=(p1.node[0], op(p1.node[1], p2.node[1])))
+        else:
+            # TODO: do automatic type casting here
+            raise Exception("aaaaaaaa different types")
+    else:
+        return None
+
+
+def is_numeric(p):
+    return isinstance(p, Node) and p.type == "numeric"
+
+
+def is_literal(p):
+    return isinstance(p, Node) and p.type == "literal"
+
+
 ast = Node("start", node="start")
 
 
@@ -55,14 +80,23 @@ def p_expression_addsub(p: yacc.YaccProduction):
     """
     if len(p) == 4:
         if p[2] == "+":
-            p[0] = Node("+", [p[1], p[3]], p[2])
+            p[0] = eval_numeric_op(p[1], p[3], operator.add)
+            if p[0] is None:
+                p[0] = Node("+", [p[1], p[3]], p[2])
+
         elif p[2] == "-":
-            p[0] = Node("-", [p[1], p[3]], p[2])
+            p[0] = eval_numeric_op(p[1], p[3], operator.sub)
+            if p[0] is None:
+                p[0] = Node("-", [p[1], p[3]], p[2])
     elif len(p) == 3:
         if p[1] == "+":
-            p[0] = Node("+", [p[2]], p[1])
+            p[0] = eval_numeric_op(p[2], op=operator.pos)
+            if p[0] is None:
+                p[0] = Node("+", [p[2]], p[1])
         elif p[1] == "-":
-            p[0] = Node("-", [p[2]], p[1])
+            p[0] = eval_numeric_op(p[2], op=operator.neg)
+            if p[0] is None:
+                p[0] = Node("-", [p[2]], p[1])
 
 
 def p_expression_term(p):
@@ -75,9 +109,14 @@ def p_term_mul_div(p):
     | term DIVIDE factor
     """
     if p[2] == "*":
-        p[0] = Node("*", [p[1], p[3]], p[2])
+        p[0] = eval_numeric_op(p[1], p[3], operator.mul)
+        if p[0] is None:
+            p[0] = Node("*", [p[1], p[3]], p[2])
+
     elif p[2] == "/":
-        p[0] = Node("/", [p[1], p[3]], p[2])
+        p[0] = eval_numeric_op(p[1], p[3], operator.truediv)
+        if p[0] is None:
+            p[0] = Node("/", [p[1], p[3]], p[2])
 
 
 def p_term_factor(p):
@@ -92,11 +131,20 @@ def p_factor_num(p):
     p[0] = p[1]
 
 
-def p_literal(p):
-    """literal : INT_LITERAL
+def p_numeric(p):
+    """numeric : INT_LITERAL
     | FLOAT_LITERAL
+    """
+    p[0] = Node("numeric", node=p[1])
+
+
+def p_literal(p):
+    """literal : numeric
     | STRING"""
-    p[0] = Node("literal", node=p[1])
+    if isinstance(p[1], Node):
+        p[0] = p[1]
+    else:
+        p[0] = Node("literal", node=p[1])
 
 
 def p_factor_expr(p):
@@ -149,7 +197,13 @@ def p_const_specs(p):
         p[0] = p[1] + p[2]
 
 
-def declare_new_variable(symbol, lineno):
+def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
+    """Helper function to add symbol to the Symbol Table
+    with declaration set to given line number.
+
+    Prints an error if the symbol is already declared at
+    current depth.
+    """
     if symtab.is_declared(symbol):
         print_error()
         print(f"Re-declaration of symbol {symbol} at line {lineno}")
@@ -165,7 +219,7 @@ def declare_new_variable(symbol, lineno):
         pos = line.find(symbol)
         print_marker(pos, width)
     else:
-        symtab.update_lineno(symbol, lineno)
+        symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
 
 
 def p_const_spec(p):
@@ -178,7 +232,16 @@ def p_const_spec(p):
             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
         ]
         for ident in p[0]:
-            declare_new_variable(ident.node[0], p.lineno(2))
+            type_ = None
+            if is_numeric(ident.children[0]) or is_literal(ident.children[0]):
+                type_ = ident.children[0].node[0]
+            declare_new_variable(
+                ident.node[0],
+                p.lineno(2),
+                const=True,
+                type_=type_,
+                value=ident.children[0],
+            )
 
     elif len(p) == 5:
         assert len(p[1]) == len(p[4]), "Constant initialisations don't match variables"
@@ -186,7 +249,13 @@ def p_const_spec(p):
             Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
         ]
         for ident in p[0]:
-            declare_new_variable(ident.node[0], p.lineno(3))
+            declare_new_variable(
+                ident.node[0],
+                p.lineno(3),
+                const=True,
+                type_=ident.node[1],
+                value=ident.children[0],
+            )
 
 
 def p_var_decl(p):
@@ -216,17 +285,41 @@ def p_var_spec(p):
     """
     if len(p) == 3:
         p[0] = [Node("identifier", node=(i, p[2])) for i in p[1]]
+        for ident in p[0]:
+            declare_new_variable(
+                ident.node[0], p.lineno(2), const=False, type_=ident.node[1]
+            )
+
     elif len(p) == 4:
         assert len(p[1]) == len(p[3]), "Variable initialisations don't match variables"
         p[0] = [
             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
         ]
+        for ident in p[0]:
+            type_ = None
+            if is_numeric(ident.children[0]) or is_literal(ident.children[0]):
+                type_ = ident.children[0].node[0]
+            declare_new_variable(
+                ident.node[0],
+                p.lineno(2),
+                const=True,
+                type_=type_,
+                value=ident.children[0],
+            )
 
     elif len(p) == 5:
         assert len(p[1]) == len(p[4]), "Variable initialisations don't match variables"
         p[0] = [
             Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
         ]
+        for ident in p[0]:
+            declare_new_variable(
+                ident.node[0],
+                p.lineno(3),
+                const=False,
+                type_=ident.node[1],
+                value=ident.children[0],
+            )
 
 
 def p_identifier_list(p):
@@ -261,7 +354,7 @@ def p_error(p: lex.LexToken):
         print(f"at line {p.lineno}, column {col}")
         print_line(p.lineno)
         # print(" " * 10, " \t", " " * (col - 1), "^", sep="")
-        print_marker(col-1, len(p.value))
+        print_marker(col - 1, len(p.value))
     else:
         print("Unexpected end of file")
 

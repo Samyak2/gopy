@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 
 import colorama
 from colorama import Fore, Style
@@ -28,6 +28,7 @@ class SymbolInfo:
     storage: int = None
     symbol: Node = None
     const: bool = False
+    value: Any = None
 
 
 class SymbolTable:
@@ -47,8 +48,18 @@ class SymbolTable:
 
         return new_symbol
 
-    def update_lineno(self, symbol: str, lineno):
-        self.mapping[symbol, self.depth].lineno = lineno
+    def update_info(self, symbol: str, lineno, type_=None, const=None, value=None):
+        sym = self.mapping[symbol, self.depth]
+        sym.lineno = lineno
+        sym.type_ = type_
+        # TODO: infer type from value if not given
+        # and set storage appropriately
+        # sym.storage = types[type_][1]
+        if value is not None:
+            sym.value = value
+
+        if const is not None:
+            sym.const = const
 
     def check_exists(self, symbol) -> bool:
         return (symbol, self.depth) in self.mapping
@@ -66,10 +77,10 @@ class SymbolTable:
         return str(
             tabulate(
                 [
-                    [key[0], key[1], value.lineno, value.type_, value.storage]
+                    [key[0], key[1], value.lineno, value.type_, value.storage, value.value]
                     for key, value in self.mapping.items()
                 ],
-                headers=["Symbol", "Depth", "Line No.", "Type", "Storage"],
+                headers=["Symbol", "Depth", "Line No.", "Type", "Storage", "Value"],
                 tablefmt="fancy_grid",
             )
         )
@@ -147,18 +158,21 @@ t_DIVIDE = r"/"
 # Literals
 # t_INT_LITERAL = r"[0-9]+"
 # t_FLOAT_LITERAL = r"[0-9]*\.[0-9]+"
-t_STRING = r"\"[^\"]*\""
+def t_STRING(t):
+    r"\"[^\"]*\""
+    t.value = ("string", t.value)
+    return t
 
 
 def t_FLOAT_LITERAL(t):
     r"\d*\.\d+"
-    t.value = float(t.value)
+    t.value = ("float64", float(t.value))
     return t
 
 
 def t_INT_LITERAL(t):
     r"\d+"
-    t.value = int(t.value)
+    t.value = ("int", int(t.value))
     return t
 
 
