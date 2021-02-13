@@ -23,10 +23,11 @@ class SymbolInfo:
     """Stores information related to a symbol"""
 
     depth: int
-    lineno: int
+    lineno: int = None
     type_: str = None
     storage: int = None
     symbol: Node = None
+    const: bool = False
 
 
 class SymbolTable:
@@ -37,17 +38,26 @@ class SymbolTable:
         self.mapping: Dict[Tuple[str, int], SymbolInfo] = {}
         self.depth = 0
 
-    def add(self, symbol: str, lineno: int) -> SymbolInfo:
+    def add(self, symbol: str) -> SymbolInfo:
         if (symbol, self.depth) in self.mapping:
             return self.mapping[symbol, self.depth]
 
-        new_symbol = SymbolInfo(self.depth, lineno)
+        new_symbol = SymbolInfo(self.depth)
         self.mapping[symbol, self.depth] = new_symbol
 
         return new_symbol
 
+    def update_lineno(self, symbol: str, lineno):
+        self.mapping[symbol, self.depth].lineno = lineno
+
     def check_exists(self, symbol) -> bool:
         return (symbol, self.depth) in self.mapping
+
+    def is_declared(self, symbol) -> bool:
+        return (
+            self.check_exists(symbol)
+            and self.mapping[symbol, self.depth].lineno is not None
+        )
 
     def get_if_exists(self, symbol) -> SymbolInfo:
         return self.mapping.get((symbol, self.depth), None)
@@ -56,11 +66,11 @@ class SymbolTable:
         return str(
             tabulate(
                 [
-                    [key[0], key[1], value.type_, value.storage]
+                    [key[0], key[1], value.lineno, value.type_, value.storage]
                     for key, value in self.mapping.items()
                 ],
-                headers=["Symbol", "Depth", "Type", "Storage"],
-                tablefmt="fancy_grid"
+                headers=["Symbol", "Depth", "Line No.", "Type", "Storage"],
+                tablefmt="fancy_grid",
             )
         )
 
@@ -185,7 +195,7 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        symtab.add(t.value, t.lineno)
+        symtab.add(t.value)
 
     return t
 
@@ -210,7 +220,7 @@ t_ignore = " \t"
 
 
 def print_error(err_str):
-    print(f"ERROR: {Fore.RED}{err_str}{Style.RESET_ALL}")
+    print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
 
 
 # Error handling rule

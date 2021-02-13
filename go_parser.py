@@ -10,6 +10,30 @@ from go_lex import tokens, lex, find_column, symtab
 from utils import Node
 
 
+def print_error():
+    print(f"{Fore.RED}SYNTAX ERROR:{Style.RESET_ALL}")
+
+
+def print_line(lineno):
+    print(
+        f"{Fore.GREEN}{lineno:>10}:\t{Style.RESET_ALL}",
+        lines[lineno - 1],
+        sep="",
+    )
+
+
+def print_marker(pos, width=1):
+    print(
+        Fore.YELLOW,
+        " " * 10,
+        " \t",
+        " " * (pos),
+        "^" * width,
+        Style.RESET_ALL,
+        sep="",
+    )
+
+
 ast = Node("start", node="start")
 
 
@@ -125,6 +149,25 @@ def p_const_specs(p):
         p[0] = p[1] + p[2]
 
 
+def declare_new_variable(symbol, lineno):
+    if symtab.is_declared(symbol):
+        print_error()
+        print(f"Re-declaration of symbol {symbol} at line {lineno}")
+        print_line(lineno)
+        line: str = lines[lineno - 1]
+        pos = line.find(symbol)
+        width = len(symbol)
+        print_marker(pos, width)
+        other_sym = symtab.get_if_exists(symbol)
+        print(f"{symbol} previously declared at line {other_sym.lineno}")
+        print_line(other_sym.lineno)
+        line: str = lines[other_sym.lineno - 1]
+        pos = line.find(symbol)
+        print_marker(pos, width)
+    else:
+        symtab.update_lineno(symbol, lineno)
+
+
 def p_const_spec(p):
     """const_spec : identifier_list EQUAL expression_list
     | identifier_list type EQUAL expression_list
@@ -134,12 +177,16 @@ def p_const_spec(p):
         p[0] = [
             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
         ]
+        for ident in p[0]:
+            declare_new_variable(ident.node[0], p.lineno(2))
 
     elif len(p) == 5:
         assert len(p[1]) == len(p[4]), "Constant initialisations don't match variables"
         p[0] = [
             Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
         ]
+        for ident in p[0]:
+            declare_new_variable(ident.node[0], p.lineno(3))
 
 
 def p_var_decl(p):
@@ -212,12 +259,9 @@ def p_error(p: lex.LexToken):
     if p is not None:
         col = find_column(input_, p)
         print(f"at line {p.lineno}, column {col}")
-        print(
-            f"{Fore.GREEN}{p.lineno:>10}:\t{Style.RESET_ALL}",
-            lines[p.lineno - 1],
-            sep="",
-        )
-        print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+        print_line(p.lineno)
+        # print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+        print_marker(col-1, len(p.value))
     else:
         print("Unexpected end of file")
 
