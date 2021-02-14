@@ -2,7 +2,6 @@ import sys
 import operator
 
 from pptree import print_tree
-import colorama
 from colorama import Fore, Style
 
 from ply import yacc
@@ -57,6 +56,33 @@ def is_numeric(p):
 
 def is_literal(p):
     return isinstance(p, Node) and p.type == "literal"
+
+
+def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
+    """Helper function to add symbol to the Symbol Table
+    with declaration set to given line number.
+
+    Prints an error if the symbol is already declared at
+    current depth.
+    """
+    symbol = symbol[1]
+    if symtab.is_declared(symbol):
+        print_error()
+        print(f"Re-declaration of symbol {symbol} at line {lineno}")
+        print_line(lineno)
+        line: str = lines[lineno - 1]
+        # TODO: get correct position of token rather than searching
+        pos = line.find(symbol)
+        width = len(symbol)
+        print_marker(pos, width)
+        other_sym = symtab.get_if_exists(symbol)
+        print(f"{symbol} previously declared at line {other_sym.lineno}")
+        print_line(other_sym.lineno)
+        line: str = lines[other_sym.lineno - 1]
+        pos = line.find(symbol)
+        print_marker(pos, width)
+    else:
+        symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
 
 
 ast = Node("start", node="start")
@@ -128,6 +154,23 @@ def p_factor_num(p):
     """factor : literal
     | IDENTIFIER
     """
+    if isinstance(p[1], tuple) and p[1][0] == "identifier":
+        symbol_name = p[1][1]
+        if not symtab.is_declared(p[1][1]):
+            lineno = p.lineno(1)
+            print_error()
+            print(f"{symbol_name} not declared in this scope at line {lineno}")
+
+            print_line(lineno)
+            line: str = lines[lineno - 1]
+            # TODO: get correct position of token rather than searching
+            pos = line.find(symbol_name)
+            width = len(symbol_name)
+            print_marker(pos, width)
+        else:
+            sym = symtab.get_if_exists(symbol_name)
+            sym.uses.append(p.lineno(1))
+
     p[0] = p[1]
 
 
@@ -195,31 +238,6 @@ def p_const_specs(p):
         p[0] = p[1]
     elif len(p) == 3:
         p[0] = p[1] + p[2]
-
-
-def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
-    """Helper function to add symbol to the Symbol Table
-    with declaration set to given line number.
-
-    Prints an error if the symbol is already declared at
-    current depth.
-    """
-    if symtab.is_declared(symbol):
-        print_error()
-        print(f"Re-declaration of symbol {symbol} at line {lineno}")
-        print_line(lineno)
-        line: str = lines[lineno - 1]
-        pos = line.find(symbol)
-        width = len(symbol)
-        print_marker(pos, width)
-        other_sym = symtab.get_if_exists(symbol)
-        print(f"{symbol} previously declared at line {other_sym.lineno}")
-        print_line(other_sym.lineno)
-        line: str = lines[other_sym.lineno - 1]
-        pos = line.find(symbol)
-        print_marker(pos, width)
-    else:
-        symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
 
 
 def p_const_spec(p):
@@ -368,7 +386,7 @@ if __name__ == "__main__":
         go_lex.input_ = input_
         lines = input_.split("\n")
         go_lex.lines = lines
-        result = parser.parse(input_)
+        result = parser.parse(input_, tracking=True)
         # print(result)
         print_tree(ast)
         print(symtab)

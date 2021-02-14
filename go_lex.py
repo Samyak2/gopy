@@ -1,5 +1,5 @@
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Tuple, Any
 
 import colorama
@@ -29,6 +29,7 @@ class SymbolInfo:
     symbol: Node = None
     const: bool = False
     value: Any = None
+    uses: list = field(default_factory=list)
 
 
 class SymbolTable:
@@ -77,10 +78,18 @@ class SymbolTable:
         return str(
             tabulate(
                 [
-                    [key[0], key[1], value.lineno, value.type_, value.storage, value.value]
+                    [
+                        key[0],
+                        key[1],
+                        value.lineno,
+                        value.type_,
+                        value.storage,
+                        value.value,
+                        value.uses,
+                    ]
                     for key, value in self.mapping.items()
                 ],
-                headers=["Symbol", "Depth", "Line No.", "Type", "Storage", "Value"],
+                headers=["Symbol", "Depth", "Line No.", "Type", "Storage", "Value", "Uses"],
                 tablefmt="fancy_grid",
             )
         )
@@ -210,6 +219,7 @@ def t_IDENTIFIER(t):
     else:
         t.type = "IDENTIFIER"
         symtab.add(t.value)
+        t.value = ("identifier", t.value)
 
     return t
 

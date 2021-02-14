@@ -3,8 +3,8 @@ var U, V, W float64
 var k = 0
 var x, y float64 = -1, -2
 var (
-	i       int
-	_, v, s = 2.0, 3.0, "bar"
+    i       int
+    _, v, s = 2.0, 3.0, "bar"
 )
 // var i float32
 // var re, im = complexSqrt(-1)
