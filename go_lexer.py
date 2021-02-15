@@ -271,7 +271,7 @@ def t_error(t):
     print(f"at line {t.lineno}, column {col}")
     print(
         f"{Fore.GREEN}{t.lineno:>10}:\t{Style.RESET_ALL}",
-        # lines[t.lineno - 1],
+        lines[t.lineno - 1],
         sep="",
     )
     print(" " * 10, " \t", " " * (col - 1), "^", sep="")
@@ -285,7 +285,7 @@ lexer = lex.lex()
 # Give input to the lexer
 lexer.input(input_code)
 
-lines = []
+lines = input_code.split('\n')
 symtab = SymbolTable()
 
 
