@@ -51,6 +51,14 @@ tokens = (
     "DIVIDE",
     "MODULO",
 
+    # relational operators
+    'EQ_EQ',
+    'NOT_EQ',
+    'LT',
+    'LT_EQ',
+    'GT',
+    'GT_EQ',
+
     # literals
     "INT_LITERAL",
     "FLOAT_LITERAL",
@@ -122,6 +130,13 @@ t_MINUS = r"\-"
 t_MULTIPLY = r"\*"
 t_DIVIDE = r"/"
 t_MODULO = r"%"
+# relational operators
+t_EQ_EQ = r'=='
+t_NOT_EQ = r'!='
+t_LT = r'<'
+t_LT_EQ = r'<='
+t_GT = r'>'
+t_GT_EQ = r'>='
 # types
 t_INT = r"int"
 t_FLOAT64 = r"float64"
