@@ -31,13 +31,12 @@ def find_column(token):
     return (token.lexpos - line_start) + 1
 
 
+# literal tokens
+literals = ';,.'
+
+
 # List of token names.   This is always required
 tokens = (
-    # punctuation
-    "SEMICOLON",
-    "COMMA",
-    "DOT",
-
     # assignment operators
     "EQUAL",
     "WALRUS",
@@ -117,10 +116,6 @@ t_ignore_MULTI_COMMENT = r'/\*(.|\n)*?\*/'
 
 ## tokens with no actions
 
-# punctuation
-t_SEMICOLON = r";"
-t_COMMA = r","
-t_DOT = r"\."
 # assignment operators
 t_EQUAL = r"="
 t_WALRUS = r":="
@@ -159,7 +154,7 @@ def t_NEWLINE(t):
     if insertsemi:
         insertsemi = False
         semi_tok = lex.LexToken()
-        semi_tok.type = 'SEMICOLON'
+        semi_tok.type = ';'
         semi_tok.value = ';'
         semi_tok.lineno = t.lexer.lineno
         semi_tok.lexpos = t.lexer.lexpos
