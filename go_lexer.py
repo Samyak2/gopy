@@ -32,23 +32,23 @@ def find_column(token):
 
 
 # literal tokens
-literals = ';,.*=()[]{}'
+literals = ';,.=+-*/%()[]{}'
 
 
 # List of token names.   This is always required
 tokens = (
     # assignment operators
-    "EQUALS",
+    # "EQUALS", # A literal token
     "WALRUS",
-    
+
     # arithmetic operators
     "INCREMENT",
     "DECREMENT", 
-    "PLUS",
-    "MINUS",
-    "MULTIPLY",
-    "DIVIDE",
-    "MODULO",
+    # "PLUS",
+    # "MINUS",
+    # "MULTIPLY",
+    # "DIVIDE",
+    # "MODULO",
 
     # relational operators
     'EQ_EQ',
@@ -111,14 +111,14 @@ t_ignore_MULTI_COMMENT = r'/\*(.|\n)*?\*/'
 ## tokens with no actions
 
 # assignment operators
-t_EQUALS = r"="
+# t_EQUALS = r"="
 t_WALRUS = r":="
 # arithmetic operators
-t_PLUS = r"\+"
-t_MINUS = r"\-"
-t_MULTIPLY = r"\*"
-t_DIVIDE = r"/"
-t_MODULO = r"%"
+# t_PLUS = r"\+"
+# t_MINUS = r"\-"
+# t_MULTIPLY = r"\*"
+# t_DIVIDE = r"/"
+# t_MODULO = r"%"
 # relational operators
 t_EQ_EQ = r'=='
 t_NOT_EQ = r'!='
