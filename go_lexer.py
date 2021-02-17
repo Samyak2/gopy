@@ -40,6 +40,12 @@ tokens = (
     # assignment operators
     # "EQUALS", # A literal token
     "WALRUS",
+    'ADD_EQ',
+    'SUB_EQ',
+    'MUL_EQ',
+    'DIV_EQ',
+    'MOD_EQ',
+    # TODO : Add |= ^= <<= >>= &= &^=
 
     # arithmetic operators
     "INCREMENT",
@@ -113,6 +119,11 @@ t_ignore_MULTI_COMMENT = r'/\*(.|\n)*?\*/'
 # assignment operators
 # t_EQUALS = r"="
 t_WALRUS = r":="
+t_ADD_EQ = r'\+='
+t_SUB_EQ = r'-='
+t_MUL_EQ = r'\*='
+t_DIV_EQ = r'/='
+t_MOD_EQ = r'%='
 # arithmetic operators
 # t_PLUS = r"\+"
 # t_MINUS = r"\-"
