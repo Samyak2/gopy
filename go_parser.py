@@ -146,8 +146,60 @@ def p_TopLevelDecl(p):
     # TODO : Add MethodDecl
 
 def p_FunctionDecl(p):
-    '''FunctionDecl : empty
+    '''FunctionDecl : KW_FUNC FunctionName Signature 
+                    | KW_FUNC FunctionName Signature FunctionBody
     '''
+
+def p_FunctionName(p):
+    '''FunctionName : IDENTIFIER
+    '''
+
+def p_Signature(p):
+    '''Signature : Parameters
+                 | Parameters Result
+    '''
+
+def p_Parameters(p):
+    '''Parameters : '(' empty ')'
+                  | '(' ParameterList ')'
+                  | '(' ParameterList ',' ')'
+    '''
+
+def p_Result(p):
+    '''Result : Parameters 
+              | TypeName
+              | TypeLit
+    '''
+
+def p_ParameterList(p):
+    '''ParameterList : ParameterDecl 
+                     | ParameterList ',' ParameterDecl
+    '''
+
+def p_ParameterDecl(p):
+    '''ParameterDecl : Type
+                     | ELLIPSIS Type
+                     | IdentifierList Type
+                     | IdentifierList ELLIPSIS Type
+    '''
+
+def p_FunctionBody(p):
+    '''FunctionBody : Block
+    '''
+
+def p_Block(p):
+    '''Block : '{' StatementList '}'
+    '''
+
+def p_StatementList(p):
+    '''StatementList : empty
+                     | Statement ';' StatementList
+    '''
+
+def p_Statement(p):
+    '''Statement : Declaration
+    '''
+    # TODO : Complete this!
 
 def p_Declaration(p):
     '''Declaration : VarDecl
