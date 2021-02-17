@@ -88,6 +88,12 @@ def print_marker(pos, width=1):
 
 # ast = Node("start", node="start")
 
+precedence = \
+(
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'MULTIPLY', 'DIVIDE', 'MODULO'),
+)
+
 
 def p_SourceFile(p):
     '''SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList
