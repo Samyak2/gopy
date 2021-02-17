@@ -128,7 +128,80 @@ def p_ImportPath(p):
 
 def p_TopLevelDeclList(p):
     '''TopLevelDeclList : empty
+                        | TopLevelDecl ';' TopLevelDeclList
     '''
+
+def p_TopLevelDecl(p):
+    '''TopLevelDecl : FunctionDecl
+                    | Declaration
+    '''
+    # TODO : Add MethodDecl
+
+def p_FunctionDecl(p):
+    '''FunctionDecl : empty
+    '''
+
+def p_Declaration(p):
+    '''Declaration : VarDecl
+    '''
+
+def p_VarDecl(p):
+    '''VarDecl : KW_VAR VarSpec
+               | KW_VAR '(' VarSpecList ')'
+    '''
+
+def p_VarSpecList(p):
+    '''VarSpecList : empty
+                   | VarSpec ';' VarSpecList
+    '''
+
+def p_VarSpec(p):
+    '''VarSpec : IdentifierList Type 
+               | IdentifierList Type '=' ExpressionList
+               | IdentifierList '=' ExpressionList 
+    '''
+
+def p_IdentifierList(p):
+    '''IdentifierList : IDENTIFIER 
+                   | IdentifierList ',' IDENTIFIER
+    '''
+
+def p_ExpressionList(p):
+    '''ExpressionList : Expression 
+                   | ExpressionList ',' Expression
+    '''
+
+def p_Expression(p):
+    '''Expression : UnaryExpr
+                  | Expression BinaryOp Expression
+    '''
+
+def p_UnaryExpr(p):
+    '''UnaryExpr : IDENTIFIER
+                 | UnaryOp UnaryExpr
+    '''
+
+def p_UnaryOp(p):
+    '''UnaryOp : PLUS 
+               | MINUS
+    '''
+    # TODO : Add other unary operators
+
+def p_BinaryOp(p):
+    '''BinaryOp : ArithmeticOp
+                | RelationalOp
+    '''
+    # TODO : Add Logical Operators 
+    # TODO : Add other binary operators
+
+def p_ArithmeticOp(p):
+    '''ArithmeticOp : PLUS
+                    | MINUS
+                    | MULTIPLY
+                    | DIVIDE
+                    | MODULO
+    '''
+
 
 # def p_start(p):
 #     """start : start expression
