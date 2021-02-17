@@ -90,8 +90,9 @@ def print_marker(pos, width=1):
 
 precedence = \
 (
-    ('left', 'PLUS', 'MINUS'),
-    ('left', 'MULTIPLY', 'DIVIDE', 'MODULO'),
+    ('nonassoc', 'EQ_EQ', 'NOT_EQ', 'LT', 'LT_EQ', 'GT', 'GT_EQ'),
+    ('left', '+', '-'),
+    ('left', '*', '/', '%'),
     ('right', 'UNARY')
 )
 
@@ -179,9 +180,24 @@ def p_ExpressionList(p):
     '''
 
 def p_Expression(p):
+    # '''Expression : UnaryExpr
+    #               | Expression BinaryOp Expression
+    # '''
     '''Expression : UnaryExpr
-                  | Expression BinaryOp Expression
+                  | Expression '+' Expression
+                  | Expression '-' Expression
+                  | Expression '*' Expression
+                  | Expression '/' Expression
+                  | Expression '%' Expression
+                  | Expression EQ_EQ Expression
+                  | Expression NOT_EQ Expression
+                  | Expression LT Expression
+                  | Expression LT_EQ Expression
+                  | Expression GT Expression
+                  | Expression GT_EQ Expression
     '''
+    # TODO : Add Logical Operators 
+    # TODO : Add other binary operators
 
 def p_UnaryExpr(p):
     '''UnaryExpr : IDENTIFIER
@@ -193,22 +209,6 @@ def p_UnaryOp(p):
                | 'MINUS' %prec UNARY
     '''
     # TODO : Add other unary operators
-
-def p_BinaryOp(p):
-    '''BinaryOp : ArithmeticOp
-                | RelationalOp
-    '''
-    # TODO : Add Logical Operators 
-    # TODO : Add other binary operators
-
-def p_ArithmeticOp(p):
-    '''ArithmeticOp : PLUS
-                    | MINUS
-                    | MULTIPLY
-                    | DIVIDE
-                    | MODULO
-    '''
-
 
 # def p_start(p):
 #     """start : start expression
