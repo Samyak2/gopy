@@ -200,15 +200,76 @@ def p_Expression(p):
     # TODO : Add other binary operators
 
 def p_UnaryExpr(p):
-    '''UnaryExpr : IDENTIFIER
+    '''UnaryExpr : PrimaryExpr 
                  | UnaryOp UnaryExpr
     '''
 
 def p_UnaryOp(p):
-    '''UnaryOp : 'PLUS' %prec UNARY
-               | 'MINUS' %prec UNARY
+    '''UnaryOp : '+' %prec UNARY
+               | '-' %prec UNARY
     '''
     # TODO : Add other unary operators
+
+def p_PrimaryExpr(p):
+    '''PrimaryExpr : Operand
+    '''
+    # TODO : This is too less! Many more to add
+
+def p_Operand(p):
+    '''Operand : OperandName
+               | Literal
+               | '(' Expression ')'
+    '''
+
+def p_OperandName(p):
+    '''OperandName : IDENTIFIER
+                   | QualifiedIdent
+    '''
+
+def p_QualifiedIdent(p):
+    '''QualifiedIdent : PackageName '.' IDENTIFIER
+    '''
+
+def p_Literal(p):
+    '''Literal : BasicLit
+    '''
+    # TODO : Add other CompositeLit and FunctionLit
+
+def p_BasicLit(p):
+    '''BasicLit : int_lit
+                | float_lit
+                | string_lit
+    '''
+    # TODO : Add other basic literals
+
+def p_int_lit(p):
+    '''int_lit : INT_LIT
+    '''
+
+    # TODO : 
+    # '''int_lit : decimal_lit
+    #            | binary_lit
+    #            | octal_lit
+    #            | hex_lit
+    # '''
+
+def p_float_lit(p):
+    '''float_lit : FLOAT_LIT
+    '''
+
+    # TODO : 
+    # '''float_lit : decimal_float_lit
+    #              | hex_float_lit
+    # '''
+
+def p_string_lit(p):
+    '''string_lit : STRING_LIT
+    '''
+    
+    # TODO : 
+    # '''string_lit : raw_string_lit
+    #               | interpreted_string_lit
+    # '''
 
 # def p_start(p):
 #     """start : start expression
