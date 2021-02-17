@@ -203,6 +203,8 @@ def p_Statement(p):
 
 def p_Declaration(p):
     '''Declaration : VarDecl
+                   | ConstDecl
+                   | TypeDecl
     '''
 
 def p_VarDecl(p):
@@ -221,20 +223,56 @@ def p_VarSpec(p):
                | IdentifierList '=' ExpressionList 
     '''
 
+def p_ConstDecl(p):
+    '''ConstDecl : KW_CONST ConstSpec
+                 | KW_CONST '(' ConstSpecList ')'
+    '''
+
+def p_ConstSpecList(p):
+    '''ConstSpecList : empty
+                     | ConstSpec ';' ConstSpecList
+    '''
+
+def p_ConstSpec(p):
+    '''ConstSpec : IdentifierList 
+                 | IdentifierList '=' ExpressionList
+                 | IdentifierList Type '=' ExpressionList
+    '''
+
+def p_TypeDecl(p):
+    '''TypeDecl : KW_TYPE TypeSpec
+                | KW_TYPE '(' TypeSpecList ')'
+    '''
+
+def p_TypeSpecList(p):
+    '''TypeSpecList : empty
+                    | TypeSpec ';' TypeSpecList
+    '''
+
+def p_TypeSpec(p):
+    '''TypeSpec : TypeDef
+                | AliasDecl
+    '''
+
+def p_TypeDef(p):
+    '''TypeDef : IDENTIFIER Type
+    '''
+
+def p_AliasDecl(p):
+    '''AliasDecl : IDENTIFIER '=' Type
+    '''
+
 def p_IdentifierList(p):
     '''IdentifierList : IDENTIFIER 
-                   | IdentifierList ',' IDENTIFIER
+                      | IDENTIFIER ',' IdentifierList
     '''
 
 def p_ExpressionList(p):
     '''ExpressionList : Expression 
-                   | ExpressionList ',' Expression
+                      | Expression ',' ExpressionList
     '''
 
 def p_Expression(p):
-    # '''Expression : UnaryExpr
-    #               | Expression BinaryOp Expression
-    # '''
     '''Expression : UnaryExpr
                   | Expression '+' Expression
                   | Expression '-' Expression
@@ -285,7 +323,7 @@ def p_QualifiedIdent(p):
 def p_Literal(p):
     '''Literal : BasicLit
     '''
-    # TODO : Add other CompositeLit and FunctionLit
+    # TODO : Add CompositeLit and FunctionLit
 
 def p_BasicLit(p):
     '''BasicLit : int_lit
@@ -322,6 +360,78 @@ def p_string_lit(p):
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
     # '''
+
+def p_Type(p):
+    '''Type : TypeName 
+            | TypeLit
+            | '(' Type ')'
+    '''
+
+def p_TypeName(p):
+    '''TypeName : BasicType
+                | QualifiedIdent
+    '''
+
+def p_BasicType(p):
+    '''BasicType : INT
+                 | BOOL
+                 | FLOAT64
+    '''
+
+def p_TypeLit(p):
+    '''TypeLit : ArrayType
+               | StructType
+               | PointerType
+               | FunctionType
+    '''
+    # TODO : Add other type literals
+
+def p_ArrayType(p):
+    '''ArrayType : '[' ArrayLength ']' ElementType
+    '''
+
+def p_ArrayLength(p):
+    '''ArrayLength : Expression
+    '''
+
+def p_ElementType(p):
+    '''ElementType : Type
+    '''
+
+def p_StructType(p):
+    '''StructType : KW_STRUCT '{' FieldDeclList '}'
+    '''
+
+def p_FieldDeclList(p):
+    '''FieldDeclList : empty
+                     | FieldDecl ';'
+    '''
+
+def p_FieldDecl(p):
+    '''FieldDecl : IdentifierList Type Tag
+                 | EmbeddedField Tag
+    '''
+
+def p_EmbeddedField(p):
+    '''EmbeddedField : '*' TypeName
+    '''
+
+def p_Tag(p):
+    '''Tag : empty
+           | STRING_LIT
+    '''
+
+def p_PointerType(p):
+    '''PointerType : '*' BaseType
+    '''
+
+def p_BaseType(p):
+    '''BaseType : Type
+    '''
+
+def p_FunctionType(p):
+    '''FunctionType : KW_FUNC Signature
+    '''
 
 # def p_start(p):
 #     """start : start expression
