@@ -32,13 +32,13 @@ def find_column(token):
 
 
 # literal tokens
-literals = ';,.'
+literals = ';,.*=()[]{}'
 
 
 # List of token names.   This is always required
 tokens = (
     # assignment operators
-    "EQUAL",
+    "EQUALS",
     "WALRUS",
     
     # arithmetic operators
@@ -59,18 +59,12 @@ tokens = (
     'GT_EQ',
 
     # literals
-    "INT_LITERAL",
-    "FLOAT_LITERAL",
-    "STRING",
+    "INT_LIT",
+    "FLOAT_LIT",
+    "STRING_LIT",
     
-    # parenthesis
-    "ROUND_START",
-    "ROUND_END",
-    "CURL_START",
-    "CURL_END",
-    "SQ_START",
-    "SQ_END",
     "IDENTIFIER",
+    "ELLIPSIS"
 )
 
 keywords = {
@@ -117,7 +111,7 @@ t_ignore_MULTI_COMMENT = r'/\*(.|\n)*?\*/'
 ## tokens with no actions
 
 # assignment operators
-t_EQUAL = r"="
+t_EQUALS = r"="
 t_WALRUS = r":="
 # arithmetic operators
 t_PLUS = r"\+"
@@ -136,11 +130,8 @@ t_GT_EQ = r'>='
 t_INT = r"int"
 t_FLOAT64 = r"float64"
 t_BOOL = r"bool"
-# opening parentheses
-t_ROUND_START = r'\('
-t_SQ_START = r'\['
-t_CURL_START = r'\{'
 
+t_ELLIPSIS = r"\.\.\."
 
 ## tokens with actions
 
@@ -163,22 +154,25 @@ def t_NEWLINE(t):
 
 # closing parantheses
 
-def t_ROUND_END(t):
+def t_round_end(t):
     r'\)'
 
     set_insertsemi()
+    t.type = ')'
     return t
 
-def t_SQ_END(t):
+def t_sq_end(t):
     r'\]'
 
     set_insertsemi()
+    t.type = ']'
     return t
 
-def t_CURL_END(t):
+def t_curl_end(t):
     r'\}'
 
     set_insertsemi()
+    t.type = '}'
     return t    
 
 
@@ -226,7 +220,7 @@ def t_DECREMENT(t):
 
 # literals
 
-def t_STRING(t):
+def t_STRING_LIT(t):
     r'\"[^\"]*\"'
     
     t.value = ("string", t.value)
@@ -235,7 +229,7 @@ def t_STRING(t):
     return t
 
 
-def t_FLOAT_LITERAL(t):
+def t_FLOAT_LIT(t):
     r"\d*\.\d+"
     
     t.value = ("float64", float(t.value))
@@ -244,7 +238,7 @@ def t_FLOAT_LITERAL(t):
     return t
 
 
-def t_INT_LITERAL(t):
+def t_INT_LIT(t):
     r"\d+"
     
     t.value = ("int", int(t.value))
