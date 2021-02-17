@@ -92,6 +92,7 @@ precedence = \
 (
     ('left', 'PLUS', 'MINUS'),
     ('left', 'MULTIPLY', 'DIVIDE', 'MODULO'),
+    ('right', 'UNARY')
 )
 
 
@@ -188,8 +189,8 @@ def p_UnaryExpr(p):
     '''
 
 def p_UnaryOp(p):
-    '''UnaryOp : PLUS 
-               | MINUS
+    '''UnaryOp : 'PLUS' %prec UNARY
+               | 'MINUS' %prec UNARY
     '''
     # TODO : Add other unary operators
 
