@@ -43,7 +43,7 @@ class Node:
         while queue:
 
             node = queue.pop(0)
-            self.print_node(node)
+            Node.print_node(node)
 
             if isinstance(node, Node):
                 queue.extend(node.children)

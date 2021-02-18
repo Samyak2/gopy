@@ -3,6 +3,7 @@ from tabulate import tabulate
 from utils import Node
 from typing import Dict, Tuple, Any
 
+
 @dataclass
 class SymbolInfo:
     """Stores information related to a symbol"""
@@ -74,7 +75,15 @@ class SymbolTable:
                     ]
                     for key, value in self.mapping.items()
                 ],
-                headers=["Symbol", "Depth", "Line No.", "Type", "Storage", "Value", "Uses"],
+                headers=[
+                    "Symbol",
+                    "Depth",
+                    "Line No.",
+                    "Type",
+                    "Storage",
+                    "Value",
+                    "Uses",
+                ],
                 tablefmt="fancy_grid",
             )
         )

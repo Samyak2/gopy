@@ -88,156 +88,172 @@ def print_marker(pos, width=1):
 
 # ast = Node("start", node="start")
 
-precedence = \
-(
+precedence = (
     # ('left', 'IDENTIFIER'),
     # ('left', 'INT', 'BOOL', 'FLOAT64'),
     # ('left', '(', ')'),
     # ('left', ';'),
     # ('left', ','),
-    ('right', 'WALRUS'),
-    ('right', '=', 'ADD_EQ', 'SUB_EQ', 'MUL_EQ', 'DIV_EQ', 'MOD_EQ'),
-    ('nonassoc', 'EQ_EQ', 'NOT_EQ', 'LT', 'LT_EQ', 'GT', 'GT_EQ'),
-    ('left', '+', '-'),
-    ('left', '*', '/', '%'),
-    ('right', 'UNARY')
+    ("right", "WALRUS"),
+    ("right", "=", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
+    ("nonassoc", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
+    ("left", "+", "-"),
+    ("left", "*", "/", "%"),
+    ("right", "UNARY"),
 )
 
 
 def p_SourceFile(p):
-    '''SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList
-    '''
+    """SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList"""
+
 
 def p_PackageClause(p):
-    '''PackageClause : KW_PACKAGE PackageName
-    '''
+    """PackageClause : KW_PACKAGE PackageName"""
+
 
 def p_PackageName(p):
-    '''PackageName : IDENTIFIER
-    '''
+    """PackageName : IDENTIFIER"""
+
 
 def p_ImportDeclList(p):
-    '''ImportDeclList : empty
-                      | ImportDecl ';' ImportDeclList
-    '''
+    """ImportDeclList : empty
+    | ImportDecl ';' ImportDeclList
+    """
+
 
 def p_ImportDecl(p):
-    '''ImportDecl : KW_IMPORT ImportSpec
-                  | KW_IMPORT '(' ImportSpecList ')' 
-    '''
+    """ImportDecl : KW_IMPORT ImportSpec
+    | KW_IMPORT '(' ImportSpecList ')'
+    """
+
 
 def p_ImportSpecList(p):
-    '''ImportSpecList : empty
-                      | ImportSpec ';' ImportSpecList
-    '''
+    """ImportSpecList : empty
+    | ImportSpec ';' ImportSpecList
+    """
+
 
 def p_ImportSpec(p):
-    '''ImportSpec : empty ImportPath
-                  | '.' ImportPath
-                  | PackageName ImportPath
-    '''
+    """ImportSpec : empty ImportPath
+    | '.' ImportPath
+    | PackageName ImportPath
+    """
+
 
 def p_ImportPath(p):
-    '''ImportPath : STRING_LIT
-    '''
+    """ImportPath : STRING_LIT"""
+
 
 def p_TopLevelDeclList(p):
-    '''TopLevelDeclList : empty
-                        | TopLevelDecl ';' TopLevelDeclList
-    '''
+    """TopLevelDeclList : empty
+    | TopLevelDecl ';' TopLevelDeclList
+    """
+
 
 def p_TopLevelDecl(p):
-    '''TopLevelDecl : FunctionDecl
-                    | Declaration
-    '''
+    """TopLevelDecl : FunctionDecl
+    | Declaration
+    """
     # TODO : Add MethodDecl
 
+
 def p_FunctionDecl(p):
-    '''FunctionDecl : KW_FUNC FunctionName Signature 
-                    | KW_FUNC FunctionName Signature FunctionBody
-    '''
+    """FunctionDecl : KW_FUNC FunctionName Signature
+    | KW_FUNC FunctionName Signature FunctionBody
+    """
+
 
 def p_FunctionName(p):
-    '''FunctionName : IDENTIFIER
-    '''
+    """FunctionName : IDENTIFIER"""
+
 
 def p_Signature(p):
-    '''Signature : Parameters
-                 | Parameters Result
-    '''
+    """Signature : Parameters
+    | Parameters Result
+    """
+
 
 def p_Parameters(p):
-    '''Parameters : '(' empty ')'
-                  | '(' ParameterList ')'
-                  | '(' ParameterList ',' ')'
-    '''
+    """Parameters : '(' empty ')'
+    | '(' ParameterList ')'
+    | '(' ParameterList ',' ')'
+    """
+
 
 def p_Result(p):
-    '''Result : Parameters 
-              | TypeName
-              | TypeLit
-    '''
+    """Result : Parameters
+    | TypeName
+    | TypeLit
+    """
+
 
 def p_ParameterList(p):
-    '''ParameterList : ParameterDecl 
-                     | ParameterList ',' ParameterDecl
-    '''
+    """ParameterList : ParameterDecl
+    | ParameterList ',' ParameterDecl
+    """
+
 
 def p_ParameterDecl(p):
-    '''ParameterDecl : Type
-                     | ELLIPSIS Type
-                     | IdentifierList Type
-                     | IdentifierList ELLIPSIS Type
-    '''
+    """ParameterDecl : Type
+    | ELLIPSIS Type
+    | IdentifierList Type
+    | IdentifierList ELLIPSIS Type
+    """
+
 
 def p_FunctionBody(p):
-    '''FunctionBody : Block
-    '''
+    """FunctionBody : Block"""
+
 
 def p_Block(p):
-    '''Block : '{' StatementList '}'
-    '''
+    """Block : '{' StatementList '}' """
+
 
 def p_StatementList(p):
-    '''StatementList : empty
-                     | Statement ';' StatementList
-    '''
+    """StatementList : empty
+    | Statement ';' StatementList
+    """
+
 
 def p_Statement(p):
-    '''Statement : Declaration
-                 | SimpleStmt
-    '''
+    """Statement : Declaration
+    | SimpleStmt
+    """
     # TODO : Complete this!
 
+
 def p_SimpleStmt(p):
-    '''SimpleStmt : EmptyStmt
-                  | ExpressionStmt
-                  | IncDecStmt
-                  | Assignment
-                  | ShortVarDecl
-    '''
+    """SimpleStmt : EmptyStmt
+    | ExpressionStmt
+    | IncDecStmt
+    | Assignment
+    | ShortVarDecl
+    """
+
 
 def p_EmptyStmt(p):
-    '''EmptyStmt : empty
-    '''
+    """EmptyStmt : empty"""
+
 
 def p_ExpressionStmt(p):
-    '''ExpressionStmt : Expression
-    '''
+    """ExpressionStmt : Expression"""
+
 
 def p_IncDecStmt(p):
-    '''IncDecStmt : Expression INCREMENT
-                  | Expression DECREMENT
-    '''
+    """IncDecStmt : Expression INCREMENT
+    | Expression DECREMENT
+    """
+
 
 def p_Assignment(p):
-    '''Assignment : ExpressionList '=' ExpressionList
-                  | ExpressionList ADD_EQ ExpressionList
-                  | ExpressionList SUB_EQ ExpressionList
-                  | ExpressionList MUL_EQ ExpressionList
-                  | ExpressionList DIV_EQ ExpressionList
-                  | ExpressionList MOD_EQ ExpressionList
-    '''
+    """Assignment : ExpressionList '=' ExpressionList
+    | ExpressionList ADD_EQ ExpressionList
+    | ExpressionList SUB_EQ ExpressionList
+    | ExpressionList MUL_EQ ExpressionList
+    | ExpressionList DIV_EQ ExpressionList
+    | ExpressionList MOD_EQ ExpressionList
+    """
+
 
 # def p_assign_op(p):
 #     '''assign_op : '='
@@ -247,10 +263,10 @@ def p_Assignment(p):
 #                  | DIV_EQ
 #                  | MOD_EQ
 #     '''
-    # '''assign_op : '='
-    #              | add_op '='
-    #              | mul_op '='
-    # '''
+# '''assign_op : '='
+#              | add_op '='
+#              | mul_op '='
+# '''
 
 # def p_add_op(p):
 #     '''add_op : '+'
@@ -265,241 +281,267 @@ def p_Assignment(p):
 #     '''
 #     # TODO : Add << >> & &^
 
+
 def p_ShortVarDecl(p):
-    '''ShortVarDecl : IdentifierList WALRUS ExpressionList
-    '''
+    """ShortVarDecl : IdentifierList WALRUS ExpressionList"""
+
 
 def p_Declaration(p):
-    '''Declaration : VarDecl
-                   | ConstDecl
-                   | TypeDecl
-    '''
+    """Declaration : VarDecl
+    | ConstDecl
+    | TypeDecl
+    """
+
 
 def p_VarDecl(p):
-    '''VarDecl : KW_VAR VarSpec
-               | KW_VAR '(' VarSpecList ')'
-    '''
+    """VarDecl : KW_VAR VarSpec
+    | KW_VAR '(' VarSpecList ')'
+    """
+
 
 def p_VarSpecList(p):
-    '''VarSpecList : empty
-                   | VarSpec ';' VarSpecList
-    '''
+    """VarSpecList : empty
+    | VarSpec ';' VarSpecList
+    """
+
 
 def p_VarSpec(p):
-    '''VarSpec : IdentifierList Type 
-               | IdentifierList Type '=' ExpressionList
-               | IdentifierList '=' ExpressionList 
-    '''
+    """VarSpec : IdentifierList Type
+    | IdentifierList Type '=' ExpressionList
+    | IdentifierList '=' ExpressionList
+    """
+
 
 def p_ConstDecl(p):
-    '''ConstDecl : KW_CONST ConstSpec
-                 | KW_CONST '(' ConstSpecList ')'
-    '''
+    """ConstDecl : KW_CONST ConstSpec
+    | KW_CONST '(' ConstSpecList ')'
+    """
+
 
 def p_ConstSpecList(p):
-    '''ConstSpecList : empty
-                     | ConstSpec ';' ConstSpecList
-    '''
+    """ConstSpecList : empty
+    | ConstSpec ';' ConstSpecList
+    """
+
 
 def p_ConstSpec(p):
-    '''ConstSpec : IdentifierList 
-                 | IdentifierList '=' ExpressionList
-                 | IdentifierList Type '=' ExpressionList
-    '''
+    """ConstSpec : IdentifierList
+    | IdentifierList '=' ExpressionList
+    | IdentifierList Type '=' ExpressionList
+    """
+
 
 def p_TypeDecl(p):
-    '''TypeDecl : KW_TYPE TypeSpec
-                | KW_TYPE '(' TypeSpecList ')'
-    '''
+    """TypeDecl : KW_TYPE TypeSpec
+    | KW_TYPE '(' TypeSpecList ')'
+    """
+
 
 def p_TypeSpecList(p):
-    '''TypeSpecList : empty
-                    | TypeSpec ';' TypeSpecList
-    '''
+    """TypeSpecList : empty
+    | TypeSpec ';' TypeSpecList
+    """
+
 
 def p_TypeSpec(p):
-    '''TypeSpec : TypeDef
-                | AliasDecl
-    '''
+    """TypeSpec : TypeDef
+    | AliasDecl
+    """
+
 
 def p_TypeDef(p):
-    '''TypeDef : IDENTIFIER Type
-    '''
+    """TypeDef : IDENTIFIER Type"""
+
 
 def p_AliasDecl(p):
-    '''AliasDecl : IDENTIFIER '=' Type
-    '''
+    """AliasDecl : IDENTIFIER '=' Type"""
+
 
 def p_IdentifierList(p):
-    '''IdentifierList : IDENTIFIER 
-                      | IDENTIFIER ',' IdentifierList %prec WALRUS
-    '''
+    """IdentifierList : IDENTIFIER
+    | IDENTIFIER ',' IdentifierList %prec WALRUS
+    """
+
 
 def p_ExpressionList(p):
-    '''ExpressionList : Expression 
-                      | Expression ',' ExpressionList
-    '''
+    """ExpressionList : Expression
+    | Expression ',' ExpressionList
+    """
+
 
 def p_Expression(p):
-    '''Expression : UnaryExpr
-                  | Expression '+' Expression
-                  | Expression '-' Expression
-                  | Expression '*' Expression
-                  | Expression '/' Expression
-                  | Expression '%' Expression
-                  | Expression EQ_EQ Expression
-                  | Expression NOT_EQ Expression
-                  | Expression LT Expression
-                  | Expression LT_EQ Expression
-                  | Expression GT Expression
-                  | Expression GT_EQ Expression
-    '''
-    # TODO : Add Logical Operators 
+    """Expression : UnaryExpr
+    | Expression '+' Expression
+    | Expression '-' Expression
+    | Expression '*' Expression
+    | Expression '/' Expression
+    | Expression '%' Expression
+    | Expression EQ_EQ Expression
+    | Expression NOT_EQ Expression
+    | Expression LT Expression
+    | Expression LT_EQ Expression
+    | Expression GT Expression
+    | Expression GT_EQ Expression
+    """
+    # TODO : Add Logical Operators
     # TODO : Add other binary operators
 
+
 def p_UnaryExpr(p):
-    '''UnaryExpr : PrimaryExpr 
-                 | UnaryOp UnaryExpr
-    '''
+    """UnaryExpr : PrimaryExpr
+    | UnaryOp UnaryExpr
+    """
+
 
 def p_UnaryOp(p):
-    '''UnaryOp : '+' %prec UNARY
-               | '-' %prec UNARY
-    '''
+    """UnaryOp : '+' %prec UNARY
+    | '-' %prec UNARY
+    """
     # TODO : Add other unary operators
 
+
 def p_PrimaryExpr(p):
-    '''PrimaryExpr : Operand
-    '''
+    """PrimaryExpr : Operand"""
     # TODO : This is too less! Many more to add
 
+
 def p_Operand(p):
-    '''Operand : OperandName
-               | Literal
-               | '(' Expression ')'
-    '''
+    """Operand : OperandName
+    | Literal
+    | '(' Expression ')'
+    """
+
 
 def p_OperandName(p):
-    '''OperandName : IDENTIFIER %prec '='
-                   | QualifiedIdent
-    '''
+    """OperandName : IDENTIFIER %prec '='
+    | QualifiedIdent
+    """
+
 
 def p_QualifiedIdent(p):
-    '''QualifiedIdent : PackageName '.' IDENTIFIER
-    '''
+    """QualifiedIdent : PackageName '.' IDENTIFIER"""
+
 
 def p_Literal(p):
-    '''Literal : BasicLit
-    '''
+    """Literal : BasicLit"""
     # TODO : Add CompositeLit and FunctionLit
 
+
 def p_BasicLit(p):
-    '''BasicLit : int_lit
-                | float_lit
-                | string_lit
-    '''
+    """BasicLit : int_lit
+    | float_lit
+    | string_lit
+    """
     # TODO : Add other basic literals
 
-def p_int_lit(p):
-    '''int_lit : INT_LIT
-    '''
 
-    # TODO : 
+def p_int_lit(p):
+    """int_lit : INT_LIT"""
+
+    # TODO :
     # '''int_lit : decimal_lit
     #            | binary_lit
     #            | octal_lit
     #            | hex_lit
     # '''
 
-def p_float_lit(p):
-    '''float_lit : FLOAT_LIT
-    '''
 
-    # TODO : 
+def p_float_lit(p):
+    """float_lit : FLOAT_LIT"""
+
+    # TODO :
     # '''float_lit : decimal_float_lit
     #              | hex_float_lit
     # '''
 
+
 def p_string_lit(p):
-    '''string_lit : STRING_LIT
-    '''
-    
-    # TODO : 
+    """string_lit : STRING_LIT"""
+
+    # TODO :
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
     # '''
 
+
 def p_Type(p):
-    '''Type : TypeName 
-            | TypeLit
-            | '(' Type ')'
-    '''
+    """Type : TypeName
+    | TypeLit
+    | '(' Type ')'
+    """
+
 
 def p_TypeName(p):
-    '''TypeName : BasicType
-                | QualifiedIdent
-    '''
+    """TypeName : BasicType
+    | QualifiedIdent
+    """
+
 
 def p_BasicType(p):
-    '''BasicType : INT
-                 | BOOL
-                 | FLOAT64
-    '''
+    """BasicType : INT
+    | BOOL
+    | FLOAT64
+    """
+
 
 def p_TypeLit(p):
-    '''TypeLit : ArrayType
-               | StructType
-               | PointerType
-               | FunctionType
-    '''
+    """TypeLit : ArrayType
+    | StructType
+    | PointerType
+    | FunctionType
+    """
     # TODO : Add other type literals
 
+
 def p_ArrayType(p):
-    '''ArrayType : '[' ArrayLength ']' ElementType
-    '''
+    """ArrayType : '[' ArrayLength ']' ElementType"""
+
 
 def p_ArrayLength(p):
-    '''ArrayLength : Expression
-    '''
+    """ArrayLength : Expression"""
+
 
 def p_ElementType(p):
-    '''ElementType : Type
-    '''
+    """ElementType : Type"""
+
 
 def p_StructType(p):
-    '''StructType : KW_STRUCT '{' FieldDeclList '}'
-    '''
+    """StructType : KW_STRUCT '{' FieldDeclList '}' """
+
 
 def p_FieldDeclList(p):
-    '''FieldDeclList : empty
-                     | FieldDecl ';'
-    '''
+    """FieldDeclList : empty
+    | FieldDecl ';'
+    """
+
 
 def p_FieldDecl(p):
-    '''FieldDecl : IdentifierList Type Tag
-                 | EmbeddedField Tag
-    '''
+    """FieldDecl : IdentifierList Type Tag
+    | EmbeddedField Tag
+    """
+
 
 def p_EmbeddedField(p):
-    '''EmbeddedField : '*' TypeName
-    '''
+    """EmbeddedField : '*' TypeName"""
+
 
 def p_Tag(p):
-    '''Tag : empty
-           | STRING_LIT
-    '''
+    """Tag : empty
+    | STRING_LIT
+    """
+
 
 def p_PointerType(p):
-    '''PointerType : '*' BaseType
-    '''
+    """PointerType : '*' BaseType"""
+
 
 def p_BaseType(p):
-    '''BaseType : Type
-    '''
+    """BaseType : Type"""
+
 
 def p_FunctionType(p):
-    '''FunctionType : KW_FUNC Signature
-    '''
+    """FunctionType : KW_FUNC Signature"""
+
 
 # def p_start(p):
 #     """start : start expression
@@ -796,8 +838,8 @@ parser = yacc.yacc(debug=True)
 if __name__ == "__main__":
     with open(sys.argv[1], "rt") as f:
         input_code = f.read()
-        if input_code[len(input_code)-1] != '\n':
-            input_code += '\n'
+        if input_code[len(input_code) - 1] != "\n":
+            input_code += "\n"
         go_lexer.input_code = input_code
         lines = input_code.split("\n")
         go_lexer.lines = lines
