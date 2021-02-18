@@ -1,5 +1,4 @@
 import sys
-import operator
 
 from pptree import print_tree
 from colorama import Fore, Style
@@ -246,40 +245,18 @@ def p_IncDecStmt(p):
 
 
 def p_Assignment(p):
-    """Assignment : ExpressionList '=' ExpressionList
-    | ExpressionList ADD_EQ ExpressionList
-    | ExpressionList SUB_EQ ExpressionList
-    | ExpressionList MUL_EQ ExpressionList
-    | ExpressionList DIV_EQ ExpressionList
-    | ExpressionList MOD_EQ ExpressionList
-    """
+    '''Assignment : ExpressionList assign_op ExpressionList
+    '''
 
-
-# def p_assign_op(p):
-#     '''assign_op : '='
-#                  | ADD_EQ
-#                  | SUB_EQ
-#                  | MUL_EQ
-#                  | DIV_EQ
-#                  | MOD_EQ
-#     '''
-# '''assign_op : '='
-#              | add_op '='
-#              | mul_op '='
-# '''
-
-# def p_add_op(p):
-#     '''add_op : '+'
-#               | '-'
-#     '''
-#     # TODO : Add | ^
-
-# def p_mul_op(p):
-#     '''mul_op : '*'
-#               | '/'
-#               | '%'
-#     '''
-#     # TODO : Add << >> & &^
+def p_assign_op(p):
+    '''assign_op : '='
+                 | ADD_EQ
+                 | SUB_EQ
+                 | MUL_EQ
+                 | DIV_EQ
+                 | MOD_EQ
+    '''
+#     # TODO : Add |= ^= <<= >>= &= &^=
 
 
 def p_ShortVarDecl(p):
@@ -846,4 +823,6 @@ if __name__ == "__main__":
         result = parser.parse(input_code, tracking=True)
         # print(result)
         # print_tree(ast)
+        print("Finished Parsing!")
+        print("Symbol Table: ")
         print(symtab)

@@ -55,11 +55,6 @@ tokens = (
     # arithmetic operators
     "INCREMENT",
     "DECREMENT",
-    # "PLUS",
-    # "MINUS",
-    # "MULTIPLY",
-    # "DIVIDE",
-    # "MODULO",
     # relational operators
     "EQ_EQ",
     "NOT_EQ",
@@ -137,17 +132,11 @@ t_ignore_MULTI_COMMENT = r"/\*(.|\n)*?\*/"
 # assignment operators
 # t_EQUALS = r"="
 t_WALRUS = r":="
-t_ADD_EQ = r"\+="
-t_SUB_EQ = r"-="
-t_MUL_EQ = r"\*="
-t_DIV_EQ = r"/="
-t_MOD_EQ = r"%="
-# arithmetic operators
-# t_PLUS = r"\+"
-# t_MINUS = r"\-"
-# t_MULTIPLY = r"\*"
-# t_DIVIDE = r"/"
-# t_MODULO = r"%"
+t_ADD_EQ = r'\+='
+t_SUB_EQ = r'-='
+t_MUL_EQ = r'\*='
+t_DIV_EQ = r'/='
+t_MOD_EQ = r'%='
 # relational operators
 t_EQ_EQ = r"=="
 t_NOT_EQ = r"!="
