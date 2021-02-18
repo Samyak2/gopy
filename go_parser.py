@@ -231,39 +231,18 @@ def p_IncDecStmt(p):
     '''
 
 def p_Assignment(p):
-    '''Assignment : ExpressionList '=' ExpressionList
-                  | ExpressionList ADD_EQ ExpressionList
-                  | ExpressionList SUB_EQ ExpressionList
-                  | ExpressionList MUL_EQ ExpressionList
-                  | ExpressionList DIV_EQ ExpressionList
-                  | ExpressionList MOD_EQ ExpressionList
+    '''Assignment : ExpressionList assign_op ExpressionList
     '''
 
-# def p_assign_op(p):
-#     '''assign_op : '='
-#                  | ADD_EQ
-#                  | SUB_EQ
-#                  | MUL_EQ
-#                  | DIV_EQ
-#                  | MOD_EQ
-#     '''
-    # '''assign_op : '='
-    #              | add_op '='
-    #              | mul_op '='
-    # '''
-
-# def p_add_op(p):
-#     '''add_op : '+'
-#               | '-'
-#     '''
-#     # TODO : Add | ^
-
-# def p_mul_op(p):
-#     '''mul_op : '*'
-#               | '/'
-#               | '%'
-#     '''
-#     # TODO : Add << >> & &^
+def p_assign_op(p):
+    '''assign_op : '='
+                 | ADD_EQ
+                 | SUB_EQ
+                 | MUL_EQ
+                 | DIV_EQ
+                 | MOD_EQ
+    '''
+#     # TODO : Add |= ^= <<= >>= &= &^=
 
 def p_ShortVarDecl(p):
     '''ShortVarDecl : IdentifierList WALRUS ExpressionList
@@ -403,7 +382,6 @@ def p_BasicLit(p):
 def p_int_lit(p):
     '''int_lit : INT_LIT
     '''
-
     # TODO : 
     # '''int_lit : decimal_lit
     #            | binary_lit
@@ -414,7 +392,6 @@ def p_int_lit(p):
 def p_float_lit(p):
     '''float_lit : FLOAT_LIT
     '''
-
     # TODO : 
     # '''float_lit : decimal_float_lit
     #              | hex_float_lit
@@ -423,7 +400,6 @@ def p_float_lit(p):
 def p_string_lit(p):
     '''string_lit : STRING_LIT
     '''
-    
     # TODO : 
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
@@ -804,4 +780,6 @@ if __name__ == "__main__":
         result = parser.parse(input_code, tracking=True)
         # print(result)
         # print_tree(ast)
+        print("Finished Parsing!")
+        print("Symbol Table: ")
         print(symtab)
