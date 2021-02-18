@@ -1,7 +1,11 @@
-a < b
-c > d
-e <= f
-g >= i
+package relational_ops
 
-j + k < l / m
-n / o >= p / q
+func main() {
+	a < b
+	c > d
+	e <= f
+	g >= i
+
+	j + k < l / m
+	n / o >= p / q
+}
