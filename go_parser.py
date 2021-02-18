@@ -90,6 +90,13 @@ def print_marker(pos, width=1):
 
 precedence = \
 (
+    # ('left', 'IDENTIFIER'),
+    # ('left', 'INT', 'BOOL', 'FLOAT64'),
+    # ('left', '(', ')'),
+    # ('left', ';'),
+    # ('left', ','),
+    ('right', 'WALRUS'),
+    ('right', '=', 'ADD_EQ', 'SUB_EQ', 'MUL_EQ', 'DIV_EQ', 'MOD_EQ'),
     ('nonassoc', 'EQ_EQ', 'NOT_EQ', 'LT', 'LT_EQ', 'GT', 'GT_EQ'),
     ('left', '+', '-'),
     ('left', '*', '/', '%'),
@@ -325,7 +332,7 @@ def p_AliasDecl(p):
 
 def p_IdentifierList(p):
     '''IdentifierList : IDENTIFIER 
-                      | IDENTIFIER ',' IdentifierList
+                      | IDENTIFIER ',' IdentifierList %prec WALRUS
     '''
 
 def p_ExpressionList(p):
@@ -373,7 +380,7 @@ def p_Operand(p):
     '''
 
 def p_OperandName(p):
-    '''OperandName : IDENTIFIER
+    '''OperandName : IDENTIFIER %prec '='
                    | QualifiedIdent
     '''
 
