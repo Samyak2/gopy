@@ -795,11 +795,13 @@ parser = yacc.yacc(debug=True)
 
 if __name__ == "__main__":
     with open(sys.argv[1], "rt") as f:
-        input_ = f.read()
-        go_lexer.input_ = input_
-        lines = input_.split("\n")
+        input_code = f.read()
+        if input_code[len(input_code)-1] != '\n':
+            input_code += '\n'
+        go_lexer.input_code = input_code
+        lines = input_code.split("\n")
         go_lexer.lines = lines
-        result = parser.parse(input_, tracking=True)
+        result = parser.parse(input_code, tracking=True)
         # print(result)
         # print_tree(ast)
         print(symtab)
