@@ -198,8 +198,69 @@ def p_StatementList(p):
 
 def p_Statement(p):
     '''Statement : Declaration
+                 | SimpleStmt
     '''
     # TODO : Complete this!
+
+def p_SimpleStmt(p):
+    '''SimpleStmt : EmptyStmt
+                  | ExpressionStmt
+                  | IncDecStmt
+                  | Assignment
+                  | ShortVarDecl
+    '''
+
+def p_EmptyStmt(p):
+    '''EmptyStmt : empty
+    '''
+
+def p_ExpressionStmt(p):
+    '''ExpressionStmt : Expression
+    '''
+
+def p_IncDecStmt(p):
+    '''IncDecStmt : Expression INCREMENT
+                  | Expression DECREMENT
+    '''
+
+def p_Assignment(p):
+    '''Assignment : ExpressionList '=' ExpressionList
+                  | ExpressionList ADD_EQ ExpressionList
+                  | ExpressionList SUB_EQ ExpressionList
+                  | ExpressionList MUL_EQ ExpressionList
+                  | ExpressionList DIV_EQ ExpressionList
+                  | ExpressionList MOD_EQ ExpressionList
+    '''
+
+# def p_assign_op(p):
+#     '''assign_op : '='
+#                  | ADD_EQ
+#                  | SUB_EQ
+#                  | MUL_EQ
+#                  | DIV_EQ
+#                  | MOD_EQ
+#     '''
+    # '''assign_op : '='
+    #              | add_op '='
+    #              | mul_op '='
+    # '''
+
+# def p_add_op(p):
+#     '''add_op : '+'
+#               | '-'
+#     '''
+#     # TODO : Add | ^
+
+# def p_mul_op(p):
+#     '''mul_op : '*'
+#               | '/'
+#               | '%'
+#     '''
+#     # TODO : Add << >> & &^
+
+def p_ShortVarDecl(p):
+    '''ShortVarDecl : IdentifierList WALRUS ExpressionList
+    '''
 
 def p_Declaration(p):
     '''Declaration : VarDecl
