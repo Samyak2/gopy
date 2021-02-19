@@ -17,31 +17,21 @@ if input_code[len(input_code) - 1] != "\n":
     input_code += "\n"
 
 
-probably_insertsemi = False
-insertsemi = False
-
-
-def set_insertsemi():
-    global insertsemi, probably_insertsemi
-    probably_insertsemi = True
-    try:
-        if input_code[lexer.lexpos] == "\n":
-            insertsemi = True
-    except IndexError as e:
-        print(e, lexer.lexpos)
-
-
+# Find column number of token
 def find_column(token):
-    """Find column number of token"""
     line_start = input_code.rfind("\n", 0, token.lexpos) + 1
     return (token.lexpos - line_start) + 1
 
 
-# literal tokens
+# Lexing states
+states = (
+    ('InsertSemi', 'exclusive'),
+)
+
+# List of literal tokens
 literals = ";,.=+-*/%()[]{}"
 
-
-# List of token names.   This is always required
+# List of token names. This is always required
 tokens = (
     # assignment operators
     # "EQUALS", # A literal token
@@ -70,6 +60,7 @@ tokens = (
     "ELLIPSIS",
 )
 
+# List of keywords
 keywords = {
     "default": "KW_DEFAULT",
     "func": "KW_FUNC",
@@ -97,34 +88,27 @@ keywords = {
     "var": "KW_VAR",
 }
 
+# List of types
 # types -> (symbol, storage in bytes)
 types = {"int": ("INT", 8), "float64": ("FLOAT64", 8), "bool": ("BOOL", 1)}
 
+# updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 
 
-# tokens to ignore
+# tokens to ignore in ANY state
 
-
-def t_ignore_SPACES(t):
+def t_ANY_ignore_SPACES(t):
     r"\ +"
-    if probably_insertsemi:
-        set_insertsemi()
 
-
-def t_ignore_TABS(t):
+def t_ANY_ignore_TABS(t):
     r"\t+"
-    if probably_insertsemi:
-        set_insertsemi()
 
-
-def t_ignore_SINGLE_COMMENT(t):
+def t_ANY_ignore_SINGLE_COMMENT(t):
     r"//.*"
-    if probably_insertsemi:
-        set_insertsemi()
 
-
-t_ignore_MULTI_COMMENT = r"/\*(.|\n)*?\*/"
+def t_ANY_ignore_MULTI_COMMENT(t):
+    r"/\*(.|\n)*?\*/"
 
 
 # tokens with no actions
@@ -151,7 +135,34 @@ t_BOOL = r"bool"
 
 t_ELLIPSIS = r"\.\.\."
 
+
 # tokens with actions
+
+
+# token in InsertSemi state
+
+
+def t_InsertSemi_NEWLINE(t):
+    r"\n"
+
+    t.lexer.lineno += 1  # track line numbers
+    t.lexer.begin('INITIAL')
+
+    semi_tok = lex.LexToken()
+    semi_tok.type = ";"
+    semi_tok.value = ";"
+    semi_tok.lineno = t.lexer.lineno
+    semi_tok.lexpos = t.lexer.lexpos
+    return semi_tok
+
+def t_InsertSemi_others(t):
+    r"."
+
+    t.lexer.lexpos -= 1
+    t.lexer.begin('INITIAL')
+
+
+# tokens in INITIAL state
 
 
 # newline characters
@@ -159,95 +170,74 @@ def t_NEWLINE(t):
     r"\n+"
     t.lexer.lineno += len(t.value)  # track line numbers
 
-    global insertsemi, probably_insertsemi
-    if insertsemi:
-        insertsemi = False
-        probably_insertsemi = False
-        semi_tok = lex.LexToken()
-        semi_tok.type = ";"
-        semi_tok.value = ";"
-        semi_tok.lineno = t.lexer.lineno
-        semi_tok.lexpos = t.lexer.lexpos
-        return semi_tok
-
 
 # closing parantheses
-
 
 def t_round_end(t):
     r"\)"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     t.type = ")"
     return t
-
 
 def t_sq_end(t):
     r"\]"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     t.type = "]"
     return t
-
 
 def t_curl_end(t):
     r"\}"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     t.type = "}"
     return t
 
 
 # keywords
 
-
 def t_BREAK(t):
     r"break"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_CONTINUE(t):
     r"continue"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_FALLTHROUGH(t):
     r"fallthrough"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_RETURN(t):
     r"return"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
 
 
 # increment/decrement operators
 
-
 def t_INCREMENT(t):
     r"\+\+"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_DECREMENT(t):
     r"--"
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
 
 
 # literals
-
 
 def t_STRING_LIT(t):
     r"\"[^\"]*\""
@@ -273,25 +263,23 @@ def t_STRING_LIT(t):
 
     t.value = ("string", t.value)
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_FLOAT_LIT(t):
     r"\d*\.\d+"
 
     t.value = ("float64", float(t.value))
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
-
 
 def t_INT_LIT(t):
     r"\d+"
 
     t.value = ("int", int(t.value))
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
 
 
@@ -308,13 +296,14 @@ def t_IDENTIFIER(t):
         symtab.add(t.value)
         t.value = ("identifier", t.value)
 
-    set_insertsemi()
+    t.lexer.begin('InsertSemi')
     return t
 
 
+# helper functions for printing error statements
+
 def print_error(err_str):
     print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
-
 
 def print_line(lineno):
     print(
@@ -322,7 +311,6 @@ def print_line(lineno):
         lines[lineno - 1],
         sep="",
     )
-
 
 def print_marker(pos, width=1):
     print(
@@ -336,8 +324,8 @@ def print_marker(pos, width=1):
     )
 
 
-# Error handling rule
-def t_error(t):
+# Error handling rule for ANY state
+def t_ANY_error(t):
     print_error(f"Illegal character {t.value[0]}")
     col = find_column(t)
     print(f"at line {t.lineno}, column {col}")

@@ -1,4 +1,5 @@
-package operators
+package operators/* hello
+world*/
 
 func main() {
 	1 + 5
