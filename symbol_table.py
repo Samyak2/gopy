@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from tabulate import tabulate
-from utils import Node
+from syntree import Node
 from typing import Dict, Tuple, Any
 
 

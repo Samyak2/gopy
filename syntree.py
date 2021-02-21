@@ -33,6 +33,25 @@ class BinOp(Node):
         return self.children[1]
 
 
+class Assignment(BinOp):
+    """Node for assignment operations"""
+
+
+class UnaryOp(Node):
+    """Node for unary operations"""
+
+    def __init__(self, operator, operand):
+        super().__init__(f"Unary {operator}", children=[operand], data=operator)
+
+    @property
+    def operator(self):
+        return self.data
+
+    @property
+    def operand(self):
+        return self.children[0]
+
+
 class Literal(Node):
     """Node to store literals"""
 
@@ -57,8 +76,39 @@ class List(Node):
         self.append = self.add_child
 
 
-class Declaration(Node):
-    """Node for variable and constant declarations"""
+class Function(Node):
+    """Node to store function declaration"""
+
+    def __init__(self, name, signature, body=None):
+        super().__init__("FUNCTION", children=[signature, body], data=name)
+        self.name = name
+
+    @property
+    def signature(self):
+        return self.children[0]
+
+    @property
+    def body(self):
+        if len(self.children) > 1:
+            return self.children[1]
+        else:
+            return None
+
+
+class Type(Node):
+    "Parent class for all types"""
+
+
+class Array(Type):
+    """Node for an array type"""
+
+    def __init__(self, eltype, length):
+        super().__init__("ARRAY", children=[length], data=eltype)
+        self.eltype = eltype
+
+    @property
+    def length(self):
+        return self.children[0]
 
 # class OldNode:
 #     """Class to store a node of the AST"""

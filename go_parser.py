@@ -7,7 +7,7 @@ from ply import yacc
 
 import go_lexer
 from go_lexer import tokens, lex, find_column, symtab
-from utils import Node, BinOp, Literal, List, Import
+import syntree
 
 
 def print_error():
@@ -85,7 +85,7 @@ def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
         symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
 
 
-ast = Node("start", children=[])
+ast = syntree.Node("start", children=[])
 
 precedence = (
     # ('left', 'IDENTIFIER'),
@@ -111,12 +111,12 @@ def p_SourceFile(p):
 
 def p_PackageClause(p):
     """PackageClause : KW_PACKAGE PackageName"""
-    p[0] = p[2]
+    p[0] = p[2][1]
 
 
 def p_PackageName(p):
     """PackageName : IDENTIFIER"""
-    p[0] = p[1][1]
+    p[0] = p[1]
 
 
 def p_ImportDeclList(p):
@@ -128,7 +128,7 @@ def p_ImportDeclList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_ImportDecl(p):
@@ -136,7 +136,7 @@ def p_ImportDecl(p):
     | KW_IMPORT '(' ImportSpecList ')'
     """
     if len(p) == 3:
-        p[0] = List([p[2]])
+        p[0] = syntree.List([p[2]])
     elif len(p) == 5:
         p[0] = p[3]
 
@@ -150,7 +150,7 @@ def p_ImportSpecList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_ImportSpec(p):
@@ -158,7 +158,7 @@ def p_ImportSpec(p):
     | '.' ImportPath
     | PackageName ImportPath
     """
-    p[0] = Import(p[1], p[2])
+    p[0] = syntree.Import(p[1], p[2])
 
 
 def p_ImportPath(p):
@@ -175,7 +175,7 @@ def p_TopLevelDeclList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_TopLevelDecl(p):
@@ -190,6 +190,10 @@ def p_FunctionDecl(p):
     """FunctionDecl : KW_FUNC FunctionName Signature
     | KW_FUNC FunctionName Signature FunctionBody
     """
+    if len(p) == 4:
+        p[0] = syntree.Function(p[2], p[3])
+    elif len(p) == 5:
+        p[0] = syntree.Function(p[2], p[3], p[4])
 
 
 def p_FunctionName(p):
@@ -227,7 +231,7 @@ def p_ParameterList(p):
         p[1].append(p[3])
         p[0] = p[1]
     elif len(p) == 2:
-        p[0] = List([p[1]])
+        p[0] = syntree.List([p[1]])
 
 
 def p_ParameterDecl(p):
@@ -257,7 +261,7 @@ def p_StatementList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_Statement(p):
@@ -296,6 +300,7 @@ def p_IncDecStmt(p):
 def p_Assignment(p):
     '''Assignment : ExpressionList assign_op ExpressionList
     '''
+    p[0] = syntree.Assignment(p[2], p[1], p[3])
 
 
 def p_assign_op(p):
@@ -336,7 +341,7 @@ def p_VarSpecList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_VarSpec(p):
@@ -361,7 +366,7 @@ def p_ConstSpecList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_ConstSpec(p):
@@ -386,7 +391,7 @@ def p_TypeSpecList(p):
             p[3].append(p[1])
             p[0] = p[3]
         else:
-            p[0] = List([p[1]])
+            p[0] = syntree.List([p[1]])
 
 
 def p_TypeSpec(p):
@@ -433,7 +438,7 @@ def p_Expression(p):
     # TODO : Add other binary operators
 
     if len(p) == 4:
-        p[0] = BinOp(p[2], left=p[1], right=p[3])
+        p[0] = syntree.BinOp(p[2], left=p[1], right=p[3])
     else:
         p[0] = p[1]
 
@@ -442,6 +447,11 @@ def p_UnaryExpr(p):
     """UnaryExpr : PrimaryExpr
     | UnaryOp UnaryExpr
     """
+    if len(p) == 3:
+        p[0] = syntree.UnaryOp(p[1], p[2])
+    else:
+        # TODO : handle PrimaryExpr
+        pass
 
 
 def p_UnaryOp(p):
@@ -449,11 +459,13 @@ def p_UnaryOp(p):
     | '-' %prec UNARY
     """
     # TODO : Add other unary operators
+    p[0] = p[1]
 
 
 def p_PrimaryExpr(p):
     """PrimaryExpr : Operand"""
     # TODO : This is too less! Many more to add
+    p[0] = p[1]
 
 
 def p_Operand(p):
@@ -461,16 +473,22 @@ def p_Operand(p):
     | Literal
     | '(' Expression ')'
     """
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[2]
 
 
 def p_OperandName(p):
     """OperandName : IDENTIFIER %prec '='
     | QualifiedIdent
     """
+    p[0] = p[1]
 
 
 def p_QualifiedIdent(p):
     """QualifiedIdent : PackageName '.' IDENTIFIER"""
+    # TODO : AST for this
 
 
 def p_Literal(p):
@@ -485,7 +503,7 @@ def p_BasicLit(p):
     | string_lit
     """
     # TODO : Add other basic literals
-    p[0] = Literal(p[1][0], p[1][1])
+    p[0] = syntree.Literal(p[1][0], p[1][1])
 
 
 def p_int_lit(p):
@@ -525,12 +543,17 @@ def p_Type(p):
     | TypeLit
     | '(' Type ')'
     """
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[2]
 
 
 def p_TypeName(p):
     """TypeName : BasicType
     | QualifiedIdent
     """
+    p[0] = p[1]
 
 
 def p_BasicType(p):
@@ -538,6 +561,7 @@ def p_BasicType(p):
     | BOOL
     | FLOAT64
     """
+    p[0] = syntree.Type(name="BasicType", children=[], data=p[1])
 
 
 def p_TypeLit(p):
@@ -547,18 +571,22 @@ def p_TypeLit(p):
     | FunctionType
     """
     # TODO : Add other type literals
+    p[0] = p[1]
 
 
 def p_ArrayType(p):
     """ArrayType : '[' ArrayLength ']' ElementType"""
+    p[0] = syntree.Array(p[4], p[2])
 
 
 def p_ArrayLength(p):
     """ArrayLength : Expression"""
+    p[0] = p[1]
 
 
 def p_ElementType(p):
     """ElementType : Type"""
+    p[0] = p[1]
 
 
 def p_StructType(p):
@@ -593,6 +621,7 @@ def p_PointerType(p):
 
 def p_BaseType(p):
     """BaseType : Type"""
+    p[0] = p[1]
 
 
 def p_FunctionType(p):
