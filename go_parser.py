@@ -1,13 +1,13 @@
 import sys
 
-from pptree import print_tree
+from pptree_mod import print_tree
 from colorama import Fore, Style
 
 from ply import yacc
 
 import go_lexer
 from go_lexer import tokens, lex, find_column, symtab
-from utils import Node
+from utils import Node, BinOp, Literal, List, Import
 
 
 def print_error():
@@ -58,34 +58,34 @@ def print_marker(pos, width=1):
 #     return isinstance(p, Node) and p.type == "literal"
 
 
-# def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
-#     """Helper function to add symbol to the Symbol Table
-#     with declaration set to given line number.
+def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
+    """Helper function to add symbol to the Symbol Table
+    with declaration set to given line number.
 
-#     Prints an error if the symbol is already declared at
-#     current depth.
-#     """
-#     symbol = symbol[1]
-#     if symtab.is_declared(symbol):
-#         print_error()
-#         print(f"Re-declaration of symbol {symbol} at line {lineno}")
-#         print_line(lineno)
-#         line: str = lines[lineno - 1]
-#         # TODO: get correct position of token rather than searching
-#         pos = line.find(symbol)
-#         width = len(symbol)
-#         print_marker(pos, width)
-#         other_sym = symtab.get_if_exists(symbol)
-#         print(f"{symbol} previously declared at line {other_sym.lineno}")
-#         print_line(other_sym.lineno)
-#         line: str = lines[other_sym.lineno - 1]
-#         pos = line.find(symbol)
-#         print_marker(pos, width)
-#     else:
-#         symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
+    Prints an error if the symbol is already declared at
+    current depth.
+    """
+    symbol = symbol[1]
+    if symtab.is_declared(symbol):
+        print_error()
+        print(f"Re-declaration of symbol {symbol} at line {lineno}")
+        print_line(lineno)
+        line: str = lines[lineno - 1]
+        # TODO: get correct position of token rather than searching
+        pos = line.find(symbol)
+        width = len(symbol)
+        print_marker(pos, width)
+        other_sym = symtab.get_if_exists(symbol)
+        print(f"{symbol} previously declared at line {other_sym.lineno}")
+        print_line(other_sym.lineno)
+        line: str = lines[other_sym.lineno - 1]
+        pos = line.find(symbol)
+        print_marker(pos, width)
+    else:
+        symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
 
 
-# ast = Node("start", node="start")
+ast = Node("start", children=[])
 
 precedence = (
     # ('left', 'IDENTIFIER'),
@@ -104,32 +104,53 @@ precedence = (
 
 def p_SourceFile(p):
     """SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList"""
+    ast.data = p[1]
+    ast.add_child(p[3])
+    ast.add_child(p[4])
 
 
 def p_PackageClause(p):
     """PackageClause : KW_PACKAGE PackageName"""
+    p[0] = p[2]
 
 
 def p_PackageName(p):
     """PackageName : IDENTIFIER"""
+    p[0] = p[1][1]
 
 
 def p_ImportDeclList(p):
     """ImportDeclList : empty
     | ImportDecl ';' ImportDeclList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_ImportDecl(p):
     """ImportDecl : KW_IMPORT ImportSpec
     | KW_IMPORT '(' ImportSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_ImportSpecList(p):
     """ImportSpecList : empty
     | ImportSpec ';' ImportSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_ImportSpec(p):
@@ -137,16 +158,24 @@ def p_ImportSpec(p):
     | '.' ImportPath
     | PackageName ImportPath
     """
+    p[0] = Import(p[1], p[2])
 
 
 def p_ImportPath(p):
     """ImportPath : STRING_LIT"""
+    p[0] = p[1]
 
 
 def p_TopLevelDeclList(p):
     """TopLevelDeclList : empty
     | TopLevelDecl ';' TopLevelDeclList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_TopLevelDecl(p):
@@ -154,6 +183,7 @@ def p_TopLevelDecl(p):
     | Declaration
     """
     # TODO : Add MethodDecl
+    p[0] = p[1]
 
 
 def p_FunctionDecl(p):
@@ -164,6 +194,7 @@ def p_FunctionDecl(p):
 
 def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
+    p[0] = p[1]
 
 
 def p_Signature(p):
@@ -177,6 +208,7 @@ def p_Parameters(p):
     | '(' ParameterList ')'
     | '(' ParameterList ',' ')'
     """
+    p[0] = p[2]
 
 
 def p_Result(p):
@@ -184,12 +216,18 @@ def p_Result(p):
     | TypeName
     | TypeLit
     """
+    p[0] = p[1]
 
 
 def p_ParameterList(p):
     """ParameterList : ParameterDecl
     | ParameterList ',' ParameterDecl
     """
+    if len(p) == 4:
+        p[1].append(p[3])
+        p[0] = p[1]
+    elif len(p) == 2:
+        p[0] = List([p[1]])
 
 
 def p_ParameterDecl(p):
@@ -202,16 +240,24 @@ def p_ParameterDecl(p):
 
 def p_FunctionBody(p):
     """FunctionBody : Block"""
+    p[0] = p[1]
 
 
 def p_Block(p):
     """Block : '{' StatementList '}' """
+    p[0] = p[2]
 
 
 def p_StatementList(p):
     """StatementList : empty
     | Statement ';' StatementList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_Statement(p):
@@ -219,6 +265,7 @@ def p_Statement(p):
     | SimpleStmt
     """
     # TODO : Complete this!
+    p[0] = p[1]
 
 
 def p_SimpleStmt(p):
@@ -228,6 +275,7 @@ def p_SimpleStmt(p):
     | Assignment
     | ShortVarDecl
     """
+    p[0] = p[1]
 
 
 def p_EmptyStmt(p):
@@ -236,6 +284,7 @@ def p_EmptyStmt(p):
 
 def p_ExpressionStmt(p):
     """ExpressionStmt : Expression"""
+    p[0] = p[1]
 
 
 def p_IncDecStmt(p):
@@ -248,6 +297,7 @@ def p_Assignment(p):
     '''Assignment : ExpressionList assign_op ExpressionList
     '''
 
+
 def p_assign_op(p):
     '''assign_op : '='
                  | ADD_EQ
@@ -257,6 +307,7 @@ def p_assign_op(p):
                  | MOD_EQ
     '''
 #     # TODO : Add |= ^= <<= >>= &= &^=
+    p[0] = p[1]
 
 
 def p_ShortVarDecl(p):
@@ -280,6 +331,12 @@ def p_VarSpecList(p):
     """VarSpecList : empty
     | VarSpec ';' VarSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_VarSpec(p):
@@ -299,6 +356,12 @@ def p_ConstSpecList(p):
     """ConstSpecList : empty
     | ConstSpec ';' ConstSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_ConstSpec(p):
@@ -318,6 +381,12 @@ def p_TypeSpecList(p):
     """TypeSpecList : empty
     | TypeSpec ';' TypeSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = List([p[1]])
 
 
 def p_TypeSpec(p):
@@ -363,6 +432,11 @@ def p_Expression(p):
     # TODO : Add Logical Operators
     # TODO : Add other binary operators
 
+    if len(p) == 4:
+        p[0] = BinOp(p[2], left=p[1], right=p[3])
+    else:
+        p[0] = p[1]
+
 
 def p_UnaryExpr(p):
     """UnaryExpr : PrimaryExpr
@@ -402,6 +476,7 @@ def p_QualifiedIdent(p):
 def p_Literal(p):
     """Literal : BasicLit"""
     # TODO : Add CompositeLit and FunctionLit
+    p[0] = p[1]
 
 
 def p_BasicLit(p):
@@ -410,6 +485,7 @@ def p_BasicLit(p):
     | string_lit
     """
     # TODO : Add other basic literals
+    p[0] = Literal(p[1][0], p[1][1])
 
 
 def p_int_lit(p):
@@ -421,6 +497,7 @@ def p_int_lit(p):
     #            | octal_lit
     #            | hex_lit
     # '''
+    p[0] = p[1]
 
 
 def p_float_lit(p):
@@ -430,6 +507,7 @@ def p_float_lit(p):
     # '''float_lit : decimal_float_lit
     #              | hex_float_lit
     # '''
+    p[0] = p[1]
 
 
 def p_string_lit(p):
@@ -439,6 +517,7 @@ def p_string_lit(p):
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
     # '''
+    p[0] = p[1]
 
 
 def p_Type(p):
@@ -822,7 +901,7 @@ if __name__ == "__main__":
         go_lexer.lines = lines
         result = parser.parse(input_code, tracking=True)
         # print(result)
-        # print_tree(ast)
+        print_tree(ast, nameattr=None)
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)

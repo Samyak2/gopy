@@ -12,6 +12,7 @@ alksdhsal
 asdasdsa"  // a = 3, b = 4, c = "foo", untyped integer and string constants
 const u, v float64 = 0, 3    // u = 0.0, v = 3.0
 const zero = 0
+asldas */
 const some = 5 * 3
 const somemore = 5.0 - 5
 const added = Pi + size
