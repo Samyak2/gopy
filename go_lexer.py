@@ -24,9 +24,7 @@ def find_column(token):
 
 
 # Lexing states
-states = (
-    ('InsertSemi', 'exclusive'),
-)
+states = (("InsertSemi", "exclusive"),)
 
 # List of literal tokens
 literals = ";,.=+-*/%()[]{}"
@@ -35,7 +33,7 @@ literals = ";,.=+-*/%()[]{}"
 tokens = (
     # assignment operators
     # "EQUALS", # A literal token
-    #MY changes
+    # MY changes
     "CARROT",
     "RIGHT_SHIFT",
     "LEFT_SHIFT",
@@ -47,7 +45,7 @@ tokens = (
     "LEFT_SHIFT_EQ",
     "AMPERSAND",
     "BAR",
-    #changes end here
+    # changes end here
     "WALRUS",
     "ADD_EQ",
     "SUB_EQ",
@@ -75,8 +73,8 @@ tokens = (
 
 # List of keywords
 keywords = {
-    #break is missing made a change
-    "break":"KW_BREAK"
+    # break is missing made a change
+    "break": "KW_BREAK",
     "default": "KW_DEFAULT",
     "func": "KW_FUNC",
     "interface": "KW_INTERFACE",
@@ -110,15 +108,19 @@ types = {"int": ("INT", 8), "float64": ("FLOAT64", 8), "bool": ("BOOL", 1)}
 # updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 
+
 # tokens to ignore in ANY state
 def t_ANY_ignore_SPACES(t):
     r"\ +"
 
+
 def t_ANY_ignore_TABS(t):
     r"\t+"
 
+
 def t_ANY_ignore_SINGLE_COMMENT(t):
     r"//.*"
+
 
 def t_ANY_ignore_MULTI_COMMENT(t):
     r"/\*(.|\n)*?\*/"
@@ -128,10 +130,10 @@ def t_ANY_ignore_MULTI_COMMENT(t):
 
 # assignment operators
 
-#MY_changes
+# MY_changes
 t_CARROT = r"\^"
-t_RIGHT_SHIFT= r">>"
-t_LEFT_SHIFT= r"<<"
+t_RIGHT_SHIFT = r">>"
+t_LEFT_SHIFT = r"<<"
 t_CARROT_EQ = r"\^="
 t_BAR_EQ = r"\|="
 t_AMP_EQ = r"&="
@@ -140,13 +142,13 @@ t_RIGHT_SHIFT_EQ = r">>="
 t_LEFT_SHIFT_EQ = r"<<="
 t_AMPERSAND = r"&"
 t_BAR = r"\|"
-#changes end
+# changes end
 t_WALRUS = r":="
-t_ADD_EQ = r'\+='
-t_SUB_EQ = r'-='
-t_MUL_EQ = r'\*='
-t_DIV_EQ = r'/='
-t_MOD_EQ = r'%='
+t_ADD_EQ = r"\+="
+t_SUB_EQ = r"-="
+t_MUL_EQ = r"\*="
+t_DIV_EQ = r"/="
+t_MOD_EQ = r"%="
 # relational operators
 t_EQ_EQ = r"=="
 t_NOT_EQ = r"!="
@@ -172,7 +174,7 @@ def t_InsertSemi_NEWLINE(t):
     r"\n"
 
     t.lexer.lineno += 1  # track line numbers
-    t.lexer.begin('INITIAL')
+    t.lexer.begin("INITIAL")
 
     semi_tok = lex.LexToken()
     semi_tok.type = ";"
@@ -181,11 +183,12 @@ def t_InsertSemi_NEWLINE(t):
     semi_tok.lexpos = t.lexer.lexpos
     return semi_tok
 
+
 def t_InsertSemi_others(t):
     r"."
 
     t.lexer.lexpos -= 1
-    t.lexer.begin('INITIAL')
+    t.lexer.begin("INITIAL")
 
 
 # tokens in INITIAL state
@@ -199,72 +202,81 @@ def t_NEWLINE(t):
 
 # closing parantheses
 
+
 def t_round_end(t):
     r"\)"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     t.type = ")"
     return t
+
 
 def t_sq_end(t):
     r"\]"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     t.type = "]"
     return t
+
 
 def t_curl_end(t):
     r"\}"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     t.type = "}"
     return t
 
 
 # keywords
 
-#NO BREAK keyword is present
+# NO BREAK keyword is present
 def t_BREAK(t):
     r"break"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_CONTINUE(t):
     r"continue"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_FALLTHROUGH(t):
     r"fallthrough"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_RETURN(t):
     r"return"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
 
 
 # increment/decrement operators
 
+
 def t_INCREMENT(t):
     r"\+\+"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_DECREMENT(t):
     r"--"
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
 
 
 # literals
+
 
 def t_STRING_LIT(t):
     r"\"[^\"]*\""
@@ -281,7 +293,7 @@ def t_STRING_LIT(t):
             if i == 0:
                 print_marker(pos - 1, len(line_actual) - pos + 1)
             elif i == len(splits) - 1:
-                print_marker(0, line_actual.find("\"") + 1)
+                print_marker(0, line_actual.find('"') + 1)
             else:
                 print_marker(0, len(line_actual))
 
@@ -290,23 +302,25 @@ def t_STRING_LIT(t):
 
     t.value = ("string", t.value)
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_FLOAT_LIT(t):
     r"\d*\.\d+"
 
     t.value = ("float64", float(t.value))
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
+
 
 def t_INT_LIT(t):
     r"\d+"
 
     t.value = ("int", int(t.value))
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
 
 
@@ -320,17 +334,19 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        symtab.add(t.value)
+        symtab.add_if_not_exists(t.value)
         t.value = ("identifier", t.value)
 
-    t.lexer.begin('InsertSemi')
+    t.lexer.begin("InsertSemi")
     return t
 
 
 # helper functions for printing error statements
 
+
 def print_error(err_str):
     print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
+
 
 def print_line(lineno):
     print(
@@ -338,6 +354,7 @@ def print_line(lineno):
         lines[lineno - 1],
         sep="",
     )
+
 
 def print_marker(pos, width=1):
     print(
