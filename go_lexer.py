@@ -33,9 +33,6 @@ literals = ";,.=+-*/%()[]{}"
 
 # List of token names. This is always required
 tokens = (
-    # assignment operators
-    # "EQUALS", # A literal token
-    #MY changes
     "CARROT",
     "RIGHT_SHIFT",
     "LEFT_SHIFT",
@@ -47,14 +44,17 @@ tokens = (
     "LEFT_SHIFT_EQ",
     "AMPERSAND",
     "BAR",
-    #changes end here
+    "AMPER_AMPER",
+    "BAR_BAR",
+    "EXCLAMATION",
+    "COLON",
+    # assignment operators
     "WALRUS",
     "ADD_EQ",
     "SUB_EQ",
     "MUL_EQ",
     "DIV_EQ",
     "MOD_EQ",
-    # TODO : Add |= ^= <<= >>= &= &^=
     # arithmetic operators
     "INCREMENT",
     "DECREMENT",
@@ -75,37 +75,59 @@ tokens = (
 
 # List of keywords
 keywords = {
-    #break is missing made a change
-    "break":"KW_BREAK",
-    "default": "KW_DEFAULT",
-    "func": "KW_FUNC",
-    "interface": "KW_INTERFACE",
-    "select": "KW_SELECT",
-    "case": "KW_CASE",
-    "defer": "KW_DEFER",
-    "go": "KW_GO",
-    "map": "KW_MAP",
-    "struct": "KW_STRUCT",
-    "chan": "KW_CHAN",
-    "else": "KW_ELSE",
-    "goto": "KW_GOTO",
-    "package": "KW_PACKAGE",
-    "switch": "KW_SWITCH",
-    "const": "KW_CONST",
-    "fallthrough": "KW_FALLTHROUGH",
-    "if": "KW_IF",
-    "range": "KW_RANGE",
-    "type": "KW_TYPE",
-    "continue": "KW_CONTINUE",
-    "for": "KW_FOR",
-    "import": "KW_IMPORT",
-    "return": "KW_RETURN",
-    "var": "KW_VAR",
+    "break"       : "KW_BREAK",
+    "default"     : "KW_DEFAULT",
+    "func"        : "KW_FUNC",
+    "interface"   : "KW_INTERFACE",
+    "select"      : "KW_SELECT",
+    "case"        : "KW_CASE",
+    "defer"       : "KW_DEFER",
+    "go"          : "KW_GO",
+    "map"         : "KW_MAP",
+    "struct"      : "KW_STRUCT",
+    "chan"        : "KW_CHAN",
+    "else"        : "KW_ELSE",
+    "goto"        : "KW_GOTO",
+    "package"     : "KW_PACKAGE",
+    "switch"      : "KW_SWITCH",
+    "const"       : "KW_CONST",
+    "fallthrough" : "KW_FALLTHROUGH",
+    "if"          : "KW_IF",
+    "range"       : "KW_RANGE",
+    "type"        : "KW_TYPE",
+    "continue"    : "KW_CONTINUE",
+    "for"         : "KW_FOR",
+    "import"      : "KW_IMPORT",
+    "return"      : "KW_RETURN",
+    "var"         : "KW_VAR",
 }
 
 # List of types
 # types -> (symbol, storage in bytes)
-types = {"int": ("INT", 8), "float64": ("FLOAT64", 8), "bool": ("BOOL", 1)}
+types = {
+    #For INT
+    "int"        : ("INT", 8),
+    "int8"       : ("INT8", 1),
+    "int16"      : ("INT16", 2),
+    "int32"      : ("INT32", 4),
+    "int64"      : ("INT64", 8),
+    #For Float
+    "float32"    : ("FLOAT32", 4),
+    "float64"    : ("FLOAT64", 8),
+    #For UINT
+    "uint"       : ("UINT", 8),
+    "uint8"      : ("UINT8", 1),
+    "uint16"     : ("UINT16", 2),
+    "uint32"     : ("UINT32", 4),
+    "uint64"     : ("UINT64", 8),
+    #For Complex
+    "complex64"  : ("COMPLEX64", 8),
+    "complex128" : ("COMPLEX128", 16),
+    #For Misc
+    "byte"       : ("BYTE", 1),
+    "bool"       : ("BOOL", 1),
+    "rune"       : ("RUNE", 4)
+}
 
 # updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
@@ -126,39 +148,58 @@ def t_ANY_ignore_MULTI_COMMENT(t):
 
 # tokens with no actions
 
-# assignment operators
 
-#MY_changes
-t_CARROT = r"\^"
-t_RIGHT_SHIFT= r">>"
-t_LEFT_SHIFT= r"<<"
-t_CARROT_EQ = r"\^="
-t_BAR_EQ = r"\|="
-t_AMP_EQ = r"&="
-t_AMP_CARROT_EQ = r"&\^="
+t_CARROT         = r"\^"
+t_RIGHT_SHIFT    = r">>"
+t_LEFT_SHIFT     = r"<<"
+t_CARROT_EQ      = r"\^="
+t_BAR_EQ         = r"\|="
+t_AMP_EQ         = r"&="
+t_AMP_CARROT_EQ  = r"&\^="
 t_RIGHT_SHIFT_EQ = r">>="
-t_LEFT_SHIFT_EQ = r"<<="
-t_AMPERSAND = r"&"
-t_BAR = r"\|"
-#changes end
-t_WALRUS = r":="
+t_LEFT_SHIFT_EQ  = r"<<="
+t_AMPERSAND      = r"&"
+t_BAR            = r"\|"
+t_AMPER_AMPER    = r"&&"
+t_BAR_BAR        = r"\|\|"
+t_EXCLAMATION    = r"!"
+t_COLON          = r":"
+t_WALRUS         = r":="
+#assignment operators
 t_ADD_EQ = r'\+='
 t_SUB_EQ = r'-='
 t_MUL_EQ = r'\*='
 t_DIV_EQ = r'/='
 t_MOD_EQ = r'%='
 # relational operators
-t_EQ_EQ = r"=="
+t_EQ_EQ  = r"=="
 t_NOT_EQ = r"!="
-t_LT = r"<"
-t_LT_EQ = r"<="
-t_GT = r">"
-t_GT_EQ = r">="
-# types
-t_INT = r"int"
-t_FLOAT64 = r"float64"
+t_LT     = r"<"
+t_LT_EQ  = r"<="
+t_GT     = r">"
+t_GT_EQ  = r">="
+# INT type
+t_INT   = r"int"
+t_INT8  = r"int8"
+t_INT16 = r"int16"
+t_INT32 = r"int32"
+t_INT64 = r"int64"
+#FLOAT Type
+t_FLOAT32  = r"float32"
+t_FLOAT64  = r"float64"
+#UNIT Type
+t_UINT   = r"uint"
+t_UINT8  = r"uint8"
+t_UINT16 = r"uint16"
+t_UINT32 = r"uint32"
+t_UINT64 = r"uint64"
+#Complex Type
+t_COMPLEX64  = r"complex64"
+t_COMPLEX128 = r"complex128"
+#MISC Type
 t_BOOL = r"bool"
-
+t_RUNE = r"rune"
+t_BYTE = r"byte"
 t_ELLIPSIS = r"\.\.\."
 
 
@@ -174,9 +215,9 @@ def t_InsertSemi_NEWLINE(t):
     t.lexer.lineno += 1  # track line numbers
     t.lexer.begin('INITIAL')
 
-    semi_tok = lex.LexToken()
-    semi_tok.type = ";"
-    semi_tok.value = ";"
+    semi_tok        = lex.LexToken()
+    semi_tok.type   = ";"
+    semi_tok.value  = ";"
     semi_tok.lineno = t.lexer.lineno
     semi_tok.lexpos = t.lexer.lexpos
     return semi_tok
@@ -223,7 +264,6 @@ def t_curl_end(t):
 
 # keywords
 
-#NO BREAK keyword is present
 def t_BREAK(t):
     r"break"
 
@@ -294,8 +334,8 @@ def t_STRING_LIT(t):
     return t
 
 def t_FLOAT_LIT(t):
-    r"\d*\.\d+"
-
+    #r"\d*\.\d+"
+    r"[+-]?(\d+([.]\d*)?([eE][+-]?\d+)?|[.]\d+([eE][+-]?\d+)?)"
     t.value = ("float64", float(t.value))
 
     t.lexer.begin('InsertSemi')
@@ -313,6 +353,10 @@ def t_INT_LIT(t):
 # identifier
 def t_IDENTIFIER(t):
     r"([a-zA-Z]([a-zA-Z0-9_])*)|_"
+
+    #There is no limit on length of identifier in go
+    if len(t.value)>31:
+        print_error("Length Exceeded")
 
     if t.value in keywords:
         t.type = keywords[t.value]

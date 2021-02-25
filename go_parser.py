@@ -965,7 +965,7 @@ if __name__ == "__main__":
         go_lexer.lines = lines
         result = parser.parse(input_code, tracking=True)
         # print(result)
-        with open("syntax_tree.txt", "wt") as ast_file:
+        with open("syntax_tree.txt", "wt", encoding='utf-8') as ast_file:
             sys.stdout = ast_file
             print_tree(ast, nameattr=None, horizontal=False)
             sys.stdout = sys.__stdout__
