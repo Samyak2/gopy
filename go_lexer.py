@@ -76,7 +76,7 @@ tokens = (
 # List of keywords
 keywords = {
     #break is missing made a change
-    "break":"KW_BREAK"
+    "break":"KW_BREAK",
     "default": "KW_DEFAULT",
     "func": "KW_FUNC",
     "interface": "KW_INTERFACE",
