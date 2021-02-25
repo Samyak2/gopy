@@ -1,3 +1,8 @@
+from typing import Optional
+
+from go_lexer import symtab
+
+
 class Node:
     """Node of an AST"""
 
@@ -93,6 +98,9 @@ class List(Node):
     def __iter__(self):
         return iter(self.children)
 
+    def __len__(self):
+        return len(self.children)
+
 
 class Signature(Node):
     """Node to store function signature"""
@@ -112,9 +120,21 @@ class Signature(Node):
 class Function(Node):
     """Node to store function declaration"""
 
-    def __init__(self, name, signature, body=None):
-        super().__init__("FUNCTION", children=[signature, body], data=name)
-        self.fn_name = name
+    def __init__(self, name, signature, lineno: int, body=None):
+        super().__init__("FUNCTION", children=[signature, body], data=(name, lineno))
+        self.data: tuple
+        if name is not None:
+            symtab.declare_new_variable(
+                name[1], lineno, type_="FUNCTION", const=True, value=self
+            )
+
+    @property
+    def fn_name(self):
+        return self.data[0]
+
+    @property
+    def lineno(self):
+        return self.data[1]
 
     @property
     def signature(self):
@@ -147,8 +167,16 @@ class Array(Type):
 class Identifier(Node):
     """Node for identifiers"""
 
-    def __init__(self, ident_tuple):
-        super().__init__("IDENTIFIER", children=[], data=ident_tuple[1])
+    def __init__(self, ident_tuple, lineno):
+        super().__init__("IDENTIFIER", children=[], data=(ident_tuple[1], lineno))
+
+    @property
+    def ident_name(self):
+        return self.data[0]
+
+    @property
+    def lineno(self):
+        return self.data[1]
 
 
 class QualifiedIdent(Node):
@@ -161,12 +189,35 @@ class QualifiedIdent(Node):
 class VariableDecl(Node):
     """Node to store variable and constant declarations"""
 
-    def __init__(self, identifier_list, type_=None, expression_list=None, const=False):
+    def __init__(
+        self,
+        identifier_list: List,
+        type_=None,
+        expression_list: Optional[List] = None,
+        const=False,
+    ):
         super().__init__(
             "DECL",
             children=[identifier_list, expression_list],
             data=(type_, const),
         )
+
+        if expression_list is None:
+            # TODO: implement default values
+            ident: Identifier
+            for ident in identifier_list:
+                symtab.declare_new_variable(
+                    ident.ident_name, ident.lineno, type_=type_, const=const
+                )
+        elif len(identifier_list) == len(expression_list):
+            ident: Identifier
+            expr: Node
+            for ident, expr in zip(identifier_list, expression_list):
+                symtab.declare_new_variable(
+                    ident.ident_name, ident.lineno, type_=type_, value=expr, const=const
+                )
+        else:
+            raise NotImplementedError("Declaration with unpacking not implemented yet")
 
     @property
     def expression_list(self):
@@ -185,42 +236,6 @@ class VariableDecl(Node):
         return self.data[1]
 
 
-# class OldNode:
-#     """Class to store a node of the AST"""
-
-#     def __init__(self, type_, children=None, node=None):
-#         self.type = type_
-#         if children is not None:
-#             new_children = []
-#             for child in children:
-#                 if child is None:
-#                     continue
-
-#                 if not isinstance(child, Node):
-#                     new_children.append(Node(type(child), node=child))
-#                 else:
-#                     new_children.append(child)
-#             self.children = new_children
-#         else:
-#             self.children = []
-#         self.node = node
-#         # print(str(self))
-
-#     def __str__(self):
-#         return f"<{self.type}, {self.node}>"
-
-#     def __repr__(self):
-#         return f"<Node: {self.type}, {self.node}, {self.children}>"
-
-#     @staticmethod
-#     def print_node(child):
-#         if isinstance(child, Node):
-#             print(f"{child.type}: {child.node}")
-#         elif isinstance(child, lex.LexToken):
-#             print(f"{child.type}: {child.value}")
-#         else:
-#             print(f"{child}")
-
 #     def print_level_order(self):
 
 #         queue = []
@@ -234,10 +249,3 @@ class VariableDecl(Node):
 
 #             if isinstance(node, Node):
 #                 queue.extend(node.children)
-
-#     def add_child(self, child):
-#         if child is not None:
-#             if not isinstance(child, Node):
-#                 self.children.append(Node(type(child), node=child))
-#             else:
-#                 self.children.append(child)
