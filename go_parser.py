@@ -205,6 +205,10 @@ def p_Signature(p):
     """Signature : Parameters
     | Parameters Result
     """
+    if len(p) == 2:
+        p[0] = syntree.Signature(p[1])
+    else:
+        p[0] = syntree.Signature(p[1], p[2])
 
 
 def p_Parameters(p):
@@ -298,20 +302,19 @@ def p_IncDecStmt(p):
 
 
 def p_Assignment(p):
-    '''Assignment : ExpressionList assign_op ExpressionList
-    '''
+    """Assignment : ExpressionList assign_op ExpressionList"""
     p[0] = syntree.Assignment(p[2], p[1], p[3])
 
 
 def p_assign_op(p):
-    '''assign_op : '='
-                 | ADD_EQ
-                 | SUB_EQ
-                 | MUL_EQ
-                 | DIV_EQ
-                 | MOD_EQ
-    '''
-#     # TODO : Add |= ^= <<= >>= &= &^=
+    """assign_op : '='
+    | ADD_EQ
+    | SUB_EQ
+    | MUL_EQ
+    | DIV_EQ
+    | MOD_EQ
+    """
+    #     # TODO : Add |= ^= <<= >>= &= &^=
     p[0] = p[1]
 
 
@@ -324,12 +327,17 @@ def p_Declaration(p):
     | ConstDecl
     | TypeDecl
     """
+    p[0] = p[1]
 
 
 def p_VarDecl(p):
     """VarDecl : KW_VAR VarSpec
     | KW_VAR '(' VarSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_VarSpecList(p):
@@ -349,12 +357,22 @@ def p_VarSpec(p):
     | IdentifierList Type '=' ExpressionList
     | IdentifierList '=' ExpressionList
     """
+    if len(p) == 3:
+        p[0] = syntree.VariableDecl(p[1], p[2])
+    elif len(p) == 4:
+        p[0] = syntree.VariableDecl(p[1], expression_list=p[3])
+    elif len(p) == 5:
+        p[0] = syntree.VariableDecl(p[1], p[2], p[4])
 
 
 def p_ConstDecl(p):
     """ConstDecl : KW_CONST ConstSpec
     | KW_CONST '(' ConstSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_ConstSpecList(p):
@@ -374,6 +392,12 @@ def p_ConstSpec(p):
     | IdentifierList '=' ExpressionList
     | IdentifierList Type '=' ExpressionList
     """
+    if len(p) == 2:
+        p[0] = syntree.VariableDecl(p[1], const=True)
+    elif len(p) == 4:
+        p[0] = syntree.VariableDecl(p[1], expression_list=p[3], const=True)
+    elif len(p) == 5:
+        p[0] = syntree.VariableDecl(p[1], p[2], p[4], const=True)
 
 
 def p_TypeDecl(p):
@@ -412,12 +436,22 @@ def p_IdentifierList(p):
     """IdentifierList : IDENTIFIER
     | IDENTIFIER ',' IdentifierList %prec WALRUS
     """
+    if len(p) == 2:
+        p[0] = syntree.List([syntree.Identifier(p[1])])
+    elif len(p) == 4:
+        p[3].append(syntree.Identifier(p[1]))
+        p[0] = p[3]
 
 
 def p_ExpressionList(p):
     """ExpressionList : Expression
     | Expression ',' ExpressionList
     """
+    if len(p) == 4:
+        p[3].append(p[1])
+        p[0] = p[3]
+    elif len(p) == 2:
+        p[0] = syntree.List([p[1]])
 
 
 def p_Expression(p):
@@ -450,8 +484,9 @@ def p_UnaryExpr(p):
     if len(p) == 3:
         p[0] = syntree.UnaryOp(p[1], p[2])
     else:
-        # TODO : handle PrimaryExpr
-        pass
+        # TODO : handle more stuff in PrimaryExpr
+        # also change the PrimaryExpr class in syntree when doing so
+        p[0] = syntree.UnaryOp(None, p[1])
 
 
 def p_UnaryOp(p):
@@ -465,7 +500,7 @@ def p_UnaryOp(p):
 def p_PrimaryExpr(p):
     """PrimaryExpr : Operand"""
     # TODO : This is too less! Many more to add
-    p[0] = p[1]
+    p[0] = syntree.PrimaryExpr(p[1])
 
 
 def p_Operand(p):
@@ -488,7 +523,7 @@ def p_OperandName(p):
 
 def p_QualifiedIdent(p):
     """QualifiedIdent : PackageName '.' IDENTIFIER"""
-    # TODO : AST for this
+    p[0] = syntree.QualifiedIdent(p[1], p[3])
 
 
 def p_Literal(p):
@@ -930,7 +965,10 @@ if __name__ == "__main__":
         go_lexer.lines = lines
         result = parser.parse(input_code, tracking=True)
         # print(result)
-        print_tree(ast, nameattr=None)
+        with open("syntax_tree.txt", "wt") as ast_file:
+            sys.stdout = ast_file
+            print_tree(ast, nameattr=None, horizontal=False)
+            sys.stdout = sys.__stdout__
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)
