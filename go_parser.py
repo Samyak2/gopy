@@ -1,4 +1,5 @@
 import sys
+from typing import Tuple
 
 from pptree_mod import print_tree
 from colorama import Fore, Style
@@ -8,7 +9,7 @@ from ply import yacc
 import go_lexer
 from go_lexer import tokens, lex, find_column, symtab
 import utils
-from utils import print_line, print_marker
+from utils import print_error, print_line, print_marker
 import syntree
 
 
@@ -478,6 +479,22 @@ def p_OperandName(p):
     """OperandName : IDENTIFIER %prec '='
     | QualifiedIdent
     """
+    if not isinstance(p[1], syntree.QualifiedIdent):
+        ident: Tuple = p[1]
+        sym = symtab.get_symbol(ident[1])
+        lineno = p.lineno(1)
+        if not symtab.is_declared_in_cur_symtab(ident[1]):
+            print_error()
+            print(f"Undeclared symbol '{ident[1]}' at line {lineno}")
+            print_line(lineno)
+            line: str = utils.lines[lineno - 1]
+            # TODO: get correct position of token rather than searching
+            pos = line.find(ident[1])
+            width = len(ident[1])
+            print_marker(pos, width)
+        else:
+            sym.uses.append(lineno)
+
     p[0] = p[1]
 
 

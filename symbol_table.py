@@ -58,10 +58,10 @@ class SymbolTable:
 
         return new_symbol
 
-    def get_symbol(self, symbol: str):
+    def get_symbol(self, symbol: str) -> Optional[SymbolInfo]:
         """Finds the symbol in the closest symtab
 
-        Warning: symbol must exist in the symtab
+        Returns None if symbol doesn't exist
         """
         for symtab_ in reversed(self.stack):
             if symbol in symtab_:
