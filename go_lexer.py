@@ -35,6 +35,19 @@ literals = ";,.=+-*/%()[]{}"
 tokens = (
     # assignment operators
     # "EQUALS", # A literal token
+    #MY changes
+    "CARROT",
+    "RIGHT_SHIFT",
+    "LEFT_SHIFT",
+    "CARROT_EQ",
+    "BAR_EQ",
+    "AMP_EQ",
+    "AMP_CARROT_EQ",
+    "RIGHT_SHIFT_EQ",
+    "LEFT_SHIFT_EQ",
+    "AMPERSAND",
+    "BAR",
+    #changes end here
     "WALRUS",
     "ADD_EQ",
     "SUB_EQ",
@@ -62,6 +75,8 @@ tokens = (
 
 # List of keywords
 keywords = {
+    #break is missing made a change
+    "break":"KW_BREAK"
     "default": "KW_DEFAULT",
     "func": "KW_FUNC",
     "interface": "KW_INTERFACE",
@@ -95,9 +110,7 @@ types = {"int": ("INT", 8), "float64": ("FLOAT64", 8), "bool": ("BOOL", 1)}
 # updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 
-
 # tokens to ignore in ANY state
-
 def t_ANY_ignore_SPACES(t):
     r"\ +"
 
@@ -114,7 +127,20 @@ def t_ANY_ignore_MULTI_COMMENT(t):
 # tokens with no actions
 
 # assignment operators
-# t_EQUALS = r"="
+
+#MY_changes
+t_CARROT = r"\^"
+t_RIGHT_SHIFT= r">>"
+t_LEFT_SHIFT= r"<<"
+t_CARROT_EQ = r"\^="
+t_BAR_EQ = r"\|="
+t_AMP_EQ = r"&="
+t_AMP_CARROT_EQ = r"&\^="
+t_RIGHT_SHIFT_EQ = r">>="
+t_LEFT_SHIFT_EQ = r"<<="
+t_AMPERSAND = r"&"
+t_BAR = r"\|"
+#changes end
 t_WALRUS = r":="
 t_ADD_EQ = r'\+='
 t_SUB_EQ = r'-='
@@ -197,6 +223,7 @@ def t_curl_end(t):
 
 # keywords
 
+#NO BREAK keyword is present
 def t_BREAK(t):
     r"break"
 
