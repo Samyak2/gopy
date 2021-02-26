@@ -92,10 +92,11 @@ precedence = (
     # ('left', 'INT', 'BOOL', 'FLOAT64'),
     # ('left', '(', ')'),
     # ('left', ';'),
-    # ('left', ','),
-    ("right", "WALRUS"),
-    ("right", "=", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
-    ("nonassoc", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
+    # ("right", "WALRUS"),
+    # ("right", "=", "WALRUS", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
+    ("right", "="),
+    ('left', ','),
+    ("left", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
     ("left", "+", "-"),
     ("left", "*", "/", "%"),
     ("right", "UNARY"),
@@ -336,7 +337,7 @@ def p_AliasDecl(p):
 
 def p_IdentifierList(p):
     """IdentifierList : IDENTIFIER
-    | IDENTIFIER ',' IdentifierList %prec WALRUS
+    | IDENTIFIER ',' IdentifierList
     """
 
 

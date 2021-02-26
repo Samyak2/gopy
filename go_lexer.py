@@ -295,8 +295,8 @@ def t_IDENTIFIER(t):
         t.type = "IDENTIFIER"
         symtab.add(t.value)
         t.value = ("identifier", t.value)
-
-    t.lexer.begin('InsertSemi')
+        t.lexer.begin('InsertSemi')
+    
     return t
 
 
