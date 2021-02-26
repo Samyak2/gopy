@@ -243,7 +243,7 @@ def p_Statement(p):
 
 
 def p_ReturnStmt(p):
-    """ReturnStmt : KW_RETURN 
+    """ReturnStmt : KW_RETURN
     | KW_RETURN ExpressionList
     """
     if(len(p) == 3):
