@@ -16,8 +16,4 @@ func main() {
 
     // Parse command line into the defined flags
     flag.Parse()
-
-    fmt.Println("Enable plaintext:", *plainArgPtr)
-    fmt.Println("Enable JSON:", *jsonArgPtr)
-    fmt.Println("Enable CSV:", *csvArgPtr)
 }

@@ -4,7 +4,10 @@ from go_lexer import symtab
 
 
 class Node:
-    """Node of an AST"""
+    """Node of an AST
+
+    Warning: pls don't change the children values after setting them
+    for nodes which depend on it"""
 
     def __init__(self, name, **kwargs):
         self.name = name
@@ -31,14 +34,8 @@ class BinOp(Node):
     def __init__(self, operator, left=None, right=None):
         super().__init__(f"Binary {operator}", children=[left, right], data=operator)
         self.operator = self.data
-
-    @property
-    def left(self):
-        return self.children[0]
-
-    @property
-    def right(self):
-        return self.children[1]
+        self.left = left
+        self.right = right
 
 
 class Assignment(BinOp):
@@ -52,14 +49,8 @@ class UnaryOp(Node):
         if isinstance(operand, UnaryOp) and operand.operator is None:
             operand = operand.operand
         super().__init__(f"Unary {operator}", children=[operand], data=operator)
-
-    @property
-    def operator(self):
-        return self.data
-
-    @property
-    def operand(self):
-        return self.children[0]
+        self.operand = operand
+        self.operator = operator
 
 
 class PrimaryExpr(Node):
@@ -69,7 +60,9 @@ class PrimaryExpr(Node):
     """
 
     def __init__(self, operand, children=None):
-        super().__init__("PrimaryExpr", children=[] if children is None else children, data=operand)
+        super().__init__(
+            "PrimaryExpr", children=[] if children is None else children, data=operand
+        )
 
 
 class Literal(Node):
@@ -107,10 +100,7 @@ class Arguments(Node):
 
     def __init__(self, expression_list):
         super().__init__("arguments", children=[expression_list])
-
-    @property
-    def expression_list(self):
-        return self.children[0]
+        self.expression_list = expression_list
 
 
 class Signature(Node):
@@ -118,14 +108,8 @@ class Signature(Node):
 
     def __init__(self, parameters, result=None):
         super().__init__("signature", children=[parameters, result])
-
-    @property
-    def parameters(self):
-        return self.children[0]
-
-    @property
-    def result(self):
-        return self.children[1]
+        self.parameters = parameters
+        self.result = result
 
 
 class Function(Node):
@@ -139,24 +123,10 @@ class Function(Node):
                 name[1], lineno, type_="FUNCTION", const=True, value=self
             )
 
-    @property
-    def fn_name(self):
-        return self.data[0]
-
-    @property
-    def lineno(self):
-        return self.data[1]
-
-    @property
-    def signature(self):
-        return self.children[0]
-
-    @property
-    def body(self):
-        if len(self.children) > 1:
-            return self.children[1]
-        else:
-            return None
+        self.fn_name = name
+        self.lineno = lineno
+        self.signature = signature
+        self.body = body
 
 
 class Type(Node):
@@ -169,10 +139,7 @@ class Array(Type):
     def __init__(self, eltype, length):
         super().__init__("ARRAY", children=[length], data=eltype)
         self.eltype = eltype
-
-    @property
-    def length(self):
-        return self.children[0]
+        self.length = length
 
 
 class Identifier(Node):
@@ -181,14 +148,8 @@ class Identifier(Node):
     def __init__(self, ident_tuple, lineno):
         super().__init__("IDENTIFIER", children=[], data=(ident_tuple[1], lineno))
         symtab.add_if_not_exists(ident_tuple[1])
-
-    @property
-    def ident_name(self):
-        return self.data[0]
-
-    @property
-    def lineno(self):
-        return self.data[1]
+        self.ident_name = ident_tuple[1]
+        self.lineno = lineno
 
 
 class QualifiedIdent(Node):
@@ -206,7 +167,7 @@ class VariableDecl(Node):
         identifier_list: List,
         type_=None,
         expression_list: Optional[List] = None,
-        const=False,
+        const: bool = False,
     ):
         super().__init__(
             "DECL",
@@ -232,21 +193,46 @@ class VariableDecl(Node):
         else:
             raise NotImplementedError("Declaration with unpacking not implemented yet")
 
-    @property
-    def expression_list(self):
-        return self.children[1]
+        self.expression_list = expression_list
+        self.identifier_list = identifier_list
+        self.type_ = type_
+        self.is_const = const
 
-    @property
-    def identifier_list(self):
-        return self.children[0]
 
-    @property
-    def type_(self):
-        return self.data[0]
+class IfStmt(Node):
+    def __init__(self, body, expr, statement=None, next_=None):
+        super().__init__("IF", children=[statement, expr, body, next_])
+        self.statement = statement
+        self.expr = expr
+        self.body = body
+        self.next_ = next_
 
-    @property
-    def is_const(self):
-        return self.data[1]
+
+class ForStmt(Node):
+    def __init__(self, body, clause=None):
+        super().__init__("FOR", children=[body, clause])
+        self.body = body
+        self.clause = clause
+
+
+class ForClause(Node):
+    def __init__(self, init, cond, post):
+        super().__init__("FOR_CLAUSE", children=[init, cond, post])
+        self.init = init
+        self.cond = cond
+        self.post = post
+
+
+class RangeClause(Node):
+    def __init__(self, expr, ident_list=None, expr_list=None):
+        if ident_list is not None:
+            self.var_decl = VariableDecl(ident_list, expr)
+        else:
+            self.var_decl = None
+        super().__init__("RANGE", children=[expr, ident_list, expr_list, self.var_decl])
+        self.expr = expr
+        self.ident_list = ident_list
+        self.expr_list = expr_list
 
 
 #     def print_level_order(self):

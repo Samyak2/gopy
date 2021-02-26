@@ -375,6 +375,7 @@ def t_INT_LIT(t):
     t.lexer.begin("InsertSemi")
     return t
 
+
 def t_BOOL_LIT(t):
     r"(true|false)"
 
