@@ -6,6 +6,8 @@ from colorama import Fore, Style
 from ply import lex
 
 from symbol_table import SymbolTable
+import utils
+from utils import print_error, print_line, print_marker
 
 colorama.init()
 
@@ -148,6 +150,8 @@ def t_ANY_ignore_SINGLE_COMMENT(t):
 def t_ANY_ignore_MULTI_COMMENT(t):
     r"/\*(.|\n)*?\*/"
 
+    # t.lexer.lineno += t.value.count("\n")
+
 
 # tokens with no actions
 
@@ -168,7 +172,8 @@ t_BAR_BAR        = r"\|\|"
 t_EXCLAMATION    = r"!"
 t_COLON          = r":"
 t_WALRUS         = r":="
-#assignment operators
+# TODO: Move the assignment operators above, below
+# assignment operators
 t_ADD_EQ = r'\+='
 t_SUB_EQ = r'-='
 t_MUL_EQ = r'\*='
@@ -343,6 +348,8 @@ def t_STRING_LIT(t):
                 print_marker(0, len(line_actual))
 
             lineno += 1
+        t.lexer.lineno += t.value.count("\n")
+
         return
 
     t.value = ("string", t.value)
@@ -372,9 +379,11 @@ def t_INT_LIT(t):
 def t_IDENTIFIER(t):
     r"([a-zA-Z]([a-zA-Z0-9_])*)|_"
 
-    #There is no limit on length of identifier in go
-    if len(t.value)>31:
-        print_error("Length Exceeded")
+    # There is no limit on length of identifier in go
+    if len(t.value) > 31:
+        # TODO print error in a better way
+        print_error("Identifiers must be shorter than 32 characters")
+        print_line(t.lexer.lineno)
 
     if t.value in keywords:
         t.type = keywords[t.value]
@@ -382,38 +391,11 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        symtab.add_if_not_exists(t.value)
-        t.value = ("identifier", t.value)
-
-    t.lexer.begin("InsertSemi")
+        symtab.add_if_not_exists(t.value) # scoping in lex?
+        t.value = ("identifier", t.value) # why identifier?
+        t.lexer.begin('InsertSemi')
+    
     return t
-
-
-# helper functions for printing error statements
-
-
-def print_error(err_str):
-    print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
-
-
-def print_line(lineno):
-    print(
-        f"{Fore.GREEN}{lineno:>10}:\t{Style.RESET_ALL}",
-        lines[lineno - 1],
-        sep="",
-    )
-
-
-def print_marker(pos, width=1):
-    print(
-        Fore.YELLOW,
-        " " * 10,
-        " \t",
-        " " * (pos),
-        "^" * width,
-        Style.RESET_ALL,
-        sep="",
-    )
 
 
 # Error handling rule for ANY state
@@ -426,7 +408,7 @@ def t_ANY_error(t):
         lines[t.lineno - 1],
         sep="",
     )
-    print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+    print_marker(col - 1, 1)
 
     t.lexer.skip(1)
 
@@ -438,6 +420,8 @@ lexer = lex.lex()
 lexer.input(input_code)
 
 lines = input_code.split("\n")
+utils.lines = lines
+
 symtab = SymbolTable()
 
 

@@ -3,8 +3,8 @@ from colorama import Fore, Style
 lines = []
 
 
-def print_error():
-    print(f"{Fore.RED}SYNTAX ERROR:{Style.RESET_ALL}")
+def print_error(err_str=""):
+    print(f"{Fore.RED}SYNTAX ERROR: {err_str}{Style.RESET_ALL}")
 
 
 def print_line(lineno):
