@@ -31,13 +31,13 @@ literals = ";,.=+-*/%()[]{}"
 
 # List of token names. This is always required
 tokens = (
-    "CARROT",
+    "CARET",
     "RIGHT_SHIFT",
     "LEFT_SHIFT",
-    "CARROT_EQ",
+    "CARET_EQ",
     "BAR_EQ",
     "AMP_EQ",
-    "AMP_CARROT_EQ",
+    "AMP_CARET_EQ",
     "RIGHT_SHIFT_EQ",
     "LEFT_SHIFT_EQ",
     "AMPERSAND",
@@ -152,13 +152,13 @@ def t_ANY_ignore_MULTI_COMMENT(t):
 # tokens with no actions
 
 
-t_CARROT         = r"\^"
+t_CARET         = r"\^"
 t_RIGHT_SHIFT    = r">>"
 t_LEFT_SHIFT     = r"<<"
-t_CARROT_EQ      = r"\^="
+t_CARET_EQ      = r"\^="
 t_BAR_EQ         = r"\|="
 t_AMP_EQ         = r"&="
-t_AMP_CARROT_EQ  = r"&\^="
+t_AMP_CARET_EQ  = r"&\^="
 t_RIGHT_SHIFT_EQ = r">>="
 t_LEFT_SHIFT_EQ  = r"<<="
 t_AMPERSAND      = r"&"
@@ -322,6 +322,10 @@ def t_DECREMENT(t):
 def t_STRING_LIT(t):
     r"\"[^\"]*\""
 
+    #  if r"\s*\*/":
+    #      print_error("ERROR: Wrong Multiline Comment")
+    #      return
+
     if "\n" in t.value:
         print_error("string cannot contain line breaks")
         lineno = t.lexer.lineno
@@ -349,7 +353,7 @@ def t_STRING_LIT(t):
 
 def t_FLOAT_LIT(t):
     #r"\d*\.\d+"
-    r"[+-]?(\d+([.]\d*)?([eE][+-]?\d+)?|[.]\d+([eE][+-]?\d+)?)"
+    r"[+-]?(\d+([.]\d*)+([eE][+-]?\d+)?|[.]\d+([eE][+-]?\d+)?)"
     t.value = ("float64", float(t.value))
 
     t.lexer.begin("InsertSemi")
