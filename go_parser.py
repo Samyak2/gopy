@@ -111,7 +111,9 @@ def p_ImportSpec(p):
     | '.' ImportPath
     | PackageName ImportPath
     """
-    p[0] = syntree.Import(p[1], p[2])
+    if p[1] is not None:
+        p[0] = syntree.Import(p[1], p[2])
+    print(p[1])
 
 
 def p_ImportPath(p):
@@ -216,6 +218,11 @@ def p_new_scope(p):
     symtab.enter_scope()
 
 
+def p_leave_scope(p):
+    """leave_scope :"""
+    symtab.leave_scope()
+
+
 def p_StatementList(p):
     """StatementList : empty
     | Statement ';' StatementList
@@ -246,8 +253,8 @@ def p_ReturnStmt(p):
     """ReturnStmt : KW_RETURN
     | KW_RETURN ExpressionList
     """
-    if(len(p) == 3):
-        p[0] = p[2]
+    if len(p) == 3:
+        p[0] = syntree.Node("RETURN", children=[p[2]])
 
 
 def p_BreakStmt(p):
@@ -277,13 +284,24 @@ def p_ContinueStmt(p):
 
 
 def p_IfStmt(p):
-    """IfStmt : KW_IF Expression Block
-    | KW_IF SimpleStmt ';' Expression Block
-    | KW_IF Expression Block KW_ELSE IfStmt
-    | KW_IF Expression Block KW_ELSE Block
-    | KW_IF SimpleStmt ';' Expression Block KW_ELSE IfStmt
-    | KW_IF SimpleStmt ';' Expression Block KW_ELSE Block
+    """IfStmt : KW_IF new_scope Expression Block
+    | KW_IF new_scope SimpleStmt ';' Expression Block
+    | KW_IF new_scope Expression Block leave_scope KW_ELSE IfStmt
+    | KW_IF new_scope Expression Block leave_scope KW_ELSE Block
+    | KW_IF new_scope SimpleStmt ';' Expression Block leave_scope KW_ELSE IfStmt
+    | KW_IF new_scope SimpleStmt ';' Expression Block leave_scope KW_ELSE Block
     """
+    print(len(p))
+    if len(p) == 5:
+        p[0] = syntree.IfStmt(body=p[4], expr=p[3])
+        symtab.leave_scope()
+    elif len(p) == 7:
+        p[0] = syntree.IfStmt(body=p[6], expr=p[5], statement=p[3])
+        symtab.leave_scope()
+    elif len(p) == 8:
+        p[0] = syntree.IfStmt(body=p[4], expr=p[3], next_=p[7])
+    elif len(p) == 10:
+        p[0] = syntree.IfStmt(body=p[6], statement=p[3], expr=p[5], next_=p[9])
 
 
 def p_ForStmt(p):
@@ -292,27 +310,38 @@ def p_ForStmt(p):
     | KW_FOR ForClause Block
     | KW_FOR RangeClause Block
     """
+    if len(p) == 3:
+        p[0] = syntree.ForStmt(body=p[2])
+    elif len(p) == 4:
+        p[0] = syntree.ForStmt(body=p[3], clause=p[2])
 
 
 def p_Condition(p):
     """Condition : Expression
     """
+    p[0] = p[1]
 
 
 def p_ForClause(p):
     """ForClause : InitStmt ';' ';' PostStmt
     | InitStmt ';' Condition ';' PostStmt
     """
+    if len(p) == 5:
+        p[0] = syntree.ForClause(p[1], cond=None, post=p[4])
+    elif len(p) == 6:
+        p[0] = syntree.ForClause(p[1], cond=p[3], post=p[5])
 
 
 def p_InitStmt(p):
     """InitStmt : SimpleStmt
     """
+    p[0] = p[1]
 
 
 def p_PostStmt(p):
     """PostStmt : SimpleStmt
     """
+    p[0] = p[1]
 
 
 def p_RangeClause(p):
@@ -556,7 +585,10 @@ def p_PrimaryExpr(p):
     """
     # TODO : This is too less! Many more to add
     if len(p) == 2:
-        p[0] = syntree.PrimaryExpr(p[1])
+        if isinstance(p[1], syntree.Node):
+            p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
+        else:
+            p[0] = syntree.PrimaryExpr(operand=p[1])
     elif len(p) == 3:
         p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
 
@@ -566,7 +598,7 @@ def p_Arguments(p):
     | '(' ExpressionList ')'
     """
     if len(p) == 3:
-        p[0] = syntree.Arguments([])
+        p[0] = syntree.Arguments(None)
     elif len(p) == 4:
         p[0] = syntree.Arguments(p[2])
 
@@ -621,6 +653,7 @@ def p_BasicLit(p):
     """BasicLit : int_lit
     | float_lit
     | string_lit
+    | BOOL_LIT
     """
     # TODO : Add other basic literals
     p[0] = syntree.Literal(p[1][0], p[1][1])
