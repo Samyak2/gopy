@@ -83,6 +83,13 @@ class SymbolTable:
     def exists_in_cur_symtab(self, symbol: str) -> bool:
         return symbol in self.stack[-1]
 
+    def is_declared(self, symbol: str) -> bool:
+        for symtab_ in reversed(self.stack):
+            if symbol in symtab_:
+                if symtab_[symbol].lineno is not None:
+                    return True
+        return False
+
     def is_declared_in_cur_symtab(self, symbol: str) -> bool:
         return (
             self.exists_in_cur_symtab(symbol)

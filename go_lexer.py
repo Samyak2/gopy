@@ -7,7 +7,7 @@ from ply import lex
 
 from symbol_table import SymbolTable
 import utils
-from utils import print_error, print_line, print_marker
+from utils import print_line, print_marker, print_lexer_error
 
 colorama.init()
 
@@ -150,7 +150,7 @@ def t_ANY_ignore_SINGLE_COMMENT(t):
 def t_ANY_ignore_MULTI_COMMENT(t):
     r"/\*(.|\n)*?\*/"
 
-    # t.lexer.lineno += t.value.count("\n")
+    t.lexer.lineno += t.value.count("\n")
 
 
 # tokens with no actions
@@ -332,7 +332,7 @@ def t_STRING_LIT(t):
     #      return
 
     if "\n" in t.value:
-        print_error("string cannot contain line breaks")
+        print_lexer_error("string cannot contain line breaks")
         lineno = t.lexer.lineno
         pos = find_column(t)
         splits = list(t.value.split("\n"))
@@ -382,7 +382,7 @@ def t_IDENTIFIER(t):
     # There is no limit on length of identifier in go
     if len(t.value) > 31:
         # TODO print error in a better way
-        print_error("Identifiers must be shorter than 32 characters")
+        print_lexer_error("Identifiers must be shorter than 32 characters")
         print_line(t.lexer.lineno)
 
     if t.value in keywords:
@@ -391,16 +391,15 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        symtab.add_if_not_exists(t.value) # scoping in lex?
         t.value = ("identifier", t.value) # why identifier?
-    
+
     t.lexer.begin('InsertSemi')
     return t
 
 
 # Error handling rule for ANY state
 def t_ANY_error(t):
-    print_error(f"Illegal character {t.value[0]}")
+    print_lexer_error(f"Illegal character {t.value[0]}")
     col = find_column(t)
     print(f"at line {t.lineno}, column {col}")
     print(

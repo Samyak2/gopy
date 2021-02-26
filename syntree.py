@@ -180,6 +180,7 @@ class Identifier(Node):
 
     def __init__(self, ident_tuple, lineno):
         super().__init__("IDENTIFIER", children=[], data=(ident_tuple[1], lineno))
+        symtab.add_if_not_exists(ident_tuple[1])
 
     @property
     def ident_name(self):

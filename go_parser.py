@@ -152,6 +152,7 @@ def p_FunctionDecl(p):
 def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
     p[0] = p[1]
+    symtab.add_if_not_exists(p[1][1])
 
 
 def p_Signature(p):
@@ -253,17 +254,26 @@ def p_BreakStmt(p):
     """BreakStmt : KW_BREAK
     | KW_BREAK Label
     """
+    if len(p) == 2:
+        p[0] = syntree.Node(name="BREAK", children=[])
+    elif len(p) == 3:
+        p[0] = syntree.Node(name="BREAK", children=[], data=p[2])
 
 
 def p_Label(p):
     """Label : IDENTIFIER
     """
+    p[0] = p[1]
 
 
 def p_ContinueStmt(p):
     """ContinueStmt : KW_CONTINUE
     | KW_CONTINUE Label
     """
+    if len(p) == 2:
+        p[0] = syntree.Node(name="CONTINUE", children=[])
+    elif len(p) == 3:
+        p[0] = syntree.Node(name="CONTINUE", children=[], data=p[2])
 
 
 def p_IfStmt(p):
@@ -580,7 +590,7 @@ def p_OperandName(p):
         ident: Tuple = p[1]
         sym = symtab.get_symbol(ident[1])
         lineno = p.lineno(1)
-        if not symtab.is_declared_in_cur_symtab(ident[1]):
+        if not symtab.is_declared(ident[1]):
             print_error()
             print(f"Undeclared symbol '{ident[1]}' at line {lineno}")
             print_line(lineno)
