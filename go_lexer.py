@@ -70,6 +70,7 @@ tokens = (
     "INT_LIT",
     "FLOAT_LIT",
     "STRING_LIT",
+    "BOOL_LIT",
     "IDENTIFIER",
     "ELLIPSIS",
 )
@@ -375,7 +376,7 @@ def t_INT_LIT(t):
     return t
 
 def t_BOOL_LIT(t):
-    r"(true|false|True|False)"
+    r"(true|false)"
 
     t.value = ("bool", t.value)
 

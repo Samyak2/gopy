@@ -621,6 +621,7 @@ def p_BasicLit(p):
     """BasicLit : int_lit
     | float_lit
     | string_lit
+    | bool_lit
     """
     # TODO : Add other basic literals
     p[0] = syntree.Literal(p[1][0], p[1][1])
@@ -661,6 +662,12 @@ def p_string_lit(p):
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
     # '''
+    p[0] = p[1]
+
+
+def p_bool_lit(p):
+    """bool_lit : BOOL_LIT
+    """
     p[0] = p[1]
 
 
@@ -797,7 +804,7 @@ if __name__ == "__main__":
         lines = input_code.split("\n")
         go_lexer.lines = lines
         utils.lines = lines
-        result = parser.parse(input_code, tracking=True)
+        result = parser.parse(input_code, tracking=True, debug = False)
         # print(result)
         with open("syntax_tree.txt", "wt", encoding='utf-8') as ast_file:
             sys.stdout = ast_file
