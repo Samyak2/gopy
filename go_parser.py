@@ -1,37 +1,16 @@
 import sys
+from typing import Tuple
 
-from pptree import print_tree
+from pptree_mod import print_tree
 from colorama import Fore, Style
 
 from ply import yacc
 
 import go_lexer
 from go_lexer import tokens, lex, find_column, symtab
-from utils import Node
-
-
-def print_error():
-    print(f"{Fore.RED}SYNTAX ERROR:{Style.RESET_ALL}")
-
-
-def print_line(lineno):
-    print(
-        f"{Fore.GREEN}{lineno:>10}:\t{Style.RESET_ALL}",
-        lines[lineno - 1],
-        sep="",
-    )
-
-
-def print_marker(pos, width=1):
-    print(
-        Fore.YELLOW,
-        " " * 10,
-        " \t",
-        " " * (pos),
-        "^" * width,
-        Style.RESET_ALL,
-        sep="",
-    )
+import utils
+from utils import print_error, print_line, print_marker
+import syntree
 
 
 # def eval_numeric_op(p1, p2=None, op=None):
@@ -58,34 +37,7 @@ def print_marker(pos, width=1):
 #     return isinstance(p, Node) and p.type == "literal"
 
 
-# def declare_new_variable(symbol, lineno, type_=None, const=False, value=None):
-#     """Helper function to add symbol to the Symbol Table
-#     with declaration set to given line number.
-
-#     Prints an error if the symbol is already declared at
-#     current depth.
-#     """
-#     symbol = symbol[1]
-#     if symtab.is_declared(symbol):
-#         print_error()
-#         print(f"Re-declaration of symbol {symbol} at line {lineno}")
-#         print_line(lineno)
-#         line: str = lines[lineno - 1]
-#         # TODO: get correct position of token rather than searching
-#         pos = line.find(symbol)
-#         width = len(symbol)
-#         print_marker(pos, width)
-#         other_sym = symtab.get_if_exists(symbol)
-#         print(f"{symbol} previously declared at line {other_sym.lineno}")
-#         print_line(other_sym.lineno)
-#         line: str = lines[other_sym.lineno - 1]
-#         pos = line.find(symbol)
-#         print_marker(pos, width)
-#     else:
-#         symtab.update_info(symbol, lineno, type_=type_, const=const, value=value)
-
-
-# ast = Node("start", node="start")
+ast = syntree.Node("start", children=[])
 
 precedence = (
     # ('left', 'IDENTIFIER'),
@@ -105,32 +57,53 @@ precedence = (
 
 def p_SourceFile(p):
     """SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList"""
+    ast.data = p[1]
+    ast.add_child(p[3])
+    ast.add_child(p[4])
 
 
 def p_PackageClause(p):
     """PackageClause : KW_PACKAGE PackageName"""
+    p[0] = p[2][1]
 
 
 def p_PackageName(p):
     """PackageName : IDENTIFIER"""
+    p[0] = p[1]
 
 
 def p_ImportDeclList(p):
     """ImportDeclList : empty
     | ImportDecl ';' ImportDeclList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_ImportDecl(p):
     """ImportDecl : KW_IMPORT ImportSpec
     | KW_IMPORT '(' ImportSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_ImportSpecList(p):
     """ImportSpecList : empty
     | ImportSpec ';' ImportSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_ImportSpec(p):
@@ -138,16 +111,24 @@ def p_ImportSpec(p):
     | '.' ImportPath
     | PackageName ImportPath
     """
+    p[0] = syntree.Import(p[1], p[2])
 
 
 def p_ImportPath(p):
     """ImportPath : STRING_LIT"""
+    p[0] = p[1]
 
 
 def p_TopLevelDeclList(p):
     """TopLevelDeclList : empty
     | TopLevelDecl ';' TopLevelDeclList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_TopLevelDecl(p):
@@ -155,22 +136,32 @@ def p_TopLevelDecl(p):
     | Declaration
     """
     # TODO : Add MethodDecl
+    p[0] = p[1]
 
 
 def p_FunctionDecl(p):
     """FunctionDecl : KW_FUNC FunctionName Signature
     | KW_FUNC FunctionName Signature FunctionBody
     """
+    if len(p) == 4:
+        p[0] = syntree.Function(p[2], p[3], lineno=p.lineno(2))
+    elif len(p) == 5:
+        p[0] = syntree.Function(p[2], p[3], body=p[4], lineno=p.lineno(2))
 
 
 def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
+    p[0] = p[1]
 
 
 def p_Signature(p):
     """Signature : Parameters
     | Parameters Result
     """
+    if len(p) == 2:
+        p[0] = syntree.Signature(p[1])
+    else:
+        p[0] = syntree.Signature(p[1], p[2])
 
 
 def p_Parameters(p):
@@ -178,6 +169,7 @@ def p_Parameters(p):
     | '(' ParameterList ')'
     | '(' ParameterList ',' ')'
     """
+    p[0] = p[2]
 
 
 def p_Result(p):
@@ -185,12 +177,18 @@ def p_Result(p):
     | TypeName
     | TypeLit
     """
+    p[0] = p[1]
 
 
 def p_ParameterList(p):
     """ParameterList : ParameterDecl
     | ParameterList ',' ParameterDecl
     """
+    if len(p) == 4:
+        p[1].append(p[3])
+        p[0] = p[1]
+    elif len(p) == 2:
+        p[0] = syntree.List([p[1]])
 
 
 def p_ParameterDecl(p):
@@ -203,16 +201,30 @@ def p_ParameterDecl(p):
 
 def p_FunctionBody(p):
     """FunctionBody : Block"""
+    p[0] = p[1]
 
 
 def p_Block(p):
-    """Block : '{' StatementList '}' """
+    """Block : '{' new_scope StatementList '}' """
+    p[0] = p[3]
+    symtab.leave_scope()
+
+
+def p_new_scope(p):
+    """new_scope :"""
+    symtab.enter_scope()
 
 
 def p_StatementList(p):
     """StatementList : empty
     | Statement ';' StatementList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_Statement(p):
@@ -220,6 +232,7 @@ def p_Statement(p):
     | SimpleStmt
     """
     # TODO : Complete this!
+    p[0] = p[1]
 
 
 def p_SimpleStmt(p):
@@ -229,6 +242,7 @@ def p_SimpleStmt(p):
     | Assignment
     | ShortVarDecl
     """
+    p[0] = p[1]
 
 
 def p_EmptyStmt(p):
@@ -237,6 +251,7 @@ def p_EmptyStmt(p):
 
 def p_ExpressionStmt(p):
     """ExpressionStmt : Expression"""
+    p[0] = p[1]
 
 
 def p_IncDecStmt(p):
@@ -246,22 +261,27 @@ def p_IncDecStmt(p):
 
 
 def p_Assignment(p):
-    '''Assignment : ExpressionList assign_op ExpressionList
-    '''
+    """Assignment : ExpressionList assign_op ExpressionList"""
+    p[0] = syntree.Assignment(p[2], p[1], p[3])
+
 
 def p_assign_op(p):
-    '''assign_op : '='
-                 | ADD_EQ
-                 | SUB_EQ
-                 | MUL_EQ
-                 | DIV_EQ
-                 | MOD_EQ
-    '''
-#     # TODO : Add |= ^= <<= >>= &= &^=
+    """assign_op : '='
+    | ADD_EQ
+    | SUB_EQ
+    | MUL_EQ
+    | DIV_EQ
+    | MOD_EQ
+    """
+    #     # TODO : Add |= ^= <<= >>= &= &^=
+    p[0] = p[1]
 
 
 def p_ShortVarDecl(p):
     """ShortVarDecl : IdentifierList WALRUS ExpressionList"""
+    ident_list = p[1]
+    expr_list = p[3]
+    p[0] = syntree.VariableDecl(ident_list, expression_list=expr_list)
 
 
 def p_Declaration(p):
@@ -269,18 +289,29 @@ def p_Declaration(p):
     | ConstDecl
     | TypeDecl
     """
+    p[0] = p[1]
 
 
 def p_VarDecl(p):
     """VarDecl : KW_VAR VarSpec
     | KW_VAR '(' VarSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_VarSpecList(p):
     """VarSpecList : empty
     | VarSpec ';' VarSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_VarSpec(p):
@@ -288,18 +319,34 @@ def p_VarSpec(p):
     | IdentifierList Type '=' ExpressionList
     | IdentifierList '=' ExpressionList
     """
+    if len(p) == 3:
+        p[0] = syntree.VariableDecl(p[1], p[2])
+    elif len(p) == 4:
+        p[0] = syntree.VariableDecl(p[1], expression_list=p[3])
+    elif len(p) == 5:
+        p[0] = syntree.VariableDecl(p[1], p[2], p[4])
 
 
 def p_ConstDecl(p):
     """ConstDecl : KW_CONST ConstSpec
     | KW_CONST '(' ConstSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_ConstSpecList(p):
     """ConstSpecList : empty
     | ConstSpec ';' ConstSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_ConstSpec(p):
@@ -307,6 +354,12 @@ def p_ConstSpec(p):
     | IdentifierList '=' ExpressionList
     | IdentifierList Type '=' ExpressionList
     """
+    if len(p) == 2:
+        p[0] = syntree.VariableDecl(p[1], const=True)
+    elif len(p) == 4:
+        p[0] = syntree.VariableDecl(p[1], expression_list=p[3], const=True)
+    elif len(p) == 5:
+        p[0] = syntree.VariableDecl(p[1], p[2], p[4], const=True)
 
 
 def p_TypeDecl(p):
@@ -319,6 +372,12 @@ def p_TypeSpecList(p):
     """TypeSpecList : empty
     | TypeSpec ';' TypeSpecList
     """
+    if len(p) == 4:
+        if p[3] is not None:
+            p[3].append(p[1])
+            p[0] = p[3]
+        else:
+            p[0] = syntree.List([p[1]])
 
 
 def p_TypeSpec(p):
@@ -339,12 +398,22 @@ def p_IdentifierList(p):
     """IdentifierList : IDENTIFIER
     | IDENTIFIER ',' IdentifierList
     """
+    if len(p) == 2:
+        p[0] = syntree.List([syntree.Identifier(p[1], p.lineno(1))])
+    elif len(p) == 4:
+        p[3].append(syntree.Identifier(p[1], p.lineno(1)))
+        p[0] = p[3]
 
 
 def p_ExpressionList(p):
     """ExpressionList : Expression
     | Expression ',' ExpressionList
     """
+    if len(p) == 4:
+        p[3].append(p[1])
+        p[0] = p[3]
+    elif len(p) == 2:
+        p[0] = syntree.List([p[1]])
 
 
 def p_Expression(p):
@@ -364,11 +433,22 @@ def p_Expression(p):
     # TODO : Add Logical Operators
     # TODO : Add other binary operators
 
+    if len(p) == 4:
+        p[0] = syntree.BinOp(p[2], left=p[1], right=p[3])
+    else:
+        p[0] = p[1]
+
 
 def p_UnaryExpr(p):
     """UnaryExpr : PrimaryExpr
     | UnaryOp UnaryExpr
     """
+    if len(p) == 3:
+        p[0] = syntree.UnaryOp(p[1], p[2])
+    else:
+        # TODO : handle more stuff in PrimaryExpr
+        # also change the PrimaryExpr class in syntree when doing so
+        p[0] = syntree.UnaryOp(None, p[1])
 
 
 def p_UnaryOp(p):
@@ -376,11 +456,13 @@ def p_UnaryOp(p):
     | '-' %prec UNARY
     """
     # TODO : Add other unary operators
+    p[0] = p[1]
 
 
 def p_PrimaryExpr(p):
     """PrimaryExpr : Operand"""
     # TODO : This is too less! Many more to add
+    p[0] = syntree.PrimaryExpr(p[1])
 
 
 def p_Operand(p):
@@ -388,21 +470,45 @@ def p_Operand(p):
     | Literal
     | '(' Expression ')'
     """
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[2]
 
 
 def p_OperandName(p):
     """OperandName : IDENTIFIER %prec '='
     | QualifiedIdent
     """
+    if not isinstance(p[1], syntree.QualifiedIdent):
+        ident: Tuple = p[1]
+        sym = symtab.get_symbol(ident[1])
+        lineno = p.lineno(1)
+        if not symtab.is_declared_in_cur_symtab(ident[1]):
+            print_error()
+            print(f"Undeclared symbol '{ident[1]}' at line {lineno}")
+            print_line(lineno)
+            line: str = utils.lines[lineno - 1]
+            # TODO: get correct position of token rather than searching
+            pos = line.find(ident[1])
+            width = len(ident[1])
+            print_marker(pos, width)
+        else:
+            sym.uses.append(lineno)
+
+    p[0] = p[1]
 
 
 def p_QualifiedIdent(p):
     """QualifiedIdent : PackageName '.' IDENTIFIER"""
+    p[0] = syntree.QualifiedIdent(p[1], p[3])
 
 
 def p_Literal(p):
-    """Literal : BasicLit"""
+    """Literal : BasicLit
+    | FunctionLit"""
     # TODO : Add CompositeLit and FunctionLit
+    p[0] = p[1]
 
 
 def p_BasicLit(p):
@@ -411,6 +517,13 @@ def p_BasicLit(p):
     | string_lit
     """
     # TODO : Add other basic literals
+    p[0] = syntree.Literal(p[1][0], p[1][1])
+
+
+def p_FunctionLit(p):
+    """FunctionLit : KW_FUNC Signature FunctionBody
+    """
+    p[0] = syntree.Function(None, p[2], p[3])
 
 
 def p_int_lit(p):
@@ -422,6 +535,7 @@ def p_int_lit(p):
     #            | octal_lit
     #            | hex_lit
     # '''
+    p[0] = p[1]
 
 
 def p_float_lit(p):
@@ -431,6 +545,7 @@ def p_float_lit(p):
     # '''float_lit : decimal_float_lit
     #              | hex_float_lit
     # '''
+    p[0] = p[1]
 
 
 def p_string_lit(p):
@@ -440,6 +555,7 @@ def p_string_lit(p):
     # '''string_lit : raw_string_lit
     #               | interpreted_string_lit
     # '''
+    p[0] = p[1]
 
 
 def p_Type(p):
@@ -447,12 +563,17 @@ def p_Type(p):
     | TypeLit
     | '(' Type ')'
     """
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[2]
 
 
 def p_TypeName(p):
     """TypeName : BasicType
     | QualifiedIdent
     """
+    p[0] = p[1]
 
 
 def p_BasicType(p):
@@ -460,6 +581,7 @@ def p_BasicType(p):
     | BOOL
     | FLOAT64
     """
+    p[0] = syntree.Type(name="BasicType", children=[], data=p[1])
 
 
 def p_TypeLit(p):
@@ -469,18 +591,22 @@ def p_TypeLit(p):
     | FunctionType
     """
     # TODO : Add other type literals
+    p[0] = p[1]
 
 
 def p_ArrayType(p):
     """ArrayType : '[' ArrayLength ']' ElementType"""
+    p[0] = syntree.Array(p[4], p[2])
 
 
 def p_ArrayLength(p):
     """ArrayLength : Expression"""
+    p[0] = p[1]
 
 
 def p_ElementType(p):
     """ElementType : Type"""
+    p[0] = p[1]
 
 
 def p_StructType(p):
@@ -515,282 +641,11 @@ def p_PointerType(p):
 
 def p_BaseType(p):
     """BaseType : Type"""
+    p[0] = p[1]
 
 
 def p_FunctionType(p):
     """FunctionType : KW_FUNC Signature"""
-
-
-# def p_start(p):
-#     """start : start expression
-#     | start top_declaration
-#     | empty
-#     """
-#     ast.add_child(p[1])
-#     if len(p) > 2:
-#         ast.add_child(p[2])
-
-
-# def p_expression_addsub(p: yacc.YaccProduction):
-#     """expression : expression PLUS term
-#     | expression MINUS term
-#     | MINUS expression
-#     | PLUS expression
-#     """
-#     if len(p) == 4:
-#         if p[2] == "+":
-#             p[0] = eval_numeric_op(p[1], p[3], operator.add)
-#             if p[0] is None:
-#                 p[0] = Node("+", [p[1], p[3]], p[2])
-
-#         elif p[2] == "-":
-#             p[0] = eval_numeric_op(p[1], p[3], operator.sub)
-#             if p[0] is None:
-#                 p[0] = Node("-", [p[1], p[3]], p[2])
-#     elif len(p) == 3:
-#         if p[1] == "+":
-#             p[0] = eval_numeric_op(p[2], op=operator.pos)
-#             if p[0] is None:
-#                 p[0] = Node("+", [p[2]], p[1])
-#         elif p[1] == "-":
-#             p[0] = eval_numeric_op(p[2], op=operator.neg)
-#             if p[0] is None:
-#                 p[0] = Node("-", [p[2]], p[1])
-
-
-# def p_expression_term(p):
-#     "expression : term"
-#     p[0] = p[1]
-
-
-# def p_term_mul_div(p):
-#     """term : term MULTIPLY factor
-#     | term DIVIDE factor
-#     """
-#     if p[2] == "*":
-#         p[0] = eval_numeric_op(p[1], p[3], operator.mul)
-#         if p[0] is None:
-#             p[0] = Node("*", [p[1], p[3]], p[2])
-
-#     elif p[2] == "/":
-#         p[0] = eval_numeric_op(p[1], p[3], operator.truediv)
-#         if p[0] is None:
-#             p[0] = Node("/", [p[1], p[3]], p[2])
-
-
-# def p_term_factor(p):
-#     "term : factor"
-#     p[0] = p[1]
-
-
-# def p_factor_num(p):
-#     """factor : literal
-#     | IDENTIFIER
-#     """
-#     if isinstance(p[1], tuple) and p[1][0] == "identifier":
-#         symbol_name = p[1][1]
-#         if not symtab.is_declared(p[1][1]):
-#             lineno = p.lineno(1)
-#             print_error()
-#             print(f"{symbol_name} not declared in this scope at line {lineno}")
-
-#             print_line(lineno)
-#             line: str = lines[lineno - 1]
-#             # TODO: get correct position of token rather than searching
-#             pos = line.find(symbol_name)
-#             width = len(symbol_name)
-#             print_marker(pos, width)
-#         else:
-#             sym = symtab.get_if_exists(symbol_name)
-#             sym.uses.append(p.lineno(1))
-
-#     p[0] = p[1]
-
-
-# def p_numeric(p):
-#     """numeric : INT_LITERAL
-#     | FLOAT_LITERAL
-#     """
-#     p[0] = Node("numeric", node=p[1])
-
-
-# def p_literal(p):
-#     """literal : numeric
-#     | STRING"""
-#     if isinstance(p[1], Node):
-#         p[0] = p[1]
-#     else:
-#         p[0] = Node("literal", node=p[1])
-
-
-# def p_factor_expr(p):
-#     "factor : ROUND_START expression ROUND_END"
-#     p[0] = p[2]
-
-
-# def p_type(p):
-#     """type : INT
-#     | FLOAT64
-#     | BOOL
-#     | array_type
-#     """
-#     p[0] = p[1]
-
-
-# def p_array_type(p):
-#     """array_type : SQ_START expression SQ_END type"""
-#     p[0] = Node("array", node=(p[2], p[4]))
-
-
-# def p_declaration(p):
-#     """declaration : const_decl
-#     | var_decl"""
-#     p[0] = p[1]
-
-
-# def p_top_declaration(p):
-#     """top_declaration : declaration"""
-#     p[0] = p[1]
-
-
-# def p_const_decl(p):
-#     """const_decl : KW_CONST const_spec
-#     | KW_CONST ROUND_START const_specs ROUND_END
-#     """
-#     if len(p) == 3:
-#         p[0] = Node("const_decl", children=p[2])
-#     elif len(p) == 5:
-#         p[0] = Node("const_decl", children=p[3])
-
-
-# def p_const_specs(p):
-#     """const_specs : const_specs const_spec
-#     | const_spec
-#     """
-#     if len(p) == 2:
-#         p[0] = p[1]
-#     elif len(p) == 3:
-#         p[0] = p[1] + p[2]
-
-
-# def p_const_spec(p):
-#     """const_spec : identifier_list EQUAL expression_list
-#     | identifier_list type EQUAL expression_list
-#     """
-#     if len(p) == 4:
-#         assert len(p[1]) == len(p[3]), "Constant initialisations don't match variables"
-#         p[0] = [
-#             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
-#         ]
-#         for ident in p[0]:
-#             type_ = None
-#             if is_numeric(ident.children[0]) or is_literal(ident.children[0]):
-#                 type_ = ident.children[0].node[0]
-#             declare_new_variable(
-#                 ident.node[0],
-#                 p.lineno(2),
-#                 const=True,
-#                 type_=type_,
-#                 value=ident.children[0],
-#             )
-
-#     elif len(p) == 5:
-#         assert len(p[1]) == len(p[4]), "Constant initialisations don't match variables"
-#         p[0] = [
-#             Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
-#         ]
-#         for ident in p[0]:
-#             declare_new_variable(
-#                 ident.node[0],
-#                 p.lineno(3),
-#                 const=True,
-#                 type_=ident.node[1],
-#                 value=ident.children[0],
-#             )
-
-
-# def p_var_decl(p):
-#     """var_decl : KW_VAR var_spec
-#     | KW_VAR ROUND_START var_specs ROUND_END
-#     """
-#     if len(p) == 3:
-#         p[0] = Node("var_decl", children=p[2])
-#     elif len(p) == 5:
-#         p[0] = Node("var_decl", children=p[3])
-
-
-# def p_var_specs(p):
-#     """var_specs : var_specs var_spec
-#     | var_spec
-#     """
-#     if len(p) == 2:
-#         p[0] = p[1]
-#     elif len(p) == 3:
-#         p[0] = p[1] + p[2]
-
-
-# def p_var_spec(p):
-#     """var_spec : identifier_list EQUAL expression_list
-#     | identifier_list type EQUAL expression_list
-#     | identifier_list type
-#     """
-#     if len(p) == 3:
-#         p[0] = [Node("identifier", node=(i, p[2])) for i in p[1]]
-#         for ident in p[0]:
-#             declare_new_variable(
-#                 ident.node[0], p.lineno(2), const=False, type_=ident.node[1]
-#             )
-
-#     elif len(p) == 4:
-#         assert len(p[1]) == len(p[3]), "Variable initialisations don't match variables"
-#         p[0] = [
-#             Node("identifier", node=(i, None), children=[e]) for i, e in zip(p[1], p[3])
-#         ]
-#         for ident in p[0]:
-#             type_ = None
-#             if is_numeric(ident.children[0]) or is_literal(ident.children[0]):
-#                 type_ = ident.children[0].node[0]
-#             declare_new_variable(
-#                 ident.node[0],
-#                 p.lineno(2),
-#                 const=True,
-#                 type_=type_,
-#                 value=ident.children[0],
-#             )
-
-#     elif len(p) == 5:
-#         assert len(p[1]) == len(p[4]), "Variable initialisations don't match variables"
-#         p[0] = [
-#             Node("identifier", node=(i, p[2]), children=[e]) for i, e in zip(p[1], p[4])
-#         ]
-#         for ident in p[0]:
-#             declare_new_variable(
-#                 ident.node[0],
-#                 p.lineno(3),
-#                 const=False,
-#                 type_=ident.node[1],
-#                 value=ident.children[0],
-#             )
-
-
-# def p_identifier_list(p):
-#     """identifier_list : IDENTIFIER
-#     | identifier_list COMMA IDENTIFIER
-#     """
-#     if len(p) == 2:
-#         p[0] = [p[1]]
-#     elif len(p) == 4:
-#         p[0] = p[1] + [p[3]]
-
-
-# def p_expression_list(p):
-#     """expression_list : expression
-#     | expression_list COMMA expression
-#     """
-#     if len(p) == 2:
-#         p[0] = [p[1]]
-#     elif len(p) == 4:
-#         p[0] = p[1] + [p[3]]
 
 
 def p_empty(p):
@@ -821,9 +676,13 @@ if __name__ == "__main__":
         go_lexer.input_code = input_code
         lines = input_code.split("\n")
         go_lexer.lines = lines
+        utils.lines = lines
         result = parser.parse(input_code, tracking=True)
         # print(result)
-        # print_tree(ast)
+        with open("syntax_tree.txt", "wt", encoding='utf-8') as ast_file:
+            sys.stdout = ast_file
+            print_tree(ast, nameattr=None, horizontal=False)
+            sys.stdout = sys.__stdout__
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)

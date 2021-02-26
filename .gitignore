@@ -1,4 +1,7 @@
 env/
 *__pycache__*
+ply/__pycache__*
 tmp*
 parser.out
+.vim/
+syntax_tree.txt
