@@ -26,6 +26,31 @@ class SymbolTable:
     """Stores all identifiers, literals and information
     related to them"""
 
+    storage = {
+        #For INT
+        "int"        : 8,
+        "int8"       : 1,
+        "int16"      : 2,
+        "int32"      : 4,
+        "int64"      : 8,
+        #For Float
+        "float32"    : 4,
+        "float64"    : 8,
+        #For UINT
+        "uint"       : 8,
+        "uint8"      : 1,
+        "uint16"     : 2,
+        "uint32"     : 4,
+        "uint64"     : 8,
+        #For Complex
+        "complex64"  : 8,
+        "complex128" : 16,
+        #For Misc
+        "byte"       : 1,
+        "bool"       : 1,
+        "rune"       : 4,
+    }
+
     def __init__(self):
         self.stack: List[Dict[str, SymbolInfo]] = [{}]
         self.symbols: List[SymbolInfo] = []
@@ -72,8 +97,13 @@ class SymbolTable:
         sym.lineno = lineno
         sym.type_ = type_
         # TODO: infer type from value if not given
-        # and set storage appropriately
-        # sym.storage = types[type_][1]
+
+        try:
+            if(type_ and type_.data in self.storage):
+                sym.storage = self.storage[type_.data]
+        except:
+            pass
+
         if value is not None:
             sym.value = value
 
