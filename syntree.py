@@ -222,6 +222,19 @@ class ForClause(Node):
         self.cond = cond
         self.post = post
 
+
+class RangeClause(Node):
+    def __init__(self, expr, ident_list=None, expr_list=None):
+        if ident_list is not None:
+            self.var_decl = VariableDecl(ident_list, expr)
+        else:
+            self.var_decl = None
+        super().__init__("RANGE", children=[expr, ident_list, expr_list, self.var_decl])
+        self.expr = expr
+        self.ident_list = ident_list
+        self.expr_list = expr_list
+
+
 #     def print_level_order(self):
 
 #         queue = []

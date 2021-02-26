@@ -305,15 +305,15 @@ def p_IfStmt(p):
 
 
 def p_ForStmt(p):
-    """ForStmt : KW_FOR Block
-    | KW_FOR Condition Block
-    | KW_FOR ForClause Block
-    | KW_FOR RangeClause Block
+    """ForStmt : KW_FOR new_scope Block leave_scope
+    | KW_FOR new_scope Condition Block leave_scope
+    | KW_FOR new_scope ForClause Block leave_scope
+    | KW_FOR new_scope RangeClause Block leave_scope
     """
-    if len(p) == 3:
-        p[0] = syntree.ForStmt(body=p[2])
-    elif len(p) == 4:
-        p[0] = syntree.ForStmt(body=p[3], clause=p[2])
+    if len(p) == 5:
+        p[0] = syntree.ForStmt(body=p[3])
+    elif len(p) == 6:
+        p[0] = syntree.ForStmt(body=p[4], clause=p[3])
 
 
 def p_Condition(p):
@@ -347,8 +347,14 @@ def p_PostStmt(p):
 def p_RangeClause(p):
     """RangeClause : KW_RANGE Expression
     | IdentifierList WALRUS KW_RANGE Expression
-    | ExpressionList '=' KW_RANGE Expression
+    | ExpressionList '=' KW_RANGE Expression empty
     """
+    if len(p) == 3:
+        p[0] = syntree.RangeClause(p[2])
+    elif len(p) == 5:
+        p[0] = syntree.RangeClause(p[4], ident_list=p[1])
+    elif len(p) == 6:
+        p[0] = syntree.RangeClause(p[4], expr_list=p[1])
 
 
 def p_SimpleStmt(p):
@@ -839,3 +845,5 @@ if __name__ == "__main__":
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)
+        with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
+            print(symtab, file=symtab_file)

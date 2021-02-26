@@ -16,7 +16,7 @@ func main() {
 		//do something
 	}
 
-	// numbers := [6]int{1, 2, 3, 5} 
+	var numbers [6]int 
 	for i,x:= range numbers {
 		fmt.Printf("value of x = %d at %d\n", x,i)
 	}
