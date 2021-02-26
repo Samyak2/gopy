@@ -6,6 +6,8 @@ from colorama import Fore, Style
 from ply import lex
 
 from symbol_table import SymbolTable
+import utils
+from utils import print_error, print_line, print_marker
 
 colorama.init()
 
@@ -170,7 +172,8 @@ t_BAR_BAR        = r"\|\|"
 t_EXCLAMATION    = r"!"
 t_COLON          = r":"
 t_WALRUS         = r":="
-#assignment operators
+# TODO: Move the assignment operators above, below
+# assignment operators
 t_ADD_EQ = r'\+='
 t_SUB_EQ = r'-='
 t_MUL_EQ = r'\*='
@@ -273,28 +276,28 @@ def t_curl_end(t):
 
 # keywords
 
-def t_BREAK(t):
+def t_KW_BREAK(t):
     r"break"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_CONTINUE(t):
+def t_KW_CONTINUE(t):
     r"continue"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_FALLTHROUGH(t):
+def t_KW_FALLTHROUGH(t):
     r"fallthrough"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_RETURN(t):
+def t_KW_RETURN(t):
     r"return"
 
     t.lexer.begin("InsertSemi")
@@ -356,8 +359,7 @@ def t_STRING_LIT(t):
 
 
 def t_FLOAT_LIT(t):
-    #r"\d*\.\d+"
-    r"[+-]?(\d+([.]\d*)+([eE][+-]?\d+)?|[.]\d+([eE][+-]?\d+)?)"
+    r"[+-]?(\d+[.]\d*[eE][+-]?\d+)|[+-]?(\d+([.]\d*)|[+-]?\d+([eE][+-]?\d+)|[.]\d+([eE][+-]?\d+)?)"
     t.value = ("float64", float(t.value))
 
     t.lexer.begin("InsertSemi")
@@ -389,38 +391,11 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        symtab.add_if_not_exists(t.value)
-        t.value = ("identifier", t.value)
-
-    t.lexer.begin("InsertSemi")
+        symtab.add_if_not_exists(t.value) # scoping in lex?
+        t.value = ("identifier", t.value) # why identifier?
+    
+    t.lexer.begin('InsertSemi')
     return t
-
-
-# helper functions for printing error statements
-
-
-def print_error(err_str):
-    print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
-
-
-def print_line(lineno):
-    print(
-        f"{Fore.GREEN}{lineno:>10}:\t{Style.RESET_ALL}",
-        lines[lineno - 1],
-        sep="",
-    )
-
-
-def print_marker(pos, width=1):
-    print(
-        Fore.YELLOW,
-        " " * 10,
-        " \t",
-        " " * (pos),
-        "^" * width,
-        Style.RESET_ALL,
-        sep="",
-    )
 
 
 # Error handling rule for ANY state
@@ -445,6 +420,8 @@ lexer = lex.lex()
 lexer.input(input_code)
 
 lines = input_code.split("\n")
+utils.lines = lines
+
 symtab = SymbolTable()
 
 

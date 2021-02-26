@@ -44,10 +44,11 @@ precedence = (
     # ('left', 'INT', 'BOOL', 'FLOAT64'),
     # ('left', '(', ')'),
     # ('left', ';'),
-    # ('left', ','),
-    ("right", "WALRUS"),
-    ("right", "=", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
-    ("nonassoc", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
+    # ("right", "WALRUS"),
+    # ("right", "=", "WALRUS", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
+    ("right", "="),
+    ('left', ','),
+    ("left", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
     ("left", "+", "-"),
     ("left", "*", "/", "%"),
     ("right", "UNARY"),
@@ -227,11 +228,88 @@ def p_StatementList(p):
 
 
 def p_Statement(p):
-    """Statement : Declaration
+    """Statement : Block
+    | ReturnStmt
+    | BreakStmt
+    | ContinueStmt
+    | IfStmt
+    | ForStmt
     | SimpleStmt
+    | Declaration
     """
-    # TODO : Complete this!
+    # TODO : Add more statements like SwitchStmt
     p[0] = p[1]
+
+
+def p_ReturnStmt(p):
+    """ReturnStmt : KW_RETURN 
+    | KW_RETURN ExpressionList
+    """
+    if(len(p) == 3):
+        p[0] = p[2]
+
+
+def p_BreakStmt(p):
+    """BreakStmt : KW_BREAK
+    | KW_BREAK Label
+    """
+
+
+def p_Label(p):
+    """Label : IDENTIFIER
+    """
+
+
+def p_ContinueStmt(p):
+    """ContinueStmt : KW_CONTINUE
+    | KW_CONTINUE Label
+    """
+
+
+def p_IfStmt(p):
+    """IfStmt : KW_IF Expression Block
+    | KW_IF SimpleStmt ';' Expression Block
+    | KW_IF Expression Block KW_ELSE IfStmt
+    | KW_IF Expression Block KW_ELSE Block
+    | KW_IF SimpleStmt ';' Expression Block KW_ELSE IfStmt
+    | KW_IF SimpleStmt ';' Expression Block KW_ELSE Block
+    """
+
+
+def p_ForStmt(p):
+    """ForStmt : KW_FOR Block
+    | KW_FOR Condition Block
+    | KW_FOR ForClause Block
+    | KW_FOR RangeClause Block
+    """
+
+
+def p_Condition(p):
+    """Condition : Expression
+    """
+
+
+def p_ForClause(p):
+    """ForClause : InitStmt ';' ';' PostStmt
+    | InitStmt ';' Condition ';' PostStmt
+    """
+
+
+def p_InitStmt(p):
+    """InitStmt : SimpleStmt
+    """
+
+
+def p_PostStmt(p):
+    """PostStmt : SimpleStmt
+    """
+
+
+def p_RangeClause(p):
+    """RangeClause : KW_RANGE Expression
+    | IdentifierList WALRUS KW_RANGE Expression
+    | ExpressionList '=' KW_RANGE Expression
+    """
 
 
 def p_SimpleStmt(p):
@@ -365,6 +443,10 @@ def p_TypeDecl(p):
     """TypeDecl : KW_TYPE TypeSpec
     | KW_TYPE '(' TypeSpecList ')'
     """
+    if len(p) == 3:
+        p[0] = syntree.List([p[2]])
+    elif len(p) == 5:
+        p[0] = p[3]
 
 
 def p_TypeSpecList(p):
@@ -395,7 +477,7 @@ def p_AliasDecl(p):
 
 def p_IdentifierList(p):
     """IdentifierList : IDENTIFIER
-    | IDENTIFIER ',' IdentifierList %prec WALRUS
+    | IDENTIFIER ',' IdentifierList
     """
     if len(p) == 2:
         p[0] = syntree.List([syntree.Identifier(p[1], p.lineno(1))])
