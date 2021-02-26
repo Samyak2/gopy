@@ -140,6 +140,6 @@ class SymbolTable:
                     "Value",
                     "Uses",
                 ],
-                tablefmt="fancy_grid",
+                tablefmt="psql",
             )
         )

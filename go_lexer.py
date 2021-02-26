@@ -374,6 +374,14 @@ def t_INT_LIT(t):
     t.lexer.begin("InsertSemi")
     return t
 
+def t_BOOL_LIT(t):
+    r"(true|false|True|False)"
+
+    t.value = ("bool", t.value)
+
+    t.lexer.begin("InsertSemi")
+    return t
+
 
 # identifier
 def t_IDENTIFIER(t):
@@ -393,7 +401,7 @@ def t_IDENTIFIER(t):
         t.type = "IDENTIFIER"
         symtab.add_if_not_exists(t.value) # scoping in lex?
         t.value = ("identifier", t.value) # why identifier?
-    
+
     t.lexer.begin('InsertSemi')
     return t
 
