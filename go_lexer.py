@@ -359,8 +359,7 @@ def t_STRING_LIT(t):
 
 
 def t_FLOAT_LIT(t):
-    #r"\d*\.\d+"
-    r"[+-]?(\d+([.]\d*)+([eE][+-]?\d+)?|[.]\d+([eE][+-]?\d+)?)"
+    r"[+-]?(\d+[.]\d*[eE][+-]?\d+)|[+-]?(\d+([.]\d*)|[+-]?\d+([eE][+-]?\d+)|[.]\d+([eE][+-]?\d+)?)"
     t.value = ("float64", float(t.value))
 
     t.lexer.begin("InsertSemi")
