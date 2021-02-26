@@ -68,8 +68,8 @@ class PrimaryExpr(Node):
     Ref: https://golang.org/ref/spec#PrimaryExpr
     """
 
-    def __init__(self, operand):
-        super().__init__("PrimaryExpr", children=[], data=operand)
+    def __init__(self, operand, children=None):
+        super().__init__("PrimaryExpr", children=[] if children is None else children, data=operand)
 
 
 class Literal(Node):
@@ -100,6 +100,17 @@ class List(Node):
 
     def __len__(self):
         return len(self.children)
+
+
+class Arguments(Node):
+    """Node to store function arguments"""
+
+    def __init__(self, expression_list):
+        super().__init__("arguments", children=[expression_list])
+
+    @property
+    def expression_list(self):
+        return self.children[0]
 
 
 class Signature(Node):
@@ -213,6 +224,7 @@ class VariableDecl(Node):
             ident: Identifier
             expr: Node
             for ident, expr in zip(identifier_list, expression_list):
+                # TODO: check value is appropriate for type
                 symtab.declare_new_variable(
                     ident.ident_name, ident.lineno, type_=type_, value=expr, const=const
                 )

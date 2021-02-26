@@ -459,9 +459,24 @@ def p_UnaryOp(p):
 
 
 def p_PrimaryExpr(p):
-    """PrimaryExpr : Operand"""
+    """PrimaryExpr : Operand
+    | PrimaryExpr Arguments
+    """
     # TODO : This is too less! Many more to add
-    p[0] = syntree.PrimaryExpr(p[1])
+    if len(p) == 2:
+        p[0] = syntree.PrimaryExpr(p[1])
+    elif len(p) == 3:
+        p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
+
+
+def p_Arguments(p):
+    """Arguments : '(' ')'
+    | '(' ExpressionList ')'
+    """
+    if len(p) == 3:
+        p[0] = syntree.Arguments([])
+    elif len(p) == 4:
+        p[0] = syntree.Arguments(p[2])
 
 
 def p_Operand(p):
@@ -577,8 +592,22 @@ def p_TypeName(p):
 
 def p_BasicType(p):
     """BasicType : INT
-    | BOOL
+    | INT8
+    | INT16
+    | INT32
+    | INT64
+    | FLOAT32
     | FLOAT64
+    | UINT
+    | UINT8
+    | UINT16
+    | UINT32
+    | UINT64
+    | COMPLEX64
+    | COMPLEX128
+    | BYTE
+    | BOOL
+    | RUNE
     """
     p[0] = syntree.Type(name="BasicType", children=[], data=p[1])
 
