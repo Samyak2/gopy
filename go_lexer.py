@@ -150,6 +150,8 @@ def t_ANY_ignore_SINGLE_COMMENT(t):
 def t_ANY_ignore_MULTI_COMMENT(t):
     r"/\*(.|\n)*?\*/"
 
+    # t.lexer.lineno += t.value.count("\n")
+
 
 # tokens with no actions
 
@@ -346,6 +348,8 @@ def t_STRING_LIT(t):
                 print_marker(0, len(line_actual))
 
             lineno += 1
+        t.lexer.lineno += t.value.count("\n")
+
         return
 
     t.value = ("string", t.value)
@@ -376,9 +380,11 @@ def t_INT_LIT(t):
 def t_IDENTIFIER(t):
     r"([a-zA-Z]([a-zA-Z0-9_])*)|_"
 
-    #There is no limit on length of identifier in go
-    if len(t.value)>31:
-        print_error("Length Exceeded")
+    # There is no limit on length of identifier in go
+    if len(t.value) > 31:
+        # TODO print error in a better way
+        print_error("Identifiers must be shorter than 32 characters")
+        print_line(t.lexer.lineno)
 
     if t.value in keywords:
         t.type = keywords[t.value]
@@ -403,7 +409,7 @@ def t_ANY_error(t):
         lines[t.lineno - 1],
         sep="",
     )
-    print(" " * 10, " \t", " " * (col - 1), "^", sep="")
+    print_marker(col - 1, 1)
 
     t.lexer.skip(1)
 
