@@ -276,28 +276,28 @@ def t_curl_end(t):
 
 # keywords
 
-def t_BREAK(t):
+def t_KW_BREAK(t):
     r"break"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_CONTINUE(t):
+def t_KW_CONTINUE(t):
     r"continue"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_FALLTHROUGH(t):
+def t_KW_FALLTHROUGH(t):
     r"fallthrough"
 
     t.lexer.begin("InsertSemi")
     return t
 
 
-def t_RETURN(t):
+def t_KW_RETURN(t):
     r"return"
 
     t.lexer.begin("InsertSemi")
@@ -393,8 +393,8 @@ def t_IDENTIFIER(t):
         t.type = "IDENTIFIER"
         symtab.add_if_not_exists(t.value) # scoping in lex?
         t.value = ("identifier", t.value) # why identifier?
-        t.lexer.begin('InsertSemi')
     
+    t.lexer.begin('InsertSemi')
     return t
 
 
