@@ -408,7 +408,7 @@ def t_IDENTIFIER(t):
         t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        t.value = ("identifier", t.value) # why identifier?
+        t.value = ("identifier", t.value, find_column(t))
 
     t.lexer.begin('InsertSemi')
     return t

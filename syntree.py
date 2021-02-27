@@ -120,7 +120,7 @@ class Function(Node):
         self.data: tuple
         if name is not None:
             symtab.declare_new_variable(
-                name[1], lineno, type_="FUNCTION", const=True, value=self
+                name[1], lineno, 0, type_="FUNCTION", const=True, value=self
             )
 
         self.fn_name = name
@@ -146,10 +146,13 @@ class Identifier(Node):
     """Node for identifiers"""
 
     def __init__(self, ident_tuple, lineno):
-        super().__init__("IDENTIFIER", children=[], data=(ident_tuple[1], lineno))
+        super().__init__(
+            "IDENTIFIER", children=[], data=(ident_tuple[1], lineno, ident_tuple[2])
+        )
         symtab.add_if_not_exists(ident_tuple[1])
         self.ident_name = ident_tuple[1]
         self.lineno = lineno
+        self.col_num = ident_tuple[2]
 
 
 class QualifiedIdent(Node):
@@ -180,7 +183,11 @@ class VariableDecl(Node):
             ident: Identifier
             for ident in identifier_list:
                 symtab.declare_new_variable(
-                    ident.ident_name, ident.lineno, type_=type_, const=const
+                    ident.ident_name,
+                    ident.lineno,
+                    ident.col_num,
+                    type_=type_,
+                    const=const,
                 )
         elif len(identifier_list) == len(expression_list):
             ident: Identifier
@@ -188,7 +195,12 @@ class VariableDecl(Node):
             for ident, expr in zip(identifier_list, expression_list):
                 # TODO: check value is appropriate for type
                 symtab.declare_new_variable(
-                    ident.ident_name, ident.lineno, type_=type_, value=expr, const=const
+                    ident.ident_name,
+                    ident.lineno,
+                    ident.col_num,
+                    type_=type_,
+                    value=expr,
+                    const=const,
                 )
         else:
             raise NotImplementedError("Declaration with unpacking not implemented yet")
