@@ -49,7 +49,6 @@ tokens = (
     "EXCLAMATION",
     "COLON",
     # assignment operators
-    # changes end here
     "WALRUS",
     "ADD_EQ",
     "SUB_EQ",
@@ -126,6 +125,7 @@ types = {
     "complex64"  : ("COMPLEX64", 8),
     "complex128" : ("COMPLEX128", 16),
     #For Misc
+    "string"     : ("STRING", None),
     "byte"       : ("BYTE", 1),
     "bool"       : ("BOOL", 1),
     "rune"       : ("RUNE", 4)
@@ -215,6 +215,23 @@ t_ELLIPSIS = r"\.\.\."
 # tokens with actions
 
 
+# tokens in ANY state
+
+
+def t_ANY_UNCLOSED_MULTI_COMMENT(t):
+    r"/\*(.|\n)*"
+
+    print_lexer_error("Unclosed Multiline comment")
+    col = find_column(t)
+    print(f"at line {t.lineno}, column {col}")
+    print(
+        f"{Fore.GREEN}{t.lineno:>10}:\t{Style.RESET_ALL}",
+        lines[t.lineno - 1],
+        sep="",
+    )
+    print_marker(col - 1, 1)
+
+
 # token in InsertSemi state
 
 
@@ -272,36 +289,6 @@ def t_curl_end(t):
 
     t.lexer.begin("InsertSemi")
     t.type = "}"
-    return t
-
-
-# keywords
-
-def t_KW_BREAK(t):
-    r"break"
-
-    t.lexer.begin("InsertSemi")
-    return t
-
-
-def t_KW_CONTINUE(t):
-    r"continue"
-
-    t.lexer.begin("InsertSemi")
-    return t
-
-
-def t_KW_FALLTHROUGH(t):
-    r"fallthrough"
-
-    t.lexer.begin("InsertSemi")
-    return t
-
-
-def t_KW_RETURN(t):
-    r"return"
-
-    t.lexer.begin("InsertSemi")
     return t
 
 
