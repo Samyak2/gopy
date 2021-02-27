@@ -34,7 +34,7 @@ precedence = (
     # ("right", "WALRUS"),
     # ("right", "=", "WALRUS", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
     ("right", "="),
-    ('left', ','),
+    ("left", ","),
     ("left", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
     ("left", "+", "-"),
     ("left", "*", "/", "%"),
@@ -100,7 +100,8 @@ def p_ImportSpec(p):
     """
     if p[1] is not None:
         p[0] = syntree.Import(p[1], p[2])
-    print(p[1])
+    else:
+        p[0] = syntree.Import(".", p[2])
 
 
 def p_ImportPath(p):
@@ -273,8 +274,7 @@ def p_BreakStmt(p):
 
 
 def p_Label(p):
-    """Label : IDENTIFIER
-    """
+    """Label : IDENTIFIER"""
     p[0] = p[1]
 
 
@@ -322,8 +322,7 @@ def p_ForStmt(p):
 
 
 def p_Condition(p):
-    """Condition : Expression
-    """
+    """Condition : Expression"""
     p[0] = p[1]
 
 
@@ -338,14 +337,12 @@ def p_ForClause(p):
 
 
 def p_InitStmt(p):
-    """InitStmt : SimpleStmt
-    """
+    """InitStmt : SimpleStmt"""
     p[0] = p[1]
 
 
 def p_PostStmt(p):
-    """PostStmt : SimpleStmt
-    """
+    """PostStmt : SimpleStmt"""
     p[0] = p[1]
 
 
@@ -385,6 +382,7 @@ def p_IncDecStmt(p):
     """IncDecStmt : Expression INCREMENT
     | Expression DECREMENT
     """
+    p[0] = syntree.Node("INCDEC", children=[p[1]], data=p[2])
 
 
 def p_Assignment(p):
@@ -671,8 +669,7 @@ def p_BasicLit(p):
 
 
 def p_FunctionLit(p):
-    """FunctionLit : KW_FUNC Signature FunctionBody
-    """
+    """FunctionLit : KW_FUNC Signature FunctionBody"""
     p[0] = syntree.Function(None, p[2], p[3])
 
 
@@ -709,8 +706,7 @@ def p_string_lit(p):
 
 
 def p_bool_lit(p):
-    """bool_lit : BOOL_LIT
-    """
+    """bool_lit : BOOL_LIT"""
     p[0] = p[1]
 
 
@@ -804,6 +800,7 @@ def p_Tag(p):
     """Tag : empty
     | STRING_LIT
     """
+    p[0] = p[1]
 
 
 def p_PointerType(p):
@@ -848,9 +845,9 @@ if __name__ == "__main__":
         lines = input_code.split("\n")
         go_lexer.lines = lines
         utils.lines = lines
-        result = parser.parse(input_code, tracking=True, debug = False)
+        result = parser.parse(input_code, tracking=True, debug=False)
         # print(result)
-        with open("syntax_tree.txt", "wt", encoding='utf-8') as ast_file:
+        with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
             sys.stdout = ast_file
             print_tree(ast, nameattr=None, horizontal=False)
             sys.stdout = sys.__stdout__

@@ -257,16 +257,3 @@ class RangeClause(Node):
         self.expr_list = expr_list
 
 
-#     def print_level_order(self):
-
-#         queue = []
-
-#         queue.append(self)
-
-#         while queue:
-
-#             node = queue.pop(0)
-#             Node.print_node(node)
-
-#             if isinstance(node, Node):
-#                 queue.extend(node.children)
