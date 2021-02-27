@@ -7,7 +7,7 @@ from colorama import Fore, Style
 from ply import yacc
 
 import go_lexer
-from go_lexer import tokens, lex, find_column, symtab
+from go_lexer import new_tokens as tokens, lex, find_column, symtab
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
@@ -22,19 +22,6 @@ import syntree
 #     if is_numeric(p1) and is_numeric(p2):
 #         if p2.node[0] == p2.node[0]:
 #             return Node("numeric", node=(p1.node[0], op(p1.node[1], p2.node[1])))
-#         else:
-#             # TODO: do automatic type casting here
-#             raise Exception("aaaaaaaa different types")
-#     else:
-#         return None
-
-
-# def is_numeric(p):
-#     return isinstance(p, Node) and p.type == "numeric"
-
-
-# def is_literal(p):
-#     return isinstance(p, Node) and p.type == "literal"
 
 
 ast = syntree.Node("start", children=[])
@@ -147,14 +134,16 @@ def p_FunctionDecl(p):
     """
     if len(p) == 4:
         p[0] = syntree.Function(p[2], p[3], lineno=p.lineno(2))
-    elif len(p) == 5:
+    elif len(p) == 6:
         p[0] = syntree.Function(p[2], p[3], body=p[4], lineno=p.lineno(2))
+    symtab.leave_scope()
 
 
 def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
     p[0] = p[1]
     symtab.add_if_not_exists(p[1][1])
+    symtab.enter_scope()
 
 
 def p_Signature(p):
@@ -200,6 +189,15 @@ def p_ParameterDecl(p):
     | IdentifierList Type
     | IdentifierList ELLIPSIS Type
     """
+    if len(p) == 2:
+        p[0] = syntree.ParameterDecl(p[1])
+    elif len(p) == 3:
+        if isinstance(p[1], syntree.List):
+            p[0] = syntree.ParameterDecl(p[2], ident_list=p[1])
+        else:
+            p[0] = syntree.ParameterDecl(p[2], vararg=True)
+    elif len(p) == 4:
+        p[0] = syntree.ParameterDecl(p[3], vararg=p[2], ident_list=p[1])
 
 
 def p_FunctionBody(p):

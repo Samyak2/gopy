@@ -199,6 +199,16 @@ class VariableDecl(Node):
         self.is_const = const
 
 
+class ParameterDecl(Node):
+    def __init__(self, type_, vararg=False, ident_list=None):
+        super().__init__("PARAMETERS", children=[type_, ident_list], data=vararg)
+        self.type_ = type_
+        self.vararg = vararg
+        self.ident_list = ident_list
+        if ident_list is not None:
+            self.var_decl = VariableDecl(ident_list)
+
+
 class IfStmt(Node):
     def __init__(self, body, expr, statement=None, next_=None):
         super().__init__("IF", children=[statement, expr, body, next_])

@@ -133,6 +133,13 @@ types = {
 
 # updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
+new_tokens = list(tokens)
+to_be_removed = ['AMPERSAND', 'AMPER_AMPER', 'AMP_CARET_EQ', 'AMP_EQ', 'BAR', 'BAR_BAR', 'BAR_EQ', 'CARET', 'CARET_EQ', 'COLON',
+                'EXCLAMATION', 'KW_CASE', 'KW_CHAN', 'KW_DEFAULT', 'KW_DEFER', 'KW_FALLTHROUGH', 'KW_GO', 'KW_GOTO', 'KW_INTERFACE',
+                'KW_MAP', 'KW_SELECT', 'KW_SWITCH', 'LEFT_SHIFT', 'LEFT_SHIFT_EQ', 'RIGHT_SHIFT', 'RIGHT_SHIFT_EQ',]
+for i in to_be_removed:
+    new_tokens.remove(i)
+
 
 
 # tokens to ignore in ANY state
