@@ -135,7 +135,7 @@ def p_FunctionDecl(p):
     """
     if len(p) == 4:
         p[0] = syntree.Function(p[2], p[3], lineno=p.lineno(2))
-    elif len(p) == 6:
+    elif len(p) == 5:
         p[0] = syntree.Function(p[2], p[3], body=p[4], lineno=p.lineno(2))
     symtab.leave_scope()
 

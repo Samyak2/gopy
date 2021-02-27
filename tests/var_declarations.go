@@ -1,5 +1,7 @@
 package var_decs
 
+import "fmt"
+
 func hello() {
     var i int
     var U, V, W float64

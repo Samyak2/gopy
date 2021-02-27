@@ -101,8 +101,11 @@ class SymbolTable:
         sym.type_ = type_
         # TODO: infer type from value if not given
 
-        if type_ is not None and type_.data in self.storage:
-            sym.storage = self.storage[type_.data]
+        try:
+            if type_ is not None and type_.data in self.storage:
+                sym.storage = self.storage[type_.data]
+        except:
+            pass
 
         if value is not None:
             sym.value = value
