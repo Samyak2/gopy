@@ -296,7 +296,6 @@ def p_IfStmt(p):
     | KW_IF new_scope SimpleStmt ';' Expression Block leave_scope KW_ELSE IfStmt
     | KW_IF new_scope SimpleStmt ';' Expression Block leave_scope KW_ELSE Block
     """
-    print(len(p))
     if len(p) == 5:
         p[0] = syntree.IfStmt(body=p[4], expr=p[3])
         symtab.leave_scope()
