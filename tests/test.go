@@ -14,4 +14,5 @@ func main() {
   var g int
   k := 3
   fmt.Println("hello")
+  fmt.Println(i, f)
 }

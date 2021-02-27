@@ -14,6 +14,7 @@ class SymbolInfo:
     name: str
     scope_id: str
     lineno: Optional[int] = None
+    col_num: Optional[int] = None
     type_: Optional[str] = None
     storage: Optional[int] = None
     # node: Optional[Node] = None
@@ -27,28 +28,28 @@ class SymbolTable:
     related to them"""
 
     storage = {
-        #For INT
-        "int"        : 8,
-        "int8"       : 1,
-        "int16"      : 2,
-        "int32"      : 4,
-        "int64"      : 8,
-        #For Float
-        "float32"    : 4,
-        "float64"    : 8,
-        #For UINT
-        "uint"       : 8,
-        "uint8"      : 1,
-        "uint16"     : 2,
-        "uint32"     : 4,
-        "uint64"     : 8,
-        #For Complex
-        "complex64"  : 8,
-        "complex128" : 16,
-        #For Misc
-        "byte"       : 1,
-        "bool"       : 1,
-        "rune"       : 4,
+        # For INT
+        "int": 8,
+        "int8": 1,
+        "int16": 2,
+        "int32": 4,
+        "int64": 8,
+        # For Float
+        "float32": 4,
+        "float64": 8,
+        # For UINT
+        "uint": 8,
+        "uint8": 1,
+        "uint16": 2,
+        "uint32": 4,
+        "uint64": 8,
+        # For Complex
+        "complex64": 8,
+        "complex128": 16,
+        # For Misc
+        "byte": 1,
+        "bool": 1,
+        "rune": 4,
     }
 
     def __init__(self):
@@ -92,17 +93,16 @@ class SymbolTable:
             if symbol in symtab_:
                 return symtab_[symbol]
 
-    def update_info(self, symbol: str, lineno, type_=None, const=None, value=None):
+    def update_info(
+        self, symbol: str, lineno, col_num=None, type_=None, const=None, value=None
+    ):
         sym = self.get_symbol(symbol)
         sym.lineno = lineno
         sym.type_ = type_
         # TODO: infer type from value if not given
 
-        try:
-            if(type_ and type_.data in self.storage):
-                sym.storage = self.storage[type_.data]
-        except:
-            pass
+        if type_ is not None and type_.data in self.storage:
+            sym.storage = self.storage[type_.data]
 
         if value is not None:
             sym.value = value
@@ -127,7 +127,13 @@ class SymbolTable:
         )
 
     def declare_new_variable(
-        self, symbol: str, lineno: int, type_=None, const=False, value=None
+        self,
+        symbol: str,
+        lineno: int,
+        col_num: int,
+        type_=None,
+        const=False,
+        value=None,
     ):
         """Helper function to add symbol to the Symbol Table
         with declaration set to given line number.
@@ -140,8 +146,7 @@ class SymbolTable:
             print(f"Re-declaration of symbol '{symbol}' at line {lineno}")
             print_line(lineno)
             line: str = utils.lines[lineno - 1]
-            # TODO: get correct position of token rather than searching
-            pos = line.find(symbol)
+            pos = col_num - 1
             width = len(symbol)
             print_marker(pos, width)
             other_sym = self.get_symbol(symbol)
@@ -151,7 +156,9 @@ class SymbolTable:
             pos = line.find(symbol)
             print_marker(pos, width)
         else:
-            self.update_info(symbol, lineno, type_=type_, const=const, value=value)
+            self.update_info(
+                symbol, lineno, col_num=col_num, type_=type_, const=const, value=value
+            )
 
     def __str__(self):
         return str(
