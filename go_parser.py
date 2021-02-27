@@ -740,6 +740,7 @@ def p_BasicType(p):
     | UINT64
     | COMPLEX64
     | COMPLEX128
+    | STRING
     | BYTE
     | BOOL
     | RUNE
