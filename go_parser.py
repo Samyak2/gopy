@@ -378,6 +378,7 @@ def p_IncDecStmt(p):
     """IncDecStmt : Expression INCREMENT
     | Expression DECREMENT
     """
+    p[0] = syntree.Node("INCDEC", children=[p[1]], data=p[2])
 
 
 def p_Assignment(p):
