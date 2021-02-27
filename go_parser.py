@@ -140,6 +140,13 @@ def p_FunctionDecl(p):
     symtab.leave_scope()
 
 
+def p_FunctionDecl_error(p):
+    """FunctionDecl : KW_FUNC FunctionName error
+    | KW_FUNC FunctionName error FunctionBody
+    """
+    print_error("Error in function declaration")
+
+
 def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
     p[0] = p[1]
