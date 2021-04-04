@@ -6,3 +6,4 @@ parser.out
 .vim/
 syntax_tree.txt
 symbol_table.txt
+ast.dot

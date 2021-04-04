@@ -79,7 +79,12 @@ class Literal(Node):
     """Node to store literals"""
 
     def __init__(self, type_, value):
-        super().__init__(f"{type_} literal", children=[], data=(type_, value))
+        children = []
+        if isinstance(type_, Node):
+            children.append(type_)
+
+        super().__init__("LITERAL", children=children, data=(type_, value))
+
         self.type_ = type_
         self.value = value
 
@@ -181,9 +186,7 @@ class Identifier(Node):
         symtab.add_if_not_exists(self.ident_name)
 
     def data_str(self):
-        return (
-            f"name: {self.ident_name}, lineno: {self.lineno}"
-        )
+        return f"name: {self.ident_name}, lineno: {self.lineno}"
 
 
 class QualifiedIdent(Node):
@@ -196,56 +199,79 @@ class QualifiedIdent(Node):
         return f"package: {self.data[0][1]}, name: {self.data[1][1]}"
 
 
-class VariableDecl(Node):
-    """Node to store variable and constant declarations"""
+class VarDecl(Node):
+    """Node to store one variable or const declaration"""
 
-    def __init__(
-        self,
-        identifier_list: List,
-        type_=None,
-        expression_list: Optional[List] = None,
-        const: bool = False,
-    ):
+    def __init__(self, ident: Identifier, type_=None, value=None, const: bool = False):
+        self.ident = ident
+        self.type_ = type_
+        self.value = value
+        self.const = const
+
+        children = []
+
+        if isinstance(type_, Node):
+            children.append(type_)
+
+        if isinstance(value, Node):
+            children.append(value)
+
         super().__init__(
-            "DECL",
-            children=[identifier_list, expression_list],
-            data=(type_, const),
+            name="DECL", children=children, data=(ident, type_, value, const)
         )
 
-        if expression_list is None:
-            # TODO: implement default values
-            ident: Identifier
-            for ident in identifier_list:
-                symtab.declare_new_variable(
-                    ident.ident_name,
-                    ident.lineno,
-                    ident.col_num,
-                    type_=type_,
-                    const=const,
-                )
-        elif len(identifier_list) == len(expression_list):
-            ident: Identifier
-            expr: Node
-            for ident, expr in zip(identifier_list, expression_list):
-                # TODO: check value is appropriate for type
-                symtab.declare_new_variable(
-                    ident.ident_name,
-                    ident.lineno,
-                    ident.col_num,
-                    type_=type_,
-                    value=expr,
-                    const=const,
-                )
-        else:
-            raise NotImplementedError("Declaration with unpacking not implemented yet")
-
-        self.expression_list = expression_list
-        self.identifier_list = identifier_list
-        self.type_ = type_
-        self.is_const = const
-
     def data_str(self):
-        return f"type: {self.type_}, is_const: {self.is_const}"
+        s = f"name: {self.ident.ident_name}"
+
+        if not isinstance(self.type_, Node) and self.type_ is not None:
+            s += f", type: {self.type_}"
+
+        if not isinstance(self.value, Node) and self.value is not None:
+            s += f", value: {self.value}"
+
+        s += f", is_const: {self.const}"
+
+        return s
+
+
+def make_variable_decls(
+    identifier_list: List,
+    type_=None,
+    expression_list: Optional[List] = None,
+    const: bool = False,
+):
+    var_list = List([])
+
+    if expression_list is None:
+        # TODO: implement default values
+        ident: Identifier
+        for ident in identifier_list:
+            symtab.declare_new_variable(
+                ident.ident_name,
+                ident.lineno,
+                ident.col_num,
+                type_=type_,
+                const=const,
+            )
+            var_list.append(VarDecl(ident, type_, const=const))
+    elif len(identifier_list) == len(expression_list):
+        ident: Identifier
+        expr: Node
+        for ident, expr in zip(identifier_list, expression_list):
+            # TODO: check value is appropriate for type
+            symtab.declare_new_variable(
+                ident.ident_name,
+                ident.lineno,
+                ident.col_num,
+                type_=type_,
+                value=expr,
+                const=const,
+            )
+            var_list.append(VarDecl(ident, type_, expr, const))
+    else:
+        raise NotImplementedError("Declaration with unpacking not implemented yet")
+
+    return var_list
 
 
 class ParameterDecl(Node):
@@ -255,7 +281,7 @@ class ParameterDecl(Node):
         self.vararg = vararg
         self.ident_list = ident_list
         if ident_list is not None:
-            self.var_decl = VariableDecl(ident_list)
+            self.var_decl = make_variable_decls(ident_list)
 
     def data_str(self):
         return f"is_vararg: {self.vararg}"
@@ -288,7 +314,7 @@ class ForClause(Node):
 class RangeClause(Node):
     def __init__(self, expr, ident_list=None, expr_list=None):
         if ident_list is not None:
-            self.var_decl = VariableDecl(ident_list, expr)
+            self.var_decl = make_variable_decls(ident_list, expr)
         else:
             self.var_decl = None
         super().__init__("RANGE", children=[expr, ident_list, expr_list, self.var_decl])
@@ -320,7 +346,7 @@ class StructField(Node):
         self.type_ = type_
         self.tag = tag
 
-        super().__init__("StructField", children=[], data=(name, type_, tag))
+        super().__init__("StructField", children=[type_], data=(name, type_, tag))
 
     def data_str(self):
         return f"name: {self.f_name}, type: {self.type_}, tag: {self.tag}"
@@ -337,3 +363,16 @@ class StructFieldDecl:
 
         self.type_ = type_
         self.tag = tag
+
+
+def _optimize(node: Node):
+    for i, child in enumerate(node.children):
+        if isinstance(child, List) and len(child) == 1:
+            node.children[i] = child.children[0]
+
+    for child in node.children:
+        _optimize(child)
+
+
+def optimize_AST(ast: Node):
+    _optimize(ast)

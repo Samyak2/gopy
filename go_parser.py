@@ -414,7 +414,7 @@ def p_ShortVarDecl(p):
     for ident in ident_list:
         ident.add_symtab()
     expr_list = p[3]
-    p[0] = syntree.VariableDecl(ident_list, expression_list=expr_list)
+    p[0] = syntree.make_variable_decls(ident_list, expression_list=expr_list)
 
 
 def p_Declaration(p):
@@ -456,11 +456,11 @@ def p_VarSpec(p):
         ident.add_symtab()
 
     if len(p) == 3:
-        p[0] = syntree.VariableDecl(p[1], p[2])
+        p[0] = syntree.make_variable_decls(p[1], p[2])
     elif len(p) == 4:
-        p[0] = syntree.VariableDecl(p[1], expression_list=p[3])
+        p[0] = syntree.make_variable_decls(p[1], expression_list=p[3])
     elif len(p) == 5:
-        p[0] = syntree.VariableDecl(p[1], p[2], p[4])
+        p[0] = syntree.make_variable_decls(p[1], p[2], p[4])
 
 
 def p_ConstDecl(p):
@@ -494,11 +494,11 @@ def p_ConstSpec(p):
         ident.add_symtab()
 
     if len(p) == 2:
-        p[0] = syntree.VariableDecl(p[1], const=True)
+        p[0] = syntree.make_variable_decls(p[1], const=True)
     elif len(p) == 4:
-        p[0] = syntree.VariableDecl(p[1], expression_list=p[3], const=True)
+        p[0] = syntree.make_variable_decls(p[1], expression_list=p[3], const=True)
     elif len(p) == 5:
-        p[0] = syntree.VariableDecl(p[1], p[2], p[4], const=True)
+        p[0] = syntree.make_variable_decls(p[1], p[2], p[4], const=True)
 
 
 def p_TypeDecl(p):
@@ -967,11 +967,14 @@ if __name__ == "__main__":
         utils.lines = lines
         result = parser.parse(input_code, tracking=True, debug=False)
         # print(result)
+
+        syntree.optimize_AST(ast)
         draw_AST(ast)
         with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
             sys.stdout = ast_file
             print_tree(ast, nameattr=None, horizontal=True)
             sys.stdout = sys.__stdout__
+
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)
