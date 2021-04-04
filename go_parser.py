@@ -201,10 +201,14 @@ def p_ParameterDecl(p):
         p[0] = syntree.ParameterDecl(p[1])
     elif len(p) == 3:
         if isinstance(p[1], syntree.List):
+            for ident in p[1]:
+                ident.add_symtab()
             p[0] = syntree.ParameterDecl(p[2], ident_list=p[1])
         else:
             p[0] = syntree.ParameterDecl(p[2], vararg=True)
     elif len(p) == 4:
+        for ident in p[1]:
+            ident.add_symtab()
         p[0] = syntree.ParameterDecl(p[3], vararg=p[2], ident_list=p[1])
 
 
@@ -353,6 +357,8 @@ def p_RangeClause(p):
     if len(p) == 3:
         p[0] = syntree.RangeClause(p[2])
     elif len(p) == 5:
+        for ident in p[1]:
+            ident.add_symtab()
         p[0] = syntree.RangeClause(p[4], ident_list=p[1])
     elif len(p) == 6:
         p[0] = syntree.RangeClause(p[4], expr_list=p[1])
@@ -404,6 +410,8 @@ def p_assign_op(p):
 def p_ShortVarDecl(p):
     """ShortVarDecl : IdentifierList WALRUS ExpressionList"""
     ident_list = p[1]
+    for ident in ident_list:
+        ident.add_symtab()
     expr_list = p[3]
     p[0] = syntree.VariableDecl(ident_list, expression_list=expr_list)
 
@@ -443,6 +451,9 @@ def p_VarSpec(p):
     | IdentifierList Type '=' ExpressionList
     | IdentifierList '=' ExpressionList
     """
+    for ident in p[1]:
+        ident.add_symtab()
+
     if len(p) == 3:
         p[0] = syntree.VariableDecl(p[1], p[2])
     elif len(p) == 4:
@@ -478,6 +489,9 @@ def p_ConstSpec(p):
     | IdentifierList '=' ExpressionList
     | IdentifierList Type '=' ExpressionList
     """
+    for ident in p[1]:
+        ident.add_symtab()
+
     if len(p) == 2:
         p[0] = syntree.VariableDecl(p[1], const=True)
     elif len(p) == 4:
@@ -652,9 +666,66 @@ def p_QualifiedIdent(p):
 
 def p_Literal(p):
     """Literal : BasicLit
-    | FunctionLit"""
-    # TODO : Add CompositeLit and FunctionLit
+    | FunctionLit
+    | CompositeLit"""
+    # TODO : Add FunctionLit
     p[0] = p[1]
+
+
+def p_CompositeLit(p):
+    """CompositeLit : LiteralType LiteralValue
+    """
+
+
+def p_LiteralType(p):
+    """LiteralType : StructType
+    | ArrayType
+    | '[' '...' ']' ElementType
+    | TypeName
+    """
+    # TODO: add SliceType and MapType here
+
+
+def p_LiteralValue(p):
+    """LiteralValue : '{' '}'
+    | '{' ElementList '}'
+    | '{' ElementList ',' '}'
+    """
+
+
+def p_ElementList(p):
+    """ElementList : KeyedElement KeyedElementList
+    """
+
+
+def p_KeyedElementList(p):
+    """KeyedElementList : empty
+    | KeyedElementList ',' KeyedElement
+    """
+
+
+def p_KeyedElement(p):
+    """KeyedElement : Element
+    | Key ':' Element
+    """
+
+
+def p_Key(p):
+    """Key : FieldName
+    | Expression
+    | LiteralValue
+    """
+
+
+def p_FieldName(p):
+    """FieldName : Identifier
+    """
+
+
+def p_Element(p):
+    """Element : Expression
+    | LiteralValue
+    """
 
 
 def p_BasicLit(p):
@@ -777,22 +848,39 @@ def p_ElementType(p):
 
 def p_StructType(p):
     """StructType : KW_STRUCT '{' FieldDeclList '}' """
+    p[0] = syntree.Struct(p[3])
 
 
 def p_FieldDeclList(p):
     """FieldDeclList : empty
-    | FieldDecl ';'
+    | FieldDeclList FieldDecl ';'
     """
+    if len(p) == 2:
+        p[0] = syntree.List([])
+    elif len(p) == 4:
+        p[1].append(p[2])
+        p[0] = p[1]
+    else:
+        raise Exception("Invalid grammar?")
 
 
 def p_FieldDecl(p):
     """FieldDecl : IdentifierList Type Tag
     | EmbeddedField Tag
     """
+    if len(p) == 4:
+        p[0] = syntree.StructFieldDecl(p[1], p[2], p[3])
+    else:
+        p[0] = syntree.StructFieldDecl(p[1], tag=p[2])
 
 
 def p_EmbeddedField(p):
-    """EmbeddedField : '*' TypeName"""
+    """EmbeddedField : '*' TypeName
+    | TypeName"""
+    if p[1] == "*":
+        p[0] = (p[1], p[2])
+    else:
+        p[0] = (None, p[1])
 
 
 def p_Tag(p):
@@ -848,7 +936,7 @@ if __name__ == "__main__":
         # print(result)
         with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
             sys.stdout = ast_file
-            print_tree(ast, nameattr=None, horizontal=False)
+            print_tree(ast, nameattr=None, horizontal=True)
             sys.stdout = sys.__stdout__
         print("Finished Parsing!")
         print("Symbol Table: ")
