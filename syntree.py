@@ -365,14 +365,35 @@ class StructFieldDecl:
         self.tag = tag
 
 
-def _optimize(node: Node):
-    for i, child in enumerate(node.children):
-        if isinstance(child, List) and len(child) == 1:
-            node.children[i] = child.children[0]
+def _optimize(node: Node) -> Node:
+    num_list_childs = 0
 
-    for child in node.children:
-        _optimize(child)
+    for i, child in enumerate(node.children):
+        if isinstance(child, List):
+            num_list_childs += 1
+
+            # if List has only one child, remove the list
+            if len(child) == 1:
+                node.children[i] = child.children[0]
+                if not isinstance(node.children[i], List):
+                    num_list_childs -= 1
+
+    # if List has all List children, flatten out the nesting
+    if isinstance(node, List) and num_list_childs == len(node.children):
+        new_children = List([])
+
+        for child in node.children:
+            child: List
+            for child_child in child.children:
+                new_children.append(child_child)
+
+        node = new_children
+
+    for i, child in enumerate(node.children):
+        node.children[i] = _optimize(child)
+
+    return node
 
 
 def optimize_AST(ast: Node):
-    _optimize(ast)
+    return _optimize(ast)
