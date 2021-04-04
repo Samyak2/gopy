@@ -154,6 +154,20 @@ class Function(Node):
         return f"name: {self.fn_name}, lineno: {self.lineno}"
 
 
+class Keyword(Node):
+    """Node to store a single keyword - like return, break, continue, etc."""
+
+    def __init__(self, kw, ext=None, children=None):
+        self.kw = kw
+        self.ext = ext if ext is not None else ()
+        children = [] if children is None else children
+
+        super().__init__(kw, children=children, data=(kw, *self.ext))
+
+    def data_str(self):
+        return ""
+
+
 class Type(Node):
     """Parent class for all types"""
 

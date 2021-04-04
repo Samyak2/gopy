@@ -265,7 +265,7 @@ def p_ReturnStmt(p):
     | KW_RETURN ExpressionList
     """
     if len(p) == 3:
-        p[0] = syntree.Node("RETURN", children=[p[2]])
+        p[0] = syntree.Keyword("RETURN", children=[p[2]])
 
 
 def p_BreakStmt(p):
@@ -273,9 +273,9 @@ def p_BreakStmt(p):
     | KW_BREAK Label
     """
     if len(p) == 2:
-        p[0] = syntree.Node(name="BREAK", children=[])
+        p[0] = syntree.Keyword("BREAK")
     elif len(p) == 3:
-        p[0] = syntree.Node(name="BREAK", children=[], data=p[2])
+        p[0] = syntree.Keyword("BREAK", ext=p[2])
 
 
 def p_Label(p):
@@ -288,9 +288,9 @@ def p_ContinueStmt(p):
     | KW_CONTINUE Label
     """
     if len(p) == 2:
-        p[0] = syntree.Node(name="CONTINUE", children=[])
+        p[0] = syntree.Keyword("CONTINUE")
     elif len(p) == 3:
-        p[0] = syntree.Node(name="CONTINUE", children=[], data=p[2])
+        p[0] = syntree.Keyword("CONTINUE", ext=p[2])
 
 
 def p_IfStmt(p):
@@ -388,7 +388,7 @@ def p_IncDecStmt(p):
     """IncDecStmt : Expression INCREMENT
     | Expression DECREMENT
     """
-    p[0] = syntree.Node("INCDEC", children=[p[1]], data=p[2])
+    p[0] = syntree.UnaryOp(p[2], p[1])
 
 
 def p_Assignment(p):

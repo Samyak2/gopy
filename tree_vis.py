@@ -34,6 +34,32 @@ def _recur_draw(graph: pydot.Graph, cache: defaultdict, node: Node, rank: int = 
             fillcolor = "gray"
             color = "black"
 
+        elif isinstance(child, syntree.IfStmt) or isinstance(child, syntree.ForStmt):
+            fillcolor = "coral"
+            color = "blue"
+
+        elif isinstance(child, syntree.Identifier) or isinstance(
+            child, syntree.QualifiedIdent
+        ):
+            fillcolor = "lightpink"
+            color = "red"
+
+        elif isinstance(child, syntree.Function):
+            fillcolor = "palegreen"
+            color = "blue"
+
+        elif isinstance(child, syntree.Literal):
+            fillcolor = "thistle"
+            color = "purple"
+
+        elif isinstance(child, syntree.BinOp) or isinstance(child, syntree.UnaryOp):
+            fillcolor = "lightyellow"
+            color = "orange"
+
+        elif isinstance(child, syntree.Keyword):
+            fillcolor = "lightblue"
+            color = "navy"
+
         child_node = pydot.Node(
             child_name,
             label=child_label,
