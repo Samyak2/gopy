@@ -18,9 +18,7 @@ def _recur_draw(graph: pydot.Graph, cache: defaultdict, node: Node, rank: int = 
 
     node_name = get_node_name(node, cache)
     # graph.add_node(pydot.Node(node_name, label=node_name, color="blue"))
-    # print("Added node:", node_name)
 
-    print("has children:", node.children)
     children: List[pydot.Node] = []
 
     for child in node.children:
@@ -45,10 +43,8 @@ def _recur_draw(graph: pydot.Graph, cache: defaultdict, node: Node, rank: int = 
         )
         graph.add_node(child_node)
         children.append(child_node)
-        print("Added node:", child_name)
 
         graph.add_edge(pydot.Edge(node_name, child_name, weight=1.5))
-        print("Added edge:", node_name, child_name)
 
         _recur_draw(graph, cache, child, rank + 1)
 

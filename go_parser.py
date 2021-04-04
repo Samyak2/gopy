@@ -678,7 +678,7 @@ def p_Literal(p):
 def p_CompositeLit(p):
     """CompositeLit : LiteralType LiteralValue
     """
-    p[0] = syntree.Literal(type_=p[1], data=p[2])
+    p[0] = syntree.Literal(type_=p[1], value=p[2])
 
 
 def p_LiteralType(p):
