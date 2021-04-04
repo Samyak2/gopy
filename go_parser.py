@@ -11,6 +11,7 @@ from go_lexer import tokens, lex, find_column, symtab
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
+from tree_vis import draw_AST
 
 
 # def eval_numeric_op(p1, p2=None, op=None):
@@ -590,7 +591,8 @@ def p_UnaryExpr(p):
     else:
         # TODO : handle more stuff in PrimaryExpr
         # also change the PrimaryExpr class in syntree when doing so
-        p[0] = syntree.UnaryOp(None, p[1])
+        # p[0] = syntree.UnaryOp(None, p[1])
+        p[0] = p[1]
 
 
 def p_UnaryOp(p):
@@ -608,7 +610,8 @@ def p_PrimaryExpr(p):
     # TODO : This is too less! Many more to add
     if len(p) == 2:
         if isinstance(p[1], syntree.Node):
-            p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
+            # p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
+            p[0] = p[1]
         else:
             p[0] = syntree.PrimaryExpr(operand=p[1])
     elif len(p) == 3:
@@ -675,15 +678,20 @@ def p_Literal(p):
 def p_CompositeLit(p):
     """CompositeLit : LiteralType LiteralValue
     """
+    p[0] = syntree.Literal(type_=p[1], data=p[2])
 
 
 def p_LiteralType(p):
     """LiteralType : StructType
     | ArrayType
-    | '[' '...' ']' ElementType
+    | '[' '.' '.' '.' ']' ElementType
     | TypeName
     """
     # TODO: add SliceType and MapType here
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        raise NotImplementedError("Array [...] literal not supported yet")
 
 
 def p_LiteralValue(p):
@@ -691,23 +699,45 @@ def p_LiteralValue(p):
     | '{' ElementList '}'
     | '{' ElementList ',' '}'
     """
+    if len(p) == 3:
+        p[0] = None
+    elif len(p) == 4:
+        p[0] = p[2]
+    elif len(p) == 5:
+        p[0] = p[2]
+    else:
+        raise Exception("Bad grammar or rules!")
 
 
 def p_ElementList(p):
     """ElementList : KeyedElement KeyedElementList
     """
+    p[0] = syntree.List([p[1], *p[2]])
 
 
 def p_KeyedElementList(p):
     """KeyedElementList : empty
     | KeyedElementList ',' KeyedElement
     """
+    if len(p) == 2:
+        p[0] = syntree.List([])
+    elif len(p) == 4:
+        p[1].append(p[3])
+        p[0] = p[1]
+    else:
+        raise Exception("Bad grammar or rules!")
 
 
 def p_KeyedElement(p):
     """KeyedElement : Element
     | Key ':' Element
     """
+    if len(p) == 2:
+        p[0] = (None, p[1])
+    elif len(p) == 4:
+        p[0] = (p[1], p[3])
+    else:
+        raise Exception("Bad grammar or rules!")
 
 
 def p_Key(p):
@@ -715,17 +745,20 @@ def p_Key(p):
     | Expression
     | LiteralValue
     """
+    p[0] = p[1]
 
 
 def p_FieldName(p):
-    """FieldName : Identifier
+    """FieldName : IDENTIFIER
     """
+    p[0] = p[1]
 
 
 def p_Element(p):
     """Element : Expression
     | LiteralValue
     """
+    p[0] = p[1]
 
 
 def p_BasicLit(p):
@@ -920,7 +953,7 @@ def p_error(p: lex.LexToken):
         print("Unexpected end of file")
 
 
-parser = yacc.yacc(debug=True, errorlog=yacc.NullLogger())
+parser = yacc.yacc(debug=True)
 
 
 if __name__ == "__main__":
@@ -934,6 +967,7 @@ if __name__ == "__main__":
         utils.lines = lines
         result = parser.parse(input_code, tracking=True, debug=False)
         # print(result)
+        draw_AST(ast)
         with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
             sys.stdout = ast_file
             print_tree(ast, nameattr=None, horizontal=True)
