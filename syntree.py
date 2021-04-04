@@ -23,6 +23,9 @@ class Node:
         else:
             return f"<{self.name}>"
 
+    def data_str(self) -> str:
+        return "" if self.data is None else str(self.data)
+
     def add_child(self, child):
         if child is not None:
             self.children.append(child)
@@ -32,7 +35,7 @@ class BinOp(Node):
     """Node for binary operations"""
 
     def __init__(self, operator, left=None, right=None):
-        super().__init__(f"Binary {operator}", children=[left, right], data=operator)
+        super().__init__("Binary", children=[left, right], data=operator)
         self.operator = self.data
         self.left = left
         self.right = right
@@ -48,7 +51,7 @@ class UnaryOp(Node):
     def __init__(self, operator, operand):
         if isinstance(operand, UnaryOp) and operand.operator is None:
             operand = operand.operand
-        super().__init__(f"Unary {operator}", children=[operand], data=operator)
+        super().__init__("Unary", children=[operand], data=operator)
         self.operand = operand
         self.operator = operator
 
@@ -64,21 +67,35 @@ class PrimaryExpr(Node):
             "PrimaryExpr", children=[] if children is None else children, data=operand
         )
 
+    def data_str(self):
+        # self.data can be an IDENTIFIER sometimes, so just show the name
+        if isinstance(self.data, tuple) and self.data[0] == "identifier":
+            return f"identifier: {self.data[1]}"
+        else:
+            return super().data_str()
+
 
 class Literal(Node):
     """Node to store literals"""
 
-    def __init__(self, type_, data):
-        super().__init__(f"{type_} literal", children=[], data=(type_, data))
+    def __init__(self, type_, value):
+        super().__init__(f"{type_} literal", children=[], data=(type_, value))
         self.type_ = type_
-        self.data = data
+        self.value = value
+
+    def data_str(self):
+        return f"type: {self.type_}, value: {self.value}"
 
 
 class Import(Node):
     """Node to store imports"""
 
     def __init__(self, pkg_name, import_path):
+        # import_path is a STRING_LIT, so it has ("string", value)
         super().__init__("import", children=[], data=(pkg_name, import_path))
+
+    def data_str(self):
+        return f"name: {self.data[0]}, path: {self.data[1][1]}"
 
 
 class List(Node):
@@ -128,6 +145,9 @@ class Function(Node):
         self.signature = signature
         self.body = body
 
+    def data_str(self):
+        return f"name: {self.fn_name}, lineno: {self.lineno}"
+
 
 class Type(Node):
     """Parent class for all types"""
@@ -141,6 +161,9 @@ class Array(Type):
         self.eltype = eltype
         self.length = length
 
+    def data_str(self):
+        return f"eltype: {self.eltype}"
+
 
 class Identifier(Node):
     """Node for identifiers"""
@@ -149,10 +172,18 @@ class Identifier(Node):
         super().__init__(
             "IDENTIFIER", children=[], data=(ident_tuple[1], lineno, ident_tuple[2])
         )
-        symtab.add_if_not_exists(ident_tuple[1])
+        # symtab.add_if_not_exists(ident_tuple[1])
         self.ident_name = ident_tuple[1]
         self.lineno = lineno
         self.col_num = ident_tuple[2]
+
+    def add_symtab(self):
+        symtab.add_if_not_exists(self.ident_name)
+
+    def data_str(self):
+        return (
+            f"name: {self.ident_name}, lineno: {self.lineno}"
+        )
 
 
 class QualifiedIdent(Node):
@@ -160,6 +191,9 @@ class QualifiedIdent(Node):
 
     def __init__(self, package_name, identifier):
         super().__init__("IDENTIFIER", children=[], data=(package_name, identifier))
+
+    def data_str(self):
+        return f"package: {self.data[0][1]}, name: {self.data[1][1]}"
 
 
 class VariableDecl(Node):
@@ -210,6 +244,9 @@ class VariableDecl(Node):
         self.type_ = type_
         self.is_const = const
 
+    def data_str(self):
+        return f"type: {self.type_}, is_const: {self.is_const}"
+
 
 class ParameterDecl(Node):
     def __init__(self, type_, vararg=False, ident_list=None):
@@ -219,6 +256,9 @@ class ParameterDecl(Node):
         self.ident_list = ident_list
         if ident_list is not None:
             self.var_decl = VariableDecl(ident_list)
+
+    def data_str(self):
+        return f"is_vararg: {self.vararg}"
 
 
 class IfStmt(Node):
@@ -257,3 +297,43 @@ class RangeClause(Node):
         self.expr_list = expr_list
 
 
+class Struct(Node):
+    def __init__(self, field_decl_list):
+        self.fields = []
+
+        for i in field_decl_list:
+            i: StructFieldDecl
+            if i.ident_list is not None:
+                for ident in i.ident_list:
+                    ident: Identifier
+                    self.fields.append(StructField(ident.ident_name, i.type_, i.tag))
+            elif i.embed_field is not None:
+                # TODO: handle pointer type here
+                self.fields.append(StructField(i.embed_field[1], None, i.tag))
+
+        super().__init__("Struct", children=self.fields)
+
+
+class StructField(Node):
+    def __init__(self, name, type_, tag):
+        self.f_name = name
+        self.type_ = type_
+        self.tag = tag
+
+        super().__init__("StructField", children=[], data=(name, type_, tag))
+
+    def data_str(self):
+        return f"name: {self.f_name}, type: {self.type_}, tag: {self.tag}"
+
+
+class StructFieldDecl:
+    def __init__(self, ident_list_or_embed_field, type_=None, tag=None):
+        if isinstance(ident_list_or_embed_field, List):
+            self.ident_list = ident_list_or_embed_field
+            self.embed_field = None
+        else:
+            self.embed_field = ident_list_or_embed_field
+            self.ident_list = None
+
+        self.type_ = type_
+        self.tag = tag
