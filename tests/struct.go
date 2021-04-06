@@ -1,14 +1,19 @@
 package structs
 
-type struct1 struct {}
+type struct1 struct{}
 
 type struct2 struct {
-  x, y int
-	u float32
-	_ float32  // padding
+	x, y int
+	u    float32
+	_    float32 // padding
 	// A *[]int
 }
 
 func main() {
-	var hmm struct2 = struct2{1, 2, 3.0, 4.0}
+	hmm := struct {
+		x, y int
+		u    float32
+		_    float32 // padding
+		// A *[]int
+	}{1, 2, 3.0, 4.0}
 }
