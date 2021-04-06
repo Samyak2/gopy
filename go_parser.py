@@ -11,6 +11,7 @@ from go_lexer import tokens, lex, find_column, symtab
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
+import Three_Add_Code
 from tree_vis import draw_AST
 
 
@@ -970,6 +971,7 @@ if __name__ == "__main__":
 
         ast = syntree.optimize_AST(ast)
         draw_AST(ast)
+        #  Three_Add_Code(ast) # TODO:- Implement the three address code
         with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
             sys.stdout = ast_file
             print_tree(ast, nameattr=None, horizontal=True)
