@@ -7,3 +7,4 @@ parser.out
 syntax_tree.txt
 symbol_table.txt
 ast.dot
+ast.png

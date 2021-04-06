@@ -991,6 +991,6 @@ if __name__ == "__main__":
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
 
-        print(f"Intermediate code:")
+        print("Intermediate code:")
         # ic.print_three_address_code()
         print(ic)

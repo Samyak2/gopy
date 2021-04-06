@@ -287,7 +287,6 @@ class SymbolTable:
                     "Line No.",
                     "Type",
                     "Const",
-                    "Storage",
                     "Value",
                     "Uses",
                 ],

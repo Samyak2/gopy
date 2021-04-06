@@ -128,5 +128,6 @@ def draw_AST(ast: Node):
     _recur_draw(graph, cache, ast)
 
     graph.write("ast.dot")
+    graph.write("ast.png", format="png")
 
     return graph
