@@ -123,7 +123,7 @@ def draw_AST(ast: Node):
     cache = defaultdict(lambda: 0)
 
     node_name = get_node_name(ast, cache)
-    graph.add_node(pydot.Node(node_name, label=node_name))
+    graph.add_node(pydot.Node(node_name, label="START", fillcolor="white"))
 
     _recur_draw(graph, cache, ast)
 
