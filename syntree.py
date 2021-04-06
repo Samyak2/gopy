@@ -337,7 +337,7 @@ class RangeClause(Node):
         self.expr_list = expr_list
 
 
-class Struct(Node):
+class Struct(Type):
     def __init__(self, field_decl_list):
         self.fields = []
 
@@ -377,6 +377,16 @@ class StructFieldDecl:
 
         self.type_ = type_
         self.tag = tag
+
+
+class TypeDef(Node):
+    def __init__(self, typename, type_: Type, type_table, lineno):
+        self.typename = typename
+        self.type_ = type_
+
+        super().__init__(name="TypeDef", children=[type_], data=typename)
+
+        type_table.add_type(typename[1], lineno, typename[2], None)
 
 
 def _optimize(node: Node) -> Node:

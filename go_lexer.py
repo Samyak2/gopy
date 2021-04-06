@@ -5,7 +5,7 @@ from colorama import Fore, Style
 
 from ply import lex
 
-from symbol_table import SymbolTable
+from symbol_table import SymbolTable, TypeTable
 import utils
 from utils import print_line, print_marker, print_lexer_error
 
@@ -379,10 +379,10 @@ def t_IDENTIFIER(t):
     r"([a-zA-Z]([a-zA-Z0-9_])*)|_"
 
     # There is no limit on length of identifier in go
-    if len(t.value) > 31:
-        # TODO print error in a better way
-        print_lexer_error("Identifiers must be shorter than 32 characters")
-        print_line(t.lexer.lineno)
+    # if len(t.value) > 31:
+    #     # TODO print error in a better way
+    #     print_lexer_error("Identifiers must be shorter than 32 characters")
+    #     print_line(t.lexer.lineno)
 
     if t.value in keywords:
         t.type = keywords[t.value]
@@ -420,7 +420,8 @@ lexer.input(input_code)
 lines = input_code.split("\n")
 utils.lines = lines
 
-symtab = SymbolTable()
+type_table = TypeTable()
+symtab = SymbolTable(type_table)
 
 
 if __name__ == "__main__":

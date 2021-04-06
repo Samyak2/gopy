@@ -8,26 +8,35 @@ from utils import print_marker, print_line, print_error
 
 
 @dataclass
-class SymbolInfo:
-    """Stores information related to a symbol"""
+class TypeInfo:
+    """Stores information for a particular type"""
 
     name: str
-    scope_id: str
     lineno: Optional[int] = None
     col_num: Optional[int] = None
-    type_: Optional[str] = None
     storage: Optional[int] = None
-    # node: Optional[Node] = None
-    const: bool = False
-    value: Any = None
-    uses: list = field(default_factory=list)
+
+    def __str__(self):
+        s = f"Type({self.name}"
+
+        if self.lineno is not None:
+            s += f", line={self.lineno}"
+
+        if self.col_num is not None:
+            s += f", col={self.col_num}"
+
+        if self.storage is not None:
+            s += f", storage={self.storage}"
+
+        s += ")"
+
+        return s
 
 
-class SymbolTable:
-    """Stores all identifiers, literals and information
-    related to them"""
+class TypeTable:
+    """Store information of all types - predefined and user defined"""
 
-    storage = {
+    _predefined = {
         # For INT
         "int": 8,
         "int8": 1,
@@ -53,12 +62,74 @@ class SymbolTable:
     }
 
     def __init__(self):
+        self.type_map: Dict[str, TypeInfo] = {}
+
+        for typename, storage in self._predefined.items():
+            self.add_type(typename, None, None, storage=storage)
+
+        self.add_type("FUNCTION", None, None, None)
+        self.add_type("ARRAY", None, None, None)
+
+    def is_defined(self, name: str):
+        """Check if a type is defined"""
+        return name in self.type_map
+
+    def get_type(self, name: str) -> TypeInfo:
+        return self.type_map[name]
+
+    def add_type(self, name: str, lineno, col_num, storage):
+        """Add a new type definition with the details"""
+
+        if self.is_defined(name):
+            print_error()
+            print(f"Re-declaration of type '{name}' at line {lineno}")
+            print_line(lineno)
+
+            pos = col_num - 1
+            width = len(name)
+            print_marker(pos, width)
+
+            other_type = self.get_type(name)
+            print(f"{name} previously declared at line {other_type.lineno}")
+            print_line(other_type.lineno)
+
+            pos = other_type.col_num - 1
+            print_marker(pos, width)
+
+        new_type = TypeInfo(name, lineno, col_num, storage)
+
+        self.type_map[name] = new_type
+
+
+@dataclass
+class SymbolInfo:
+    """Stores information related to a symbol"""
+
+    name: str
+    scope_id: str
+    lineno: Optional[int] = None
+    col_num: Optional[int] = None
+    type_: Optional[TypeInfo] = None
+    # storage: Optional[int] = None
+    # node: Optional[Node] = None
+    const: bool = False
+    value: Any = None
+    uses: list = field(default_factory=list)
+
+
+class SymbolTable:
+    """Stores all identifiers, literals and information
+    related to them"""
+
+    def __init__(self, type_table: TypeTable):
         self.stack: List[Dict[str, SymbolInfo]] = [{}]
         self.symbols: List[SymbolInfo] = []
         self.cur_scope = "1"
         self.depth = 1
         self.scopes_at_depth: Dict[int, int] = defaultdict(lambda: 0)
         self.scopes_at_depth[0] = 1
+
+        self.type_table = type_table
 
     def enter_scope(self):
         self.depth += 1
@@ -98,14 +169,42 @@ class SymbolTable:
     ):
         sym = self.get_symbol(symbol)
         sym.lineno = lineno
-        sym.type_ = type_
+        sym.type_ = None
+        sym.col_num = col_num
         # TODO: infer type from value if not given
+        typename = None
 
-        try:
-            if type_ is not None and type_.data in self.storage:
-                sym.storage = self.storage[type_.data]
-        except:
-            pass
+        if type_ is not None:
+            # sym.storage = self.storage[type_.data]
+
+            # type_ can sometimes be syntree.Type
+            if (
+                hasattr(type_, "data")
+                and hasattr(type_, "name")
+            ):
+                if type_.name == "BasicType":
+                    typename = type_.data
+                elif type_.name == "ARRAY":
+                    typename = "ARRAY"
+                else:
+                    raise Exception(f"Unknown node {type_}. Could not determine type")
+            elif isinstance(type_, str):
+                typename = type_
+            else:
+                raise Exception(f"Could not determine type, issue in code. Found {type_}")
+
+            if not self.type_table.is_defined(typename):
+                print_error()
+                print(f"Type '{typename}' is not defined at line {lineno}")
+                print_line(lineno)
+
+                line = utils.lines[lineno]
+                pos = line.find(typename)
+                width = len(typename)
+
+                print_marker(pos, width)
+            else:
+                sym.type_ = self.type_table.get_type(typename)
 
         if value is not None:
             sym.value = value
@@ -148,15 +247,16 @@ class SymbolTable:
             print_error()
             print(f"Re-declaration of symbol '{symbol}' at line {lineno}")
             print_line(lineno)
-            line: str = utils.lines[lineno - 1]
+
             pos = col_num - 1
             width = len(symbol)
             print_marker(pos, width)
+
             other_sym = self.get_symbol(symbol)
             print(f"{symbol} previously declared at line {other_sym.lineno}")
             print_line(other_sym.lineno)
-            line: str = utils.lines[other_sym.lineno - 1]
-            pos = line.find(symbol)
+
+            pos = other_sym.col_num - 1
             print_marker(pos, width)
         else:
             self.update_info(
@@ -173,7 +273,6 @@ class SymbolTable:
                         symbol.lineno,
                         symbol.type_,
                         symbol.const,
-                        symbol.storage,
                         symbol.value,
                         symbol.uses,
                     ]

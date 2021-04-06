@@ -7,7 +7,7 @@ from colorama import Fore, Style
 from ply import yacc
 
 import go_lexer
-from go_lexer import tokens, lex, find_column, symtab
+from go_lexer import tokens, lex, find_column, symtab, type_table
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
@@ -527,14 +527,17 @@ def p_TypeSpec(p):
     """TypeSpec : TypeDef
     | AliasDecl
     """
+    p[0] = p[1]
 
 
 def p_TypeDef(p):
     """TypeDef : IDENTIFIER Type"""
+    p[0] = syntree.TypeDef(p[1], p[2], type_table, p.lineno(1))
 
 
 def p_AliasDecl(p):
     """AliasDecl : IDENTIFIER '=' Type"""
+    p[0] = syntree.TypeDef(p[1], p[3], type_table, p.lineno(1))
 
 
 def p_IdentifierList(p):
@@ -682,12 +685,12 @@ def p_CompositeLit(p):
 
 
 def p_LiteralType(p):
-    """LiteralType : StructType
-    | ArrayType
+    """LiteralType : ArrayType
     | '[' '.' '.' '.' ']' ElementType
     | TypeName
     """
     # TODO: add SliceType and MapType here
+    # TODO: add StructType
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -695,8 +698,7 @@ def p_LiteralType(p):
 
 
 def p_LiteralValue(p):
-    """LiteralValue : '{' '}'
-    | '{' ElementList '}'
+    """LiteralValue : '{' ElementList '}'
     | '{' ElementList ',' '}'
     """
     if len(p) == 3:
@@ -710,14 +712,14 @@ def p_LiteralValue(p):
 
 
 def p_ElementList(p):
-    """ElementList : KeyedElement KeyedElementList
+    """ElementList : KeyedElementList
     """
     p[0] = syntree.List([p[1], *p[2]])
 
 
 def p_KeyedElementList(p):
     """KeyedElementList : empty
-    | KeyedElementList ',' KeyedElement
+    | KeyedElement ',' KeyedElementList
     """
     if len(p) == 2:
         p[0] = syntree.List([])
@@ -730,8 +732,8 @@ def p_KeyedElementList(p):
 
 def p_KeyedElement(p):
     """KeyedElement : Element
-    | Key ':' Element
     """
+    # TODO: add `Key ':' Element`
     if len(p) == 2:
         p[0] = (None, p[1])
     elif len(p) == 4:
@@ -740,18 +742,18 @@ def p_KeyedElement(p):
         raise Exception("Bad grammar or rules!")
 
 
-def p_Key(p):
-    """Key : FieldName
-    | Expression
-    | LiteralValue
-    """
-    p[0] = p[1]
+# def p_Key(p):
+#     """Key : FieldName
+#     | Expression
+#     | LiteralValue
+#     """
+#     p[0] = p[1]
 
 
-def p_FieldName(p):
-    """FieldName : IDENTIFIER
-    """
-    p[0] = p[1]
+# def p_FieldName(p):
+#     """FieldName : IDENTIFIER
+#     """
+#     p[0] = p[1]
 
 
 def p_Element(p):
@@ -826,9 +828,12 @@ def p_Type(p):
 
 def p_TypeName(p):
     """TypeName : BasicType
-    | QualifiedIdent
     """
-    p[0] = p[1]
+    # TODO: QualifiedIdent here gives R/R conflict
+    if isinstance(p[1], tuple) and p[1][0] == "identifier":
+        p[0] = p[1][1]
+    else:
+        p[0] = p[1]
 
 
 def p_BasicType(p):
@@ -856,11 +861,11 @@ def p_BasicType(p):
 
 def p_TypeLit(p):
     """TypeLit : ArrayType
-    | StructType
     | PointerType
     | FunctionType
     """
     # TODO : Add other type literals
+    # TODO : add StructType
     p[0] = p[1]
 
 
@@ -879,48 +884,48 @@ def p_ElementType(p):
     p[0] = p[1]
 
 
-def p_StructType(p):
-    """StructType : KW_STRUCT '{' FieldDeclList '}' """
-    p[0] = syntree.Struct(p[3])
+# def p_StructType(p):
+#     """StructType : KW_STRUCT '{' FieldDeclList '}' """
+#     p[0] = syntree.Struct(p[3])
 
 
-def p_FieldDeclList(p):
-    """FieldDeclList : empty
-    | FieldDeclList FieldDecl ';'
-    """
-    if len(p) == 2:
-        p[0] = syntree.List([])
-    elif len(p) == 4:
-        p[1].append(p[2])
-        p[0] = p[1]
-    else:
-        raise Exception("Invalid grammar?")
+# def p_FieldDeclList(p):
+#     """FieldDeclList : empty
+#     | FieldDeclList FieldDecl ';'
+#     """
+#     if len(p) == 2:
+#         p[0] = syntree.List([])
+#     elif len(p) == 4:
+#         p[1].append(p[2])
+#         p[0] = p[1]
+#     else:
+#         raise Exception("Invalid grammar?")
 
 
-def p_FieldDecl(p):
-    """FieldDecl : IdentifierList Type Tag
-    | EmbeddedField Tag
-    """
-    if len(p) == 4:
-        p[0] = syntree.StructFieldDecl(p[1], p[2], p[3])
-    else:
-        p[0] = syntree.StructFieldDecl(p[1], tag=p[2])
+# def p_FieldDecl(p):
+#     """FieldDecl : IdentifierList Type Tag
+#     | EmbeddedField Tag
+#     """
+#     if len(p) == 4:
+#         p[0] = syntree.StructFieldDecl(p[1], p[2], p[3])
+#     else:
+#         p[0] = syntree.StructFieldDecl(p[1], tag=p[2])
 
 
-def p_EmbeddedField(p):
-    """EmbeddedField : '*' TypeName
-    | TypeName"""
-    if p[1] == "*":
-        p[0] = (p[1], p[2])
-    else:
-        p[0] = (None, p[1])
+# def p_EmbeddedField(p):
+#     """EmbeddedField : '*' TypeName
+#     | TypeName"""
+#     if p[1] == "*":
+#         p[0] = (p[1], p[2])
+#     else:
+#         p[0] = (None, p[1])
 
 
-def p_Tag(p):
-    """Tag : empty
-    | STRING_LIT
-    """
-    p[0] = p[1]
+# def p_Tag(p):
+#     """Tag : empty
+#     | STRING_LIT
+#     """
+#     p[0] = p[1]
 
 
 def p_PointerType(p):
