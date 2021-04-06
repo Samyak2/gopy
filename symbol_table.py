@@ -176,35 +176,38 @@ class SymbolTable:
 
         if type_ is not None:
             # sym.storage = self.storage[type_.data]
+            valid_type = True
+            typename = ""
 
             # type_ can sometimes be syntree.Type
-            if (
-                hasattr(type_, "data")
-                and hasattr(type_, "name")
-            ):
+            if hasattr(type_, "data") and hasattr(type_, "name"):
                 if type_.name == "BasicType":
                     typename = type_.data
                 elif type_.name == "ARRAY":
                     typename = "ARRAY"
                 else:
-                    raise Exception(f"Unknown node {type_}. Could not determine type")
+                    print(f"Unknown node {type_}. Could not determine type")
+                    valid_type = False
             elif isinstance(type_, str):
                 typename = type_
             else:
-                raise Exception(f"Could not determine type, issue in code. Found {type_}")
+                print(f"Could not determine type, issue in code. Found {type_}")
+                valid_type = False
 
-            if not self.type_table.is_defined(typename):
-                print_error()
-                print(f"Type '{typename}' is not defined at line {lineno}")
-                print_line(lineno)
+            if valid_type:
 
-                line = utils.lines[lineno]
-                pos = line.find(typename)
-                width = len(typename)
+                if not self.type_table.is_defined(typename):
+                    print_error()
+                    print(f"Type '{typename}' is not defined at line {lineno}")
+                    print_line(lineno)
 
-                print_marker(pos, width)
-            else:
-                sym.type_ = self.type_table.get_type(typename)
+                    line = utils.lines[lineno]
+                    pos = line.find(typename)
+                    width = len(typename)
+
+                    print_marker(pos, width)
+                else:
+                    sym.type_ = self.type_table.get_type(typename)
 
         if value is not None:
             sym.value = value
