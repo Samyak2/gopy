@@ -40,6 +40,33 @@ class BinOp(Node):
         self.left = left
         self.right = right
 
+        ###############
+        # Starts Here #
+        ###############
+        #  x = type(self.left)
+        #  y = type(self.right)
+        #
+        #  def check_type(x, y):
+        #      if x == int:
+        #          if y == float:
+        #              x = int  #  Change the type here
+        #              return 1
+        #
+        #          #  elif y == str or y == bool or y == complex:
+        #          else:
+        #              print("Error: type mismatch")
+        #              return 0
+        #
+        #      return 0
+        #
+        #  if x!=y:
+        #      val1 = check_type(x, y)
+        #      val2 = check_type(y, x)
+        #      if not (val1 | val2):
+        #          print("Error: Type Mismatch")
+        #############
+        # Ends here #
+        #############
 
 class Assignment(BinOp):
     """Node for assignment operations"""
@@ -221,6 +248,26 @@ class VarDecl(Node):
         self.type_ = type_
         self.value = value
         self.const = const
+
+        ###############################
+        # From here the changes start #
+        ###############################
+        #  typeRight = type(self.value)
+        #
+        #  if typeRight == None:
+        #      print("Error: Variable not defined earlier")
+        #      return
+        #
+        #  if self.type_ and typeRight != self.type_:
+        #      print("Error: mismatch types")
+        #      return
+        #
+        #  else:
+        #      if not self.type_:
+        #          self.type_ = typeRight
+        ################
+        #  Ends here
+        ################
 
         children = []
 
