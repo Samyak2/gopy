@@ -11,11 +11,14 @@ class Quad:
     op2 = None
     operator = None
 
+    #  func_name = None
+
     def __init__(self, dest, op1, op2, operator):
         self.dest = dest
         self.op1 = op1
         self.op2 = op2
         self.operator = operator
+        #  self.func_name = str(func_name)
 
     def print_info(self):
         print("{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2))
@@ -23,6 +26,7 @@ class Quad:
 
 class IntermediateCode:
     def __init__(self):
+        #  self.code_list: List[Quad] = {Quad.func_name: []}
         self.code_list: List[Quad] = []
         self.temp_var_count = 0
 
@@ -32,17 +36,22 @@ class IntermediateCode:
 
     def add_to_list(self, code: Quad):
         self.code_list.append(code)
+        #  self.code_list[Quad.func_name].append(code)
 
     def print_three_address_code(self):
         for i in self.code_list:
             print("{} = {} {} {}".format(i.dest, i.op1, i.operator, i.op2))
+        #  for i in self.code_list:
+        #      print("{} : ".format(i))
+        #      for j in range(len(self.code_list[i])):
+        #          print("%5d:\t" % j, self.code_list[i][j])
 
     def __str__(self) -> str:
         return str(
             tabulate(
                 [[i.dest, i.op1, i.operator, i.op2] for i in self.code_list],
                 headers=["Dest", "Operand 1", "Operator", "Operand 2"],
-                tablefmt="psql"
+                tablefmt="psql",
             )
         )
 

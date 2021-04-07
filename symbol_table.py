@@ -59,6 +59,7 @@ class TypeTable:
         "byte": 1,
         "bool": 1,
         "rune": 4,
+        "string" : None
     }
 
     def __init__(self):
