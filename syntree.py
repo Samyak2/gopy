@@ -1,6 +1,7 @@
 from typing import Optional
 
 from go_lexer import symtab, type_table
+from utils import print_error, print_line, print_marker
 
 
 class Node:
@@ -43,35 +44,33 @@ class BinOp(Node):
         ###############
         # Starts Here #
         ###############
-        # self.type_ = None
-        # print(left, right)
-        # x = self.children[0].data[0]  # left operand
-        # y = self.children[1].data[0]  # right operand
+        self.type_ = None
+        x = self.children[0].data[0]  # left operand
+        y = self.children[1].data[0]  # right operand
 
-        # def check_type(x, y):
-        #     if x == "int":
-        #         if y == "float64":
-        #             self.type_ = "float64"
+        def check_type(x, y):
+           if x == "int":
+               if y == "float64":
+                   self.type_ = "float64"
 
-        #         elif y == "bool":
-        #             self.type_ = "int"
-        #         return 1
+               elif y == "bool":
+                   self.type_ = "int"
+               return 1
 
-        #     elif x == "float64":
-        #         if y == "bool":
-        #             self.type_ = "float64"
-        #             return 1
+           elif x == "float64":
+               if y == "bool":
+                   self.type_ = "float64"
+                   return 1
 
-        #     #  elif y == str or y == bool or y == complex:
-        #     return 0
+           return 0
 
-        # if x != y:
-        #     val1 = check_type(x, y)
-        #     val2 = check_type(y, x)
-        #     if not (val1 | val2):
-        #         print("Error: Type Mismatch")
-        # else:
-        #     self.type_ = x
+        if x != y:
+           val1 = check_type(x, y)
+           val2 = check_type(y, x)
+           if not (val1 | val2):
+               print_error("Type Mismatch")
+        else:
+           self.type_ = x
         #############
         # Ends here #
         #############
@@ -370,34 +369,44 @@ def make_variable_decls(
             ###############################
             # From here the changes start #
             ###############################
+            if isinstance(expr,BinOp):
+                type_ = expr.type_
 
             #  expr -> right side
             #  type -> left side
 
-            if expr is None:
-                print("Error: Variable not defined earlier")
-                return
-
-            # if (
-            #     expr
-            #     and type_ is not None
-            #     and type_ != "string"
-            #     and type_.data != expr.data[0]
-            # ):
-            #     #  print(type_.data, expr)
-            #     if (type_.data == "float64" and expr.data[0] == "int") or (
-            #         type_.data == "int" and expr.data[0] == "float64"
-            #     ):
-            #         type_.data = expr.data[0]
-            #     else:
-            #         print("Error: mismatch in VarDecl types")
-            #         return
-
             else:
-                if not type_:
-                    type_ = expr.data[0]
-            #  print("type is: ", type_)
-            #  print("value is:", expr)  # right side
+                if expr is None:
+                    print("Variable is not defined earlier but used")
+                    return
+
+                if (
+                    type_ is not None
+                    and type_.data
+                    in ["uint8", "uint16", "int8", "int16", "int32", "int64", "float32"]
+                    and expr.data[0] != "string"
+                ):
+                    type_ = type_.data
+
+                elif type_ is not None and type_ != "string" and type_.data != expr.data[0]:
+                    #  print(type_.data, expr)
+                    if type_.data == "float64" and expr.data[0] == "int":
+                        expr.data = list(expr.data)
+                        expr.data[1] = float(expr.data[1])
+                        expr.data[0] = type_.data
+
+                    elif type_.data == "int" and expr.data[0] == "float64":
+                        expr.data = list(expr.data)
+                        expr.data[1] = int(expr.data[1])
+                        expr.data[0] = type_.data
+
+                    else:
+                        print_error("Mismatch in VarDecl types")
+                        return
+
+                else:
+                    if not type_:
+                        type_ = expr.data[0]
 
             ################
             #  Ends here
@@ -414,6 +423,8 @@ def make_variable_decls(
             #  print(type_)
 
             var_list.append(VarDecl(ident, type_, expr, const))
+            #  Most important line
+            type_ = None
     else:
         raise NotImplementedError("Declaration with unpacking not implemented yet")
 
