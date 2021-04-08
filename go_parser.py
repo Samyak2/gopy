@@ -212,7 +212,7 @@ def p_ParameterDecl(p):
     elif len(p) == 4:
         for ident in p[1]:
             ident.add_symtab()
-        p[0] = syntree.ParameterDecl(p[3], vararg=p[2], ident_list=p[1])
+        p[0] = syntree.ParameterDecl(p[3], vararg=True, ident_list=p[1])
 
 
 def p_FunctionBody(p):
@@ -1009,6 +1009,9 @@ if __name__ == "__main__":
         print(symtab)
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
+
+        print("Type Table: ")
+        print(type_table)
 
         print("Intermediate code:")
         # ic.print_three_address_code()

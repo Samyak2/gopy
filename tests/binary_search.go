@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func bin_search(key int, arr []int, low int, high int) int {
+func bin_search(key int, arr [5]int, low int, high int) int {
     var mid int = (low + high) / 2
 
     if (arr[mid] == key) {
@@ -17,7 +17,7 @@ func bin_search(key int, arr []int, low int, high int) int {
 }
 
 func main() {
-    var arr []int = []int{1, 2, 3, 4, 5}
+    var arr [5]int = [5]int{1, 2, 3, 4, 5}
 
     fmt.Println(bin_search(4, arr, 0, 5))
 }

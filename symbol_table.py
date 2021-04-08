@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from collections import defaultdict
 from tabulate import tabulate
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List, Any
 
 import utils
 from utils import print_marker, print_line, print_error
@@ -15,6 +15,7 @@ class TypeInfo:
     lineno: Optional[int] = None
     col_num: Optional[int] = None
     storage: Optional[int] = None
+    eltype: Any = None
 
     def __str__(self):
         s = f"Type({self.name}"
@@ -70,6 +71,7 @@ class TypeTable:
 
         self.add_type("FUNCTION", None, None, None)
         self.add_type("ARRAY", None, None, None)
+        self.add_type("SLICE", None, None, None)
 
     def is_defined(self, name: str):
         """Check if a type is defined"""
@@ -78,10 +80,10 @@ class TypeTable:
     def get_type(self, name: str) -> TypeInfo:
         return self.type_map[name]
 
-    def add_type(self, name: str, lineno, col_num, storage):
+    def add_type(self, name: str, lineno, col_num, storage, eltype=None, check=True):
         """Add a new type definition with the details"""
 
-        if self.is_defined(name):
+        if check and self.is_defined(name):
             print_error()
             print(f"Re-declaration of type '{name}' at line {lineno}")
             print_line(lineno)
@@ -97,9 +99,33 @@ class TypeTable:
             pos = other_type.col_num - 1
             print_marker(pos, width)
 
-        new_type = TypeInfo(name, lineno, col_num, storage)
+        new_type = TypeInfo(name, lineno, col_num, storage, eltype)
 
         self.type_map[name] = new_type
+
+    def __str__(self):
+        return str(
+            tabulate(
+                [
+                    [
+                        symbol.name,
+                        symbol.lineno,
+                        symbol.col_num,
+                        symbol.storage,
+                        symbol.eltype,
+                    ]
+                    for _, symbol in self.type_map.items()
+                ],
+                headers=[
+                    "Type Name",
+                    "Line No.",
+                    "Col no.",
+                    "Storage",
+                    "Element Type",
+                ],
+                tablefmt="psql",
+            )
+        )
 
 
 @dataclass
@@ -174,6 +200,8 @@ class SymbolTable:
         sym.col_num = col_num
         # TODO: infer type from value if not given
         typename = None
+        composite_type = False
+        eltype = None
 
         if type_ is not None:
             # sym.storage = self.storage[type_.data]
@@ -184,8 +212,10 @@ class SymbolTable:
             if hasattr(type_, "data") and hasattr(type_, "name"):
                 if type_.name == "BasicType":
                     typename = type_.data
-                elif type_.name == "ARRAY":
-                    typename = "ARRAY"
+                elif type_.name == "ARRAY" or type_.name == "SLICE":
+                    typename = type_.typename
+                    composite_type = True
+                    eltype = type_.eltype
                 else:
                     print(f"Unknown node {type_}. Could not determine type")
                     valid_type = False
@@ -209,6 +239,10 @@ class SymbolTable:
                     print_marker(pos, width)
                 else:
                     sym.type_ = self.type_table.get_type(typename)
+
+            # elif composite_type:
+
+            #     self.type_table.add_type(f"{typename}_{eltype}")
 
         if value is not None:
             sym.value = value
