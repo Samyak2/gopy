@@ -28,7 +28,7 @@ class IntermediateCode:
 
     def get_new_temp_var(self):
         self.temp_var_count += 1
-        return "var" + str(self.temp_var_count)
+        return "t" + str(self.temp_var_count)
 
     def add_to_list(self, code: Quad):
         self.code_list.append(code)
@@ -42,7 +42,7 @@ class IntermediateCode:
             tabulate(
                 [[i.dest, i.op1, i.operator, i.op2] for i in self.code_list],
                 headers=["Dest", "Operand 1", "Operator", "Operand 2"],
-                tablefmt="psql"
+                tablefmt="psql",
             )
         )
 
@@ -70,6 +70,38 @@ def _recur_codegen(node: syntree.Node, ic: IntermediateCode):
         )
 
         return_val.append(temp)
+
+    elif isinstance(node, syntree.Literal):
+        temp = ic.get_new_temp_var()
+
+        # TODO: how to handle type here?
+        ic.add_to_list(Quad(temp, None, node.value, "="))
+
+        return_val.append(temp)
+
+    # elif isinstance(node, syntree.Identifier):
+
+    #     return_val.append(node.ident_name)
+
+    elif isinstance(node, syntree.PrimaryExpr):
+
+        if isinstance(node.data, tuple) and node.data[0] == "identifier":
+            return_val.append(node.data[1])
+
+        elif (
+            node.data is None
+            and len(new_children) == 2
+            and isinstance(new_children[1][0], syntree.Index)
+        ):
+            # TODO: do array/slice indexing here
+            return_val.append(node)
+            pass
+            # temp1 = ic.get_new_temp_var()
+
+        # TODO: implement other variants of PrimaryExpr
+
+        else:
+            return_val.append(node)
 
     # TODO: implement other AST nodes too
 
