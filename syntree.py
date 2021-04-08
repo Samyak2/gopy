@@ -178,17 +178,24 @@ class Function(Node):
                          data=(name, lineno))
         self.data: tuple
         if name is not None:
-            symtab.declare_new_variable(name[1],
-                                        lineno,
-                                        0,
-                                        type_="FUNCTION",
-                                        const=True,
-                                        value=self)
+            # self.add_func_to_symtab(name[1], lineno, self)
+            # symtab.declare_new_variable(
+            #     name[1], lineno, 0, type_="FUNCTION", const=True, value=self
+            # )
+            symtab.update_info(
+                name[1], lineno, 0, type_="FUNCTION", const=True, value=self
+            )
 
         self.fn_name = name
         self.lineno = lineno
         self.signature = signature
         self.body = body
+
+    @staticmethod
+    def add_func_to_symtab(name, lineno, value=None):
+        symtab.declare_new_variable(
+            name, lineno, 0, type_="FUNCTION", const=True, value=value
+        )
 
     def data_str(self):
         return f"name: {self.fn_name}, lineno: {self.lineno}"
@@ -222,6 +229,26 @@ class Array(Type):
 
     def data_str(self):
         return f"eltype: {self.eltype}"
+
+
+class Slice(Type):
+    """Node for a slice type"""
+
+    def __init__(self, eltype):
+        super().__init__("SLICE", children=[], data=eltype)
+        self.eltype = eltype
+
+    def data_str(self):
+        return f"eltype: {self.eltype}"
+
+
+class Index(Node):
+    """Node for array/slice indexing"""
+
+    def __init__(self, expr):
+        super().__init__("INDEX", children=[expr], data=None)
+
+        self.expr = expr
 
 
 class Identifier(Node):

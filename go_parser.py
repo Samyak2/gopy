@@ -153,6 +153,7 @@ def p_FunctionName(p):
     """FunctionName : IDENTIFIER"""
     p[0] = p[1]
     symtab.add_if_not_exists(p[1][1])
+    syntree.Function.add_func_to_symtab(p[1][1], p.lineno(1))
     symtab.enter_scope()
 
 
@@ -610,6 +611,7 @@ def p_UnaryOp(p):
 def p_PrimaryExpr(p):
     """PrimaryExpr : Operand
     | PrimaryExpr Arguments
+    | PrimaryExpr Index
     """
     # TODO : This is too less! Many more to add
     if len(p) == 2:
@@ -630,6 +632,12 @@ def p_Arguments(p):
         p[0] = syntree.Arguments(None)
     elif len(p) == 4:
         p[0] = syntree.Arguments(p[2])
+
+
+def p_Index(p):
+    """Index : '[' Expression ']'
+    """
+    p[0] = syntree.Index(p[2])
 
 
 def p_Operand(p):
@@ -689,8 +697,9 @@ def p_LiteralType(p):
     """LiteralType : ArrayType
     | '[' '.' '.' '.' ']' ElementType
     | TypeName
+    | SliceType
     """
-    # TODO: add SliceType and MapType here
+    # TODO: add MapType here
     # TODO: add StructType
     if len(p) == 2:
         p[0] = p[1]
@@ -700,7 +709,6 @@ def p_LiteralType(p):
 
 def p_LiteralValue(p):
     """LiteralValue : '{' ElementList '}'
-    | '{' ElementList ',' '}'
     """
     if len(p) == 3:
         p[0] = None
@@ -715,18 +723,22 @@ def p_LiteralValue(p):
 def p_ElementList(p):
     """ElementList : KeyedElementList
     """
-    p[0] = syntree.List([p[1], *p[2]])
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        # p[0] = syntree.List([p[1], *p[2]])
+        raise Exception("Invalid semantic rules here!")
 
 
 def p_KeyedElementList(p):
-    """KeyedElementList : empty
+    """KeyedElementList : KeyedElement
     | KeyedElement ',' KeyedElementList
     """
     if len(p) == 2:
-        p[0] = syntree.List([])
+        p[0] = syntree.List([p[1]])
     elif len(p) == 4:
-        p[1].append(p[3])
-        p[0] = p[1]
+        p[3].append(p[1])
+        p[0] = p[3]
     else:
         raise Exception("Bad grammar or rules!")
 
@@ -864,6 +876,7 @@ def p_TypeLit(p):
     """TypeLit : ArrayType
     | PointerType
     | FunctionType
+    | SliceType
     """
     # TODO : Add other type literals
     # TODO : add StructType
@@ -883,6 +896,12 @@ def p_ArrayLength(p):
 def p_ElementType(p):
     """ElementType : Type"""
     p[0] = p[1]
+
+
+def p_SliceType(p):
+    """SliceType : '[' ']' ElementType
+    """
+    p[0] = syntree.Slice(p[3])
 
 
 # def p_StructType(p):
