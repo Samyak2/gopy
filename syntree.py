@@ -43,34 +43,34 @@ class BinOp(Node):
         ###############
         # Starts Here #
         ###############
-        # self.type_ = None
-        # x = self.children[0].data[0]  # left operand
-        # y = self.children[1].data[0]  # right operand
-        #
-        # def check_type(x, y):
-        #     if x == 'int':
-        #         if y == "float64":
-        #             self.type_ = "float64"
-        #
-        #         elif y == 'bool':
-        #             self.type_ = "int"
-        #         return 1
-        #
-        #     elif x == "float64":
-        #         if y == "bool":
-        #             self.type_ = "float64"
-        #             return 1
-        #
-        #     #  elif y == str or y == bool or y == complex:
-        #     return 0
-        #
-        # if x != y:
-        #     val1 = check_type(x, y)
-        #     val2 = check_type(y, x)
-        #     if not (val1 | val2):
-        #         print("Error: Type Mismatch")
-        # else:
-        #     self.type_ = x
+        self.type_ = None
+        x = self.children[0].data[0]  # left operand
+        y = self.children[1].data[0]  # right operand
+
+        def check_type(x, y):
+           if x == 'int':
+               if y == "float64":
+                   self.type_ = "float64"
+
+               elif y == 'bool':
+                   self.type_ = "int"
+               return 1
+
+           elif x == "float64":
+               if y == "bool":
+                   self.type_ = "float64"
+                   return 1
+
+           #  elif y == str or y == bool or y == complex:
+           return 0
+
+        if x != y:
+           val1 = check_type(x, y)
+           val2 = check_type(y, x)
+           if not (val1 | val2):
+               print("Error: Type Mismatch")
+        else:
+           self.type_ = x
         #############
         # Ends here #
         #############
