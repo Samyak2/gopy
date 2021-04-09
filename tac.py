@@ -119,7 +119,10 @@ def tac_PrimaryExpr(
                 index_t = ic.get_new_temp_var()
                 ic.add_to_list(Quad(index_t, base_addr_t, offset_t, "+"))
 
-                return_val.append(index_t)
+                res_t = ic.get_new_temp_var()
+                ic.add_to_list(Quad(res_t, arr_name, index_t, "[]"))
+
+                return_val.append(res_t)
             else:
                 print("uhhh could not get type")
 
