@@ -1,3 +1,4 @@
+from symbol_table import SymbolInfo
 from typing import Optional
 
 from go_lexer import symtab, type_table
@@ -99,8 +100,19 @@ class PrimaryExpr(Node):
     """
 
     def __init__(self, operand, children=None):
+        # small optimization for the case when PrimaryExpr
+        # has children of [PrimaryExpr, something]
+        if operand is None and children is not None:
+            if len(children) == 2 and isinstance(children[0], PrimaryExpr):
+                if children[0].children is None or children[0].children == []:
+                    operand = children[0].data
+                    children = children[1:]
+
         super().__init__(
             "PrimaryExpr", children=[] if children is None else children, data=operand
+        )
+        self.ident: Optional[SymbolInfo] = symtab.get_symbol(
+            operand[1] if isinstance(operand, tuple) else ""
         )
 
     def data_str(self):
@@ -394,8 +406,8 @@ def make_variable_decls(
             #         return
 
             else:
-                if not type_:
-                    type_ = expr.data[0]
+                if not type_ and isinstance(expr, Literal):
+                    type_ = expr.type_
             #  print("type is: ", type_)
             #  print("value is:", expr)  # right side
 
