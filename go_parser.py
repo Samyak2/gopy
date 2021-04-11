@@ -7,7 +7,7 @@ from colorama import Fore, Style
 from ply import yacc
 
 import go_lexer
-from go_lexer import tokens, lex, find_column, symtab, type_table
+from go_lexer import required_tokens_for_parser as tokens, lex, find_column, symtab, type_table
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
@@ -1010,8 +1010,8 @@ if __name__ == "__main__":
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
 
-        print("Type Table: ")
-        print(type_table)
+        #  print("Type Table: ")
+        #  print(type_table)
 
         print("Intermediate code:")
         # ic.print_three_address_code()
