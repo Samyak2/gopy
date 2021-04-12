@@ -7,7 +7,7 @@ from colorama import Fore, Style
 from ply import yacc
 
 import go_lexer
-from go_lexer import tokens, lex, find_column, symtab, type_table
+from go_lexer import required_tokens_for_parser as tokens, lex, find_column, symtab, type_table
 import utils
 from utils import print_error, print_line, print_marker
 import syntree

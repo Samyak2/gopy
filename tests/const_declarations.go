@@ -5,7 +5,8 @@ const float_testing float64 = 1E6
 const zero = 1e7
 const (
     size int = 1024
-    // eof        = -1  // untyped integer constant
+    eof      = -1.0  // untyped integer constant
+    eof1 = +1
 )
 const a, b, c = 3, 4, "foo"  // a = 3, b = 4, c = "foo", untyped integer and string constants
 const u, v float64 = 0, 3    // u = 0.0, v = 3.0
@@ -19,6 +20,7 @@ const abc = "hello"
 const somemore = 5.0 * 5
 const some = 5 + 5
 const one = true + 1
+const five = -5.0
 const two = "foo" + "foo"
 // const w = 5*"foo"
 // const added = Pi + size

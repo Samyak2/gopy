@@ -11,7 +11,6 @@ from utils import print_line, print_marker, print_lexer_error
 
 colorama.init()
 
-
 with open(sys.argv[1], "r") as f:
     input_code = f.read()
 
@@ -76,64 +75,94 @@ tokens = (
 
 # List of keywords
 keywords = {
-    "break"       : "KW_BREAK",
-    "default"     : "KW_DEFAULT",
-    "func"        : "KW_FUNC",
-    "interface"   : "KW_INTERFACE",
-    "select"      : "KW_SELECT",
-    "case"        : "KW_CASE",
-    "defer"       : "KW_DEFER",
-    "go"          : "KW_GO",
-    "map"         : "KW_MAP",
-    "struct"      : "KW_STRUCT",
-    "chan"        : "KW_CHAN",
-    "else"        : "KW_ELSE",
-    "goto"        : "KW_GOTO",
-    "package"     : "KW_PACKAGE",
-    "switch"      : "KW_SWITCH",
-    "const"       : "KW_CONST",
-    "fallthrough" : "KW_FALLTHROUGH",
-    "if"          : "KW_IF",
-    "range"       : "KW_RANGE",
-    "type"        : "KW_TYPE",
-    "continue"    : "KW_CONTINUE",
-    "for"         : "KW_FOR",
-    "import"      : "KW_IMPORT",
-    "return"      : "KW_RETURN",
-    "var"         : "KW_VAR",
+    "break": "KW_BREAK",
+    "default": "KW_DEFAULT",
+    "func": "KW_FUNC",
+    "interface": "KW_INTERFACE",
+    "select": "KW_SELECT",
+    "case": "KW_CASE",
+    "defer": "KW_DEFER",
+    "go": "KW_GO",
+    "map": "KW_MAP",
+    "struct": "KW_STRUCT",
+    "chan": "KW_CHAN",
+    "else": "KW_ELSE",
+    "goto": "KW_GOTO",
+    "package": "KW_PACKAGE",
+    "switch": "KW_SWITCH",
+    "const": "KW_CONST",
+    "fallthrough": "KW_FALLTHROUGH",
+    "if": "KW_IF",
+    "range": "KW_RANGE",
+    "type": "KW_TYPE",
+    "continue": "KW_CONTINUE",
+    "for": "KW_FOR",
+    "import": "KW_IMPORT",
+    "return": "KW_RETURN",
+    "var": "KW_VAR",
 }
 
 # List of types
 # types -> (symbol, storage in bytes)
 types = {
     #For INT
-    "int"        : ("INT", 8),
-    "int8"       : ("INT8", 1),
-    "int16"      : ("INT16", 2),
-    "int32"      : ("INT32", 4),
-    "int64"      : ("INT64", 8),
+    "int": ("INT", 8),
+    "int8": ("INT8", 1),
+    "int16": ("INT16", 2),
+    "int32": ("INT32", 4),
+    "int64": ("INT64", 8),
     #For Float
-    "float32"    : ("FLOAT32", 4),
-    "float64"    : ("FLOAT64", 8),
+    "float32": ("FLOAT32", 4),
+    "float64": ("FLOAT64", 8),
     #For UINT
-    "uint"       : ("UINT", 8),
-    "uint8"      : ("UINT8", 1),
-    "uint16"     : ("UINT16", 2),
-    "uint32"     : ("UINT32", 4),
-    "uint64"     : ("UINT64", 8),
+    "uint": ("UINT", 8),
+    "uint8": ("UINT8", 1),
+    "uint16": ("UINT16", 2),
+    "uint32": ("UINT32", 4),
+    "uint64": ("UINT64", 8),
     #For Complex
-    "complex64"  : ("COMPLEX64", 8),
-    "complex128" : ("COMPLEX128", 16),
+    "complex64": ("COMPLEX64", 8),
+    "complex128": ("COMPLEX128", 16),
     #For Misc
-    "string"     : ("STRING", None),
-    "byte"       : ("BYTE", 1),
-    "bool"       : ("BOOL", 1),
-    "rune"       : ("RUNE", 4)
+    "string": ("STRING", None),
+    "byte": ("BYTE", 1),
+    "bool": ("BOOL", 1),
+    "rune": ("RUNE", 4)
 }
 
 # updating list of tokens with keywords and types
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
-
+unused_tokens = {
+    "AMPERSAND",
+    "AMPER_AMPER",
+    "AMP_CARET_EQ",
+    "AMP_EQ",
+    "BAR",
+    "BAR_BAR",
+    "BAR_EQ",
+    "CARET",
+    "CARET_EQ",
+    "COLON",
+    "EXCLAMATION",
+    "KW_CASE",
+    "KW_CHAN",
+    "KW_DEFAULT",
+    "KW_DEFER",
+    "KW_FALLTHROUGH",
+    "KW_GO",
+    "KW_GOTO",
+    "KW_INTERFACE",
+    "KW_MAP",
+    "KW_SELECT",
+    "KW_STRUCT",
+    "KW_SWITCH",
+    "LEFT_SHIFT",
+    "LEFT_SHIFT_EQ",
+    "RIGHT_SHIFT",
+    "RIGHT_SHIFT_EQ",
+}
+required_tokens_for_parser = list(set(tokens) - unused_tokens)
+#  print(required_tokens_for_parser)
 
 # tokens to ignore in ANY state
 
@@ -158,23 +187,22 @@ def t_ANY_ignore_MULTI_COMMENT(t):
 
 # tokens with no actions
 
-
-t_CARET         = r"\^"
-t_RIGHT_SHIFT    = r">>"
-t_LEFT_SHIFT     = r"<<"
-t_CARET_EQ      = r"\^="
-t_BAR_EQ         = r"\|="
-t_AMP_EQ         = r"&="
-t_AMP_CARET_EQ  = r"&\^="
+t_CARET = r"\^"
+t_RIGHT_SHIFT = r">>"
+t_LEFT_SHIFT = r"<<"
+t_CARET_EQ = r"\^="
+t_BAR_EQ = r"\|="
+t_AMP_EQ = r"&="
+t_AMP_CARET_EQ = r"&\^="
 t_RIGHT_SHIFT_EQ = r">>="
-t_LEFT_SHIFT_EQ  = r"<<="
-t_AMPERSAND      = r"&"
-t_BAR            = r"\|"
-t_AMPER_AMPER    = r"&&"
-t_BAR_BAR        = r"\|\|"
-t_EXCLAMATION    = r"!"
-t_COLON          = r":"
-t_WALRUS         = r":="
+t_LEFT_SHIFT_EQ = r"<<="
+t_AMPERSAND = r"&"
+t_BAR = r"\|"
+t_AMPER_AMPER = r"&&"
+t_BAR_BAR = r"\|\|"
+t_EXCLAMATION = r"!"
+t_COLON = r":"
+t_WALRUS = r":="
 # TODO: Move the assignment operators above, below
 # assignment operators
 t_ADD_EQ = r'\+='
@@ -183,29 +211,29 @@ t_MUL_EQ = r'\*='
 t_DIV_EQ = r'/='
 t_MOD_EQ = r'%='
 # relational operators
-t_EQ_EQ  = r"=="
+t_EQ_EQ = r"=="
 t_NOT_EQ = r"!="
-t_LT     = r"<"
-t_LT_EQ  = r"<="
-t_GT     = r">"
-t_GT_EQ  = r">="
+t_LT = r"<"
+t_LT_EQ = r"<="
+t_GT = r">"
+t_GT_EQ = r">="
 # INT type
-t_INT   = r"int"
-t_INT8  = r"int8"
+t_INT = r"int"
+t_INT8 = r"int8"
 t_INT16 = r"int16"
 t_INT32 = r"int32"
 t_INT64 = r"int64"
 #FLOAT Type
-t_FLOAT32  = r"float32"
-t_FLOAT64  = r"float64"
+t_FLOAT32 = r"float32"
+t_FLOAT64 = r"float64"
 #UNIT Type
-t_UINT   = r"uint"
-t_UINT8  = r"uint8"
+t_UINT = r"uint"
+t_UINT8 = r"uint8"
 t_UINT16 = r"uint16"
 t_UINT32 = r"uint32"
 t_UINT64 = r"uint64"
 #Complex Type
-t_COMPLEX64  = r"complex64"
+t_COMPLEX64 = r"complex64"
 t_COMPLEX128 = r"complex128"
 #MISC Type
 t_BOOL = r"bool"
@@ -213,9 +241,7 @@ t_RUNE = r"rune"
 t_BYTE = r"byte"
 t_ELLIPSIS = r"\.\.\."
 
-
 # tokens with actions
-
 
 # tokens in ANY state
 
@@ -243,9 +269,9 @@ def t_InsertSemi_NEWLINE(t):
     t.lexer.lineno += 1  # track line numbers
     t.lexer.begin("INITIAL")
 
-    semi_tok        = lex.LexToken()
-    semi_tok.type   = ";"
-    semi_tok.value  = ";"
+    semi_tok = lex.LexToken()
+    semi_tok.type = ";"
+    semi_tok.value = ";"
     semi_tok.lineno = t.lexer.lineno
     semi_tok.lexpos = t.lexer.lexpos
     return semi_tok
@@ -422,7 +448,6 @@ utils.lines = lines
 
 type_table = TypeTable()
 symtab = SymbolTable(type_table)
-
 
 if __name__ == "__main__":
     # Tokenize
