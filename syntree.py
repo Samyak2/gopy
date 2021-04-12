@@ -47,22 +47,43 @@ class BinOp(Node):
         ###############
         self.type_ = None
         try:
-            x = self.children[0].data[0]  # left operand
-            y = self.children[1].data[0]  # right operand
+            if isinstance(self.children[0], PrimaryExpr):
+                print(self.children[0])
+                if len(self.children[0].children) > 0 and isinstance(self.children[0].children[0],Index):
+                    x = symtab.get_symbol(self.children[0].data[1]).type_.eltype
+
+                else:
+                    x = symtab.get_symbol(self.children[0].data[1]).type_.name
+
+            else:
+                x = self.children[0].type_  # left operand
+
+            if isinstance(self.children[1], PrimaryExpr):
+                if len(self.children[1].children) > 0 and isinstance(self.children[1].children[0],Index):
+                    y = symtab.get_symbol(self.children[1].data[1]).type_.eltype
+
+                else:
+                    y = symtab.get_symbol(self.children[1].data[1]).type_.name
+
+            else:
+                y = self.children[1].type_  # right operand
+            print(self.children)
+            print(x,y)
+
 
             def check_type(x, y):
                 if x == "int":
                     if y == "float64":
                         self.type_ = "float64"
 
-                    elif y == "bool":
-                        self.type_ = "int"
-                    return 1
+                    #  elif y == "bool":
+                    #      self.type_ = "int"
+                    #  return 1
 
-                elif x == "float64":
-                    if y == "bool":
-                        self.type_ = "float64"
-                        return 1
+                #  elif x == "float64":
+                #      if y == "bool":
+                #          self.type_ = "float64"
+                #          return 1
 
                 return 0
 
@@ -73,8 +94,10 @@ class BinOp(Node):
                     print_error("Type Mismatch")
             else:
                 self.type_ = x
-        except:
+        except Exception as e:
+            print(e)
             pass
+        print("Type is", self.type_)
         #############
         # Ends here #
         #############

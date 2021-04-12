@@ -1013,10 +1013,10 @@ if __name__ == "__main__":
 
         print("Type Table: ")
         print(type_table)
-                
+
         print("Intermediate code:")
         print(ic)
-        
+
         ico = optimize_ic(ic)
 
         print("Optimized intermediate code:")

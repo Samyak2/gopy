@@ -33,15 +33,15 @@ class TempVar:
     def __init__(self, id):
         self.name = "t" + str(id)
         self.const_flag = False
-        self.value = None 
+        self.value = None
 
     def is_const(self):
         return self.const_flag
-    
+
     def make_const(self, value):
         self.const_flag = True
         self.value = value
-    
+
     def __str__(self):
         return self.name
 
