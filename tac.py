@@ -24,6 +24,28 @@ class Quad:
 
     def print_info(self):
         print("{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2))
+    
+    def __str__(self):
+        return "{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2)
+
+
+class TempVar:
+    def __init__(self, id, const_flag):
+        self.name = "t" + str(id)
+        self.const_flag = const_flag
+        self.value = None 
+
+    def get_name(self):
+        return self.name
+    
+    def get_const_flag(self):
+        return self.const_flag
+    
+    def set_const_flag(self, new_const_flag):
+        self.const_flag = new_const_flag
+    
+    def __str__(self):
+        return self.name
 
 
 class IntermediateCode:
@@ -32,9 +54,10 @@ class IntermediateCode:
         self.code_list: List[Quad] = []
         self.temp_var_count = 0
 
-    def get_new_temp_var(self):
+    def get_new_temp_var(self, const_flag=False):
         self.temp_var_count += 1
-        return "t" + str(self.temp_var_count)
+        return TempVar(self.temp_var_count, const_flag)
+        # return "t" + str(self.temp_var_count)
 
     def add_to_list(self, code: Quad):
         self.code_list.append(code)
@@ -80,7 +103,8 @@ def tac_Literal(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    temp = ic.get_new_temp_var()
+    temp = ic.get_new_temp_var(True)
+    temp.value = node.value
 
     # TODO: how to handle type here?
     ic.add_to_list(Quad(temp, None, node.value, "="))
@@ -219,5 +243,5 @@ def intermediate_codegen(ast: syntree.Node) -> IntermediateCode:
     ic = IntermediateCode()
 
     _recur_codegen(ast, ic)
-
+    
     return ic

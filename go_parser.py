@@ -12,6 +12,7 @@ import utils
 from utils import print_error, print_line, print_marker
 import syntree
 from tac import intermediate_codegen
+from ico import optimize_ic
 from tree_vis import draw_AST
 
 
@@ -994,7 +995,7 @@ if __name__ == "__main__":
         # print(result)
 
         ast = syntree.optimize_AST(ast)
-        draw_AST(ast)
+        # draw_AST(ast)
 
         # Intermediate Code gen
         ic = intermediate_codegen(ast)
@@ -1012,7 +1013,11 @@ if __name__ == "__main__":
 
         print("Type Table: ")
         print(type_table)
-
+                
         print("Intermediate code:")
-        # ic.print_three_address_code()
         print(ic)
+        
+        ico = optimize_ic(ic)
+
+        print("Optimized intermediate code:")
+        print(ico)
