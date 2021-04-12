@@ -376,9 +376,13 @@ class VarDecl(Node):
 
         if isinstance(type_, Node):
             children.append(type_)
+        else:
+            children.append(List([]))
 
         if isinstance(value, Node):
             children.append(value)
+        else:
+            children.append(List([]))
 
         super().__init__(name="DECL",
                          children=children,
