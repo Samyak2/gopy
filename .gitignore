@@ -1,4 +1,4 @@
-env/
+env*
 *__pycache__*
 ply/__pycache__*
 tmp*

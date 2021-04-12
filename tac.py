@@ -23,8 +23,8 @@ class Quad:
         #  self.func_name = str(func_name)
 
     def print_info(self):
-        print("{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2))
-    
+        print(str(self))
+
     def __str__(self):
         return "{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2)
 
@@ -47,7 +47,6 @@ class TempVar:
 
 
 class IntermediateCode:
-
     def __init__(self):
         #  self.code_list: List[Quad] = {Quad.func_name: []}
         self.code_list: List[Quad] = []
@@ -76,7 +75,8 @@ class IntermediateCode:
                 [[i.dest, i.op1, i.operator, i.op2] for i in self.code_list],
                 headers=["Dest", "Operand 1", "Operator", "Operand 2"],
                 tablefmt="psql",
-            ))
+            )
+        )
 
 
 def tac_BinOp(
@@ -90,8 +90,7 @@ def tac_BinOp(
     # the children can be temporaries made in the _recur_codegen call above
     # so they are stored in new_children which is used here
     # each return value is a list, so the second [0] is needed
-    ic.add_to_list(
-        Quad(temp, new_children[0][0], new_children[1][0], node.operator))
+    ic.add_to_list(Quad(temp, new_children[0][0], new_children[1][0], node.operator))
 
     return_val.append(temp)
 
@@ -123,8 +122,7 @@ def tac_PrimaryExpr(
             return_val.append(node.data[1])
 
         # not so simple identifier
-        elif len(node.children) == 1 and isinstance(node.children[0],
-                                                    syntree.Index):
+        elif len(node.children) == 1 and isinstance(node.children[0], syntree.Index):
             arr_name = node.data[1]
             index: syntree.Index = node.children[0]
             ident: Optional[SymbolInfo] = node.ident
@@ -156,8 +154,11 @@ def tac_PrimaryExpr(
 
             return_val.append(node)
 
-    elif (node.data is None and len(new_children) == 2 and
-          isinstance(new_children[1][0], syntree.Index)):
+    elif (
+        node.data is None
+        and len(new_children) == 2
+        and isinstance(new_children[1][0], syntree.Index)
+    ):
         # TODO: do array/slice indexing here
         print("array/slice indexing: ", new_children)
         arr_name_, index_ = new_children
@@ -173,8 +174,7 @@ def tac_PrimaryExpr(
         if ident is not None:
             print(ident.type_)
         else:
-            print("This should not be None, something is wrong", index,
-                  arr_name)
+            print("This should not be None, something is wrong", index, arr_name)
 
     # TODO: implement other variants of PrimaryExpr
 
@@ -241,5 +241,5 @@ def intermediate_codegen(ast: syntree.Node) -> IntermediateCode:
     ic = IntermediateCode()
 
     _recur_codegen(ast, ic)
-    
+
     return ic

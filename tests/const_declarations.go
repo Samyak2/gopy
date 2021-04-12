@@ -25,3 +25,4 @@ const two = "foo" + "foo"
 // const w = 5*"foo"
 // const added = Pi + size
 // const test = 5 + 5.0 * 5
+const brr = 7 + 8 + 3
