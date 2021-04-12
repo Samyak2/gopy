@@ -30,19 +30,17 @@ class Quad:
 
 
 class TempVar:
-    def __init__(self, id, const_flag):
+    def __init__(self, id):
         self.name = "t" + str(id)
-        self.const_flag = const_flag
+        self.const_flag = False
         self.value = None 
 
-    def get_name(self):
-        return self.name
-    
-    def get_const_flag(self):
+    def is_const(self):
         return self.const_flag
     
-    def set_const_flag(self, new_const_flag):
-        self.const_flag = new_const_flag
+    def make_const(self, value):
+        self.const_flag = True
+        self.value = value
     
     def __str__(self):
         return self.name
@@ -55,9 +53,9 @@ class IntermediateCode:
         self.code_list: List[Quad] = []
         self.temp_var_count = 0
 
-    def get_new_temp_var(self, const_flag=False):
+    def get_new_temp_var(self):
         self.temp_var_count += 1
-        return TempVar(self.temp_var_count, const_flag)
+        return TempVar(self.temp_var_count)
         # return "t" + str(self.temp_var_count)
 
     def add_to_list(self, code: Quad):
@@ -104,8 +102,8 @@ def tac_Literal(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    temp = ic.get_new_temp_var(True)
-    temp.value = node.value
+    temp = ic.get_new_temp_var()
+    temp.make_const(node.value)
 
     # TODO: how to handle type here?
     ic.add_to_list(Quad(temp, None, node.value, "="))
