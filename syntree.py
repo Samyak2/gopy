@@ -46,10 +46,12 @@ class BinOp(Node):
         # Starts Here #
         ###############
         self.type_ = None
+        #  print("This is binOp function")
         try:
             if isinstance(self.children[0], PrimaryExpr):
-                print(self.children[0])
-                if len(self.children[0].children) > 0 and isinstance(self.children[0].children[0],Index):
+                if len(self.children[0].children) > 0 and isinstance(
+                    self.children[0].children[0], Index
+                ):
                     x = symtab.get_symbol(self.children[0].data[1]).type_.eltype
 
                 else:
@@ -59,7 +61,9 @@ class BinOp(Node):
                 x = self.children[0].type_  # left operand
 
             if isinstance(self.children[1], PrimaryExpr):
-                if len(self.children[1].children) > 0 and isinstance(self.children[1].children[0],Index):
+                if len(self.children[1].children) > 0 and isinstance(
+                    self.children[1].children[0], Index
+                ):
                     y = symtab.get_symbol(self.children[1].data[1]).type_.eltype
 
                 else:
@@ -67,9 +71,8 @@ class BinOp(Node):
 
             else:
                 y = self.children[1].type_  # right operand
-            print(self.children)
-            print(x,y)
-
+            #  print("x is: {}".format(x))
+            #  print("x is: {}".format(y))
 
             def check_type(x, y):
                 if x == "int":
@@ -97,7 +100,7 @@ class BinOp(Node):
         except Exception as e:
             print(e)
             pass
-        print("Type is", self.type_)
+        #  print("Type is", self.type_)
         #############
         # Ends here #
         #############
@@ -116,7 +119,7 @@ class UnaryOp(Node):
         super().__init__("Unary", children=[operand], data=operator)
         self.operand = operand
         self.operator = operator
-        self.type_=None
+        self.type_ = None
 
         #  print(operand.data[0])
         #  try:
@@ -140,11 +143,12 @@ class PrimaryExpr(Node):
                     operand = children[0].data
                     children = children[1:]
 
-        super().__init__("PrimaryExpr",
-                         children=[] if children is None else children,
-                         data=operand)
+        super().__init__(
+            "PrimaryExpr", children=[] if children is None else children, data=operand
+        )
         self.ident: Optional[SymbolInfo] = symtab.get_symbol(
-            operand[1] if isinstance(operand, tuple) else "")
+            operand[1] if isinstance(operand, tuple) else ""
+        )
 
     def data_str(self):
         # self.data can be an IDENTIFIER sometimes, so just show the name
@@ -217,21 +221,16 @@ class Function(Node):
     """Node to store function declaration"""
 
     def __init__(self, name, signature, lineno: int, body=None):
-        super().__init__("FUNCTION",
-                         children=[signature, body],
-                         data=(name, lineno))
+        super().__init__("FUNCTION", children=[signature, body], data=(name, lineno))
         self.data: tuple
         if name is not None:
             # self.add_func_to_symtab(name[1], lineno, self)
             # symtab.declare_new_variable(
             #     name[1], lineno, 0, type_="FUNCTION", const=True, value=self
             # )
-            symtab.update_info(name[1],
-                               lineno,
-                               0,
-                               type_="FUNCTION",
-                               const=True,
-                               value=self)
+            symtab.update_info(
+                name[1], lineno, 0, type_="FUNCTION", const=True, value=self
+            )
 
         self.fn_name = name
         self.lineno = lineno
@@ -240,12 +239,9 @@ class Function(Node):
 
     @staticmethod
     def add_func_to_symtab(name, lineno, value=None):
-        symtab.declare_new_variable(name,
-                                    lineno,
-                                    0,
-                                    type_="FUNCTION",
-                                    const=True,
-                                    value=value)
+        symtab.declare_new_variable(
+            name, lineno, 0, type_="FUNCTION", const=True, value=value
+        )
 
     def data_str(self):
         return f"name: {self.fn_name}, lineno: {self.lineno}"
@@ -332,9 +328,9 @@ class Identifier(Node):
     """Node for identifiers"""
 
     def __init__(self, ident_tuple, lineno):
-        super().__init__("IDENTIFIER",
-                         children=[],
-                         data=(ident_tuple[1], lineno, ident_tuple[2]))
+        super().__init__(
+            "IDENTIFIER", children=[], data=(ident_tuple[1], lineno, ident_tuple[2])
+        )
         # symtab.add_if_not_exists(ident_tuple[1])
         self.ident_name = ident_tuple[1]
         self.lineno = lineno
@@ -351,9 +347,7 @@ class QualifiedIdent(Node):
     """Node for qualified identifiers"""
 
     def __init__(self, package_name, identifier):
-        super().__init__("IDENTIFIER",
-                         children=[],
-                         data=(package_name, identifier))
+        super().__init__("IDENTIFIER", children=[], data=(package_name, identifier))
 
     def data_str(self):
         return f"package: {self.data[0][1]}, name: {self.data[1][1]}"
@@ -362,11 +356,7 @@ class QualifiedIdent(Node):
 class VarDecl(Node):
     """Node to store one variable or const declaration"""
 
-    def __init__(self,
-                 ident: Identifier,
-                 type_=None,
-                 value=None,
-                 const: bool = False):
+    def __init__(self, ident: Identifier, type_=None, value=None, const: bool = False):
         self.ident = ident
         self.type_ = type_
         self.value = value
@@ -384,9 +374,9 @@ class VarDecl(Node):
         else:
             children.append(List([]))
 
-        super().__init__(name="DECL",
-                         children=children,
-                         data=(ident, type_, value, const))
+        super().__init__(
+            name="DECL", children=children, data=(ident, type_, value, const)
+        )
 
     def data_str(self):
         s = f"name: {self.ident.ident_name}"
@@ -435,12 +425,11 @@ def make_variable_decls(
                 if isinstance(expr, BinOp):
                     type_ = expr.type_
 
-                if isinstance(expr,UnaryOp):
+                if isinstance(expr, UnaryOp):
                     #  print("type is:",type_)
                     #  print("expr:",expr.data)
                     type_ = expr.type_
                     #  type_ = expr.type_
-
 
                 #  expr -> right side
                 #  type -> left side
@@ -450,14 +439,30 @@ def make_variable_decls(
                         print("Variable is not defined earlier but used")
                         return
 
-                    if (type_ is not None and type_.data in [
-                            "uint", "uint8", "uint16", "int8", "int16", "int32", "int64",
-                            "float32"
-                    ] and expr.data[0] != "string"):
+                    if (
+                        type_ is not None
+                        and type_.data
+                        in [
+                            "uint",
+                            "uint8",
+                            "uint16",
+                            "int8",
+                            "int16",
+                            "int32",
+                            "int64",
+                            "float32",
+                        ]
+                        and expr.data[0] != "string"
+                    ):
                         type_ = type_.data
+                    if type_ is not None and isinstance(type_,Array):
+                        type_ = type_.children[0].data[0]
 
-                    elif type_ is not None and type_ != "string" and type_.data != expr.data[
-                            0]:
+                    elif (
+                        type_ is not None
+                        and type_ != "string"
+                        and type_.data != expr.data[0]
+                    ):
                         #  print(type_.data, expr)
                         if type_.data == "float64" and expr.data[0] == "int":
                             expr.data = list(expr.data)
@@ -497,18 +502,14 @@ def make_variable_decls(
             #  Most important line
             type_ = None
     else:
-        raise NotImplementedError(
-            "Declaration with unpacking not implemented yet")
+        raise NotImplementedError("Declaration with unpacking not implemented yet")
 
     return var_list
 
 
 class ParameterDecl(Node):
-
     def __init__(self, type_, vararg=False, ident_list=None):
-        super().__init__("PARAMETERS",
-                         children=[type_, ident_list],
-                         data=vararg)
+        super().__init__("PARAMETERS", children=[type_, ident_list], data=vararg)
         self.type_ = type_
         self.vararg = vararg
         self.ident_list = ident_list
@@ -520,7 +521,6 @@ class ParameterDecl(Node):
 
 
 class IfStmt(Node):
-
     def __init__(self, body, expr, statement=None, next_=None):
         super().__init__("IF", children=[statement, expr, body, next_])
         self.statement = statement
@@ -530,7 +530,6 @@ class IfStmt(Node):
 
 
 class ForStmt(Node):
-
     def __init__(self, body, clause=None):
         super().__init__("FOR", children=[body, clause])
         self.body = body
@@ -538,7 +537,6 @@ class ForStmt(Node):
 
 
 class ForClause(Node):
-
     def __init__(self, init, cond, post):
         super().__init__("FOR_CLAUSE", children=[init, cond, post])
         self.init = init
@@ -547,21 +545,18 @@ class ForClause(Node):
 
 
 class RangeClause(Node):
-
     def __init__(self, expr, ident_list=None, expr_list=None):
         if ident_list is not None:
             self.var_decl = make_variable_decls(ident_list, expr)
         else:
             self.var_decl = None
-        super().__init__("RANGE",
-                         children=[expr, ident_list, expr_list, self.var_decl])
+        super().__init__("RANGE", children=[expr, ident_list, expr_list, self.var_decl])
         self.expr = expr
         self.ident_list = ident_list
         self.expr_list = expr_list
 
 
 class Struct(Type):
-
     def __init__(self, field_decl_list):
         self.fields = []
 
@@ -570,8 +565,7 @@ class Struct(Type):
             if i.ident_list is not None:
                 for ident in i.ident_list:
                     ident: Identifier
-                    self.fields.append(
-                        StructField(ident.ident_name, i.type_, i.tag))
+                    self.fields.append(StructField(ident.ident_name, i.type_, i.tag))
             elif i.embed_field is not None:
                 # TODO: handle pointer type here
                 self.fields.append(StructField(i.embed_field[1], None, i.tag))
@@ -580,22 +574,18 @@ class Struct(Type):
 
 
 class StructField(Node):
-
     def __init__(self, name, type_, tag):
         self.f_name = name
         self.type_ = type_
         self.tag = tag
 
-        super().__init__("StructField",
-                         children=[type_],
-                         data=(name, type_, tag))
+        super().__init__("StructField", children=[type_], data=(name, type_, tag))
 
     def data_str(self):
         return f"name: {self.f_name}, type: {self.type_}, tag: {self.tag}"
 
 
 class StructFieldDecl:
-
     def __init__(self, ident_list_or_embed_field, type_=None, tag=None):
         if isinstance(ident_list_or_embed_field, List):
             self.ident_list = ident_list_or_embed_field
@@ -609,7 +599,6 @@ class StructFieldDecl:
 
 
 class TypeDef(Node):
-
     def __init__(self, typename, type_: Type, type_table, lineno):
         self.typename = typename
         self.type_ = type_
