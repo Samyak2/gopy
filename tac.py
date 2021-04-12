@@ -46,6 +46,15 @@ class TempVar:
         return self.name
 
 
+class Operand:
+    def __init__(self, name: str, symbol: SymbolInfo):
+        self.name = name
+        self.symbol = symbol
+
+    def __str__(self):
+        return self.name
+
+
 class IntermediateCode:
     def __init__(self):
         #  self.code_list: List[Quad] = {Quad.func_name: []}
@@ -119,7 +128,7 @@ def tac_PrimaryExpr(
     if isinstance(node.data, tuple) and node.data[0] == "identifier":
         # a simple identifier
         if not node.children:
-            return_val.append(node.data[1])
+            return_val.append(Operand(node.ident.name, node.ident))
 
         # not so simple identifier
         elif len(node.children) == 1 and isinstance(node.children[0], syntree.Index):
@@ -160,7 +169,6 @@ def tac_PrimaryExpr(
         and isinstance(new_children[1][0], syntree.Index)
     ):
         # TODO: do array/slice indexing here
-        print("array/slice indexing: ", new_children)
         arr_name_, index_ = new_children
         arr_name = arr_name_[0]
         index: syntree.Index = index_[0]
@@ -190,6 +198,15 @@ def tac_Index(
 ):
     return_val.append(new_children[0])
 
+
+def tac_VarDecl(
+    ic: IntermediateCode,
+    node: syntree.VarDecl,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    ic.add_to_list(Quad(node.ident.ident_name, None, new_children[1][0], "="))
+    return_val.append(node.ident.ident_name)
 
 # def tac_Array(
 #     ic: IntermediateCode,
