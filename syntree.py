@@ -75,7 +75,24 @@ class BinOp(Node):
 
                 return 0
 
-            if x != y:
+            rel_oper = ["==", "!=", "<", ">", ">=", "<="]
+            if self.data in rel_oper:
+                if x == y:
+                    self.type_ = "bool"
+                else:
+                    LIST1 = list(
+                        set(type_table.type_map.keys())
+                        - {"string", "unknown", "FUNCTION"}
+                    )
+                    if x in LIST1 and y in LIST1:
+                        self.type_ = "bool"
+                    else:
+                        print_error(
+                            "Type Mismatch",
+                            kind="TYPE ERROR",
+                        )
+
+            elif x != y:
                 val1 = check_type(x, y)
                 val2 = check_type(y, x)
                 if (
@@ -94,7 +111,11 @@ class BinOp(Node):
                     print_marker(0, len(lines[self.lineno - 1]))
 
             else:
-                self.type_ = x
+                if self.data in rel_oper:
+                    self.type = "bool"
+
+                else:
+                    self.type_ = x
         except Exception:
             traceback.format_exc()
 
