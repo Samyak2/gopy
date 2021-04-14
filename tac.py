@@ -333,7 +333,8 @@ def tac_VarDecl(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    ic.add_to_list(Assign(ActualVar(node.symbol), new_children[1][0]))
+    if len(new_children[1]) > 0:
+        ic.add_to_list(Assign(ActualVar(node.symbol), new_children[1][0]))
     return_val.append(node.ident.ident_name)
 
 

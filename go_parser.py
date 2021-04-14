@@ -998,7 +998,7 @@ if __name__ == "__main__":
         # print(result)
 
         ast = syntree.optimize_AST(ast)
-        # draw_AST(ast)
+        draw_AST(ast)
 
         # Intermediate Code gen
         ic = intermediate_codegen(ast)
@@ -1019,10 +1019,10 @@ if __name__ == "__main__":
 
         print("Intermediate code:")
         print(ic)
-        # ic.print_three_address_code()
+        ic.print_three_address_code()
 
-        # ico = optimize_ic(ic)
+        ico = optimize_ic(ic)
 
-        # print("Optimized intermediate code:")
-        # print(ico)
-        # ic.print_three_address_code()
+        print("Optimized intermediate code:")
+        print(ico)
+        ic.print_three_address_code()
