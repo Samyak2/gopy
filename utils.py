@@ -29,3 +29,13 @@ def print_marker(pos, width=1):
         Style.RESET_ALL,
         sep="",
     )
+
+
+def print_line_marker_nowhitespace(lineno):
+    line = lines[lineno - 1]
+    line = line.expandtabs(1)
+    leading_spaces = len(line) - len(line.lstrip(" "))
+    ending_spaces = len(line) - len(line.rstrip(" "))
+
+    print_line(lineno)
+    print_marker(leading_spaces, len(line) - leading_spaces - ending_spaces)

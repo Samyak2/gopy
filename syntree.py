@@ -3,7 +3,7 @@ from typing import Any, Optional
 import traceback
 
 from go_lexer import symtab, type_table
-from utils import print_error, print_line, print_marker, lines
+from utils import print_error, print_line, print_line_marker_nowhitespace, print_marker, lines
 
 
 class Node:
@@ -79,24 +79,7 @@ class BinOp(Node):
 
                 return 0
 
-            rel_oper = ["==", "!=", "<", ">", ">=", "<="]
-            if self.data in rel_oper:
-                if x == y:
-                    self.type_ = "bool"
-                else:
-                    LIST1 = list(
-                        set(type_table.type_map.keys())
-                        - {"string", "unknown", "FUNCTION"}
-                    )
-                    if x in LIST1 and y in LIST1:
-                        self.type_ = "bool"
-                    else:
-                        print_error(
-                            "Type Mismatch",
-                            kind="TYPE ERROR",
-                        )
-
-            elif x != y:
+            if x != y:
                 val1 = check_type(x, y)
                 val2 = check_type(y, x)
                 if (
@@ -111,11 +94,13 @@ class BinOp(Node):
                         f"Cannot apply operation {self.operator}"
                         f" on types {x} and {y}"
                     )
-                    print_line(self.lineno)
-                    print_marker(0, len(lines[self.lineno - 1]))
+                    print_line_marker_nowhitespace(self.lineno)
+
+                if self.is_relop:
+                    self.type = "bool"
 
             else:
-                if self.data in rel_oper:
+                if self.is_relop:
                     self.type = "bool"
 
                 else:
@@ -505,8 +490,7 @@ def make_variable_decls(
                             f"Cannot use expression of type {inf_typename} as "
                             f"assignment to type {typename}"
                         )
-                        print_line(ident.lineno)
-                        print_marker(0, len(lines[ident.lineno - 1]))
+                        print_line_marker_nowhitespace(ident.lineno)
 
             symtab.declare_new_variable(
                 ident.ident_name,
@@ -557,8 +541,7 @@ class IfStmt(Node):
                 print("Cannot use non-boolean binary operator "
                       f"{self.expr.operator}"
                       " in a condition")
-                print_line(lineno)
-                print_marker(0, len(lines[lineno - 1]))
+                print_line_marker_nowhitespace(lineno)
 
 
 class ForStmt(Node):
