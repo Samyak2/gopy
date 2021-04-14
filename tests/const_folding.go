@@ -6,5 +6,6 @@ func main() {
 	var c int = 14 * 15;
 	// c = 16 / 4;
 	var d int = a + b + 20;
+	return d
 }
 
