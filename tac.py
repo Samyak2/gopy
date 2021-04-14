@@ -263,7 +263,7 @@ def tac_VarDecl(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    ic.add_to_list(Quad(node.ident.ident_name, None, new_children[1][0], "="))
+    ic.add_to_list(Quad(ActualVar(node.symbol), None, new_children[1][0], "="))
     return_val.append(node.ident.ident_name)
 
 # def tac_Array(

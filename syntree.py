@@ -361,6 +361,7 @@ class VarDecl(Node):
         self.type_ = type_
         self.value = value
         self.const = const
+        self.symbol: SymbolInfo = symtab.get_symbol(self.ident.ident_name)
 
         children = []
 
