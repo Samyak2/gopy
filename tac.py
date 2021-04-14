@@ -130,7 +130,7 @@ class TempVar(Operand):
     def __init__(self, id: int, value: Any = None):
         self.__name = "t" + str(id)
         self.value = value
-        self.__const_flag = True if value else False
+        self.__const_flag = True if value != None else False
 
     @property
     def name(self):
