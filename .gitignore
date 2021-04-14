@@ -8,3 +8,7 @@ syntax_tree.txt
 symbol_table.txt
 ast.dot
 ast.png
+tests/binary_search
+tests/binary_search_loop
+tests/dead_code
+*.stats
