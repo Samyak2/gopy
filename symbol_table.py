@@ -140,6 +140,7 @@ class SymbolInfo:
     # storage: Optional[int] = None
     # node: Optional[Node] = None
     const: bool = False
+    const_flag: bool = False
     value: Any = None
     uses: list = field(default_factory=list)
 
