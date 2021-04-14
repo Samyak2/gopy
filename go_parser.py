@@ -622,7 +622,10 @@ def p_PrimaryExpr(p):
         else:
             p[0] = syntree.PrimaryExpr(operand=p[1])
     elif len(p) == 3:
-        p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
+        if isinstance(p[2], syntree.Arguments):
+            p[0] = syntree.FunctionCall(p[1], p[2])
+        else:
+            p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
 
 
 def p_Arguments(p):
@@ -995,7 +998,7 @@ if __name__ == "__main__":
         # print(result)
 
         ast = syntree.optimize_AST(ast)
-        # draw_AST(ast)
+        draw_AST(ast)
 
         # Intermediate Code gen
         ic = intermediate_codegen(ast)
@@ -1016,6 +1019,8 @@ if __name__ == "__main__":
 
         print("Intermediate code:")
         print(ic)
+
+        ic.print_three_address_code()
 
         # ico = optimize_ic(ic)
 

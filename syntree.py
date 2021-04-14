@@ -1,5 +1,5 @@
 from symbol_table import SymbolInfo
-from typing import Optional
+from typing import Any, Optional
 
 from go_lexer import symtab, type_table
 from utils import print_error, print_line, print_marker
@@ -137,6 +137,7 @@ class PrimaryExpr(Node):
     def __init__(self, operand, children=None):
         # small optimization for the case when PrimaryExpr
         # has children of [PrimaryExpr, something]
+        # with PrimaryExpr having only data and no children
         if operand is None and children is not None:
             if len(children) == 2 and isinstance(children[0], PrimaryExpr):
                 if children[0].children is None or children[0].children == []:
@@ -206,6 +207,44 @@ class Arguments(Node):
     def __init__(self, expression_list):
         super().__init__("arguments", children=[expression_list])
         self.expression_list = expression_list
+
+
+class FunctionCall(Node):
+    """Node for a function call
+
+    Is a part of PrimaryExpr in the grammar, but separated here"""
+
+    def __init__(self, fn_name: Any, arguments: Arguments):
+        if (
+            isinstance(fn_name, PrimaryExpr)
+            and isinstance(fn_name.data, tuple)
+            and fn_name.data[0] == "identifier"
+        ):
+            fn_name = str(fn_name.data[1])
+
+        self.fn_name = fn_name
+        self.arguments = arguments
+
+        super().__init__("FunctionCall", children=[arguments], data=fn_name)
+
+    @staticmethod
+    def get_fn_name(fn_name) -> str:
+        if isinstance(fn_name, QualifiedIdent):
+            return f"{fn_name.data[0][1]}__{fn_name.data[1][1]}"
+        elif isinstance(fn_name, tuple) and fn_name[0] == "identifier":
+            return fn_name[1]
+        elif isinstance(fn_name, str):
+            return fn_name
+        else:
+            raise Exception(
+                "Function call name could not be determined from fn_name "
+                f"{fn_name}"
+            )
+
+    def data_str(self):
+        if isinstance(self.fn_name, QualifiedIdent):
+            return self.fn_name.data_str()
+        return self.fn_name
 
 
 class Signature(Node):
@@ -361,7 +400,7 @@ class VarDecl(Node):
         self.type_ = type_
         self.value = value
         self.const = const
-        self.symbol: SymbolInfo = symtab.get_symbol(self.ident.ident_name)
+        self.symbol: Optional[SymbolInfo] = symtab.get_symbol(self.ident.ident_name)
 
         children = []
 
@@ -456,7 +495,7 @@ def make_variable_decls(
                         and expr.data[0] != "string"
                     ):
                         type_ = type_.data
-                    if type_ is not None and isinstance(type_,Array):
+                    if type_ is not None and isinstance(type_, Array):
                         type_ = type_.children[0].data[0]
 
                     elif (

@@ -60,7 +60,6 @@ class TypeTable:
         "byte": 1,
         "bool": 1,
         "rune": 4,
-        "string" : None
     }
 
     def __init__(self):
@@ -70,8 +69,7 @@ class TypeTable:
             self.add_type(typename, None, None, storage=storage)
 
         self.add_type("FUNCTION", None, None, None)
-        self.add_type("ARRAY", None, None, None)
-        self.add_type("SLICE", None, None, None)
+        self.add_type("string", None, None, None, eltype="rune")
 
     def is_defined(self, name: str):
         """Check if a type is defined"""

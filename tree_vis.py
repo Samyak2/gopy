@@ -60,6 +60,10 @@ def _recur_draw(graph: pydot.Graph, cache: defaultdict, node: Node, rank: int = 
             fillcolor = "lightblue"
             color = "navy"
 
+        elif isinstance(child, syntree.FunctionCall):
+            fillcolor = "orange"
+            color = "red"
+
         child_node = pydot.Node(
             child_name,
             label=child_label,
