@@ -118,7 +118,7 @@ class TempVar(Operand):
 class ActualVar(Operand):
     def __init__(self, symbol: Optional[SymbolInfo]):
         self.__symbol = symbol
-        self.__const_flag = self.symbol.const
+        self.symbol.const_flag = self.symbol.const
 
     @property
     def symbol(self):
@@ -129,8 +129,8 @@ class ActualVar(Operand):
         return self.symbol.name
 
     def is_const(self):
-        return self.__const_flag
-
+        return self.symbol.const_flag
+    
     @property
     def value(self):
         if self.is_const():
@@ -143,10 +143,8 @@ class ActualVar(Operand):
     @value.setter
     def value(self, value: Any):
         if self.symbol.const:
-            raise Exception(
-                self.name + " is a defined constant and its value cannot be changed!"
-            )
-        self.__const_flag = True
+            raise Exception(self.name + " is a defined constant and its value cannot be changed!")
+        self.symbol.const_flag = True
         self.symbol.value = value
 
 

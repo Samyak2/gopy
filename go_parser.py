@@ -1019,10 +1019,10 @@ if __name__ == "__main__":
 
         print("Intermediate code:")
         print(ic)
-
         ic.print_three_address_code()
 
-        # ico = optimize_ic(ic)
+        ico = optimize_ic(ic)
 
-        # print("Optimized intermediate code:")
-        # print(ico)
+        print("Optimized intermediate code:")
+        print(ico)
+        ic.print_three_address_code()
