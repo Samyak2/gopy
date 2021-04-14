@@ -1,3 +1,5 @@
+import abc
+
 from symbol_table import SymbolInfo
 from typing import Any, List, Optional
 
@@ -29,30 +31,87 @@ class Quad:
         return "{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2)
 
 
-class TempVar:
-    def __init__(self, id):
-        self.name = "t" + str(id)
-        self.const_flag = False
-        self.value = None
+class Operand(metaclass=abc.ABCMeta):
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        pass
+
+    @abc.abstractmethod
+    def is_const(self):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def value(self):
+        pass
+
+    @value.setter
+    @abc.abstractmethod
+    def value(self, value: Any):
+        pass
+
+    def __str__(self):
+        return self.name
+
+
+class TempVar(Operand):
+    def __init__(self, id: int, value: Any = None):
+        self.__name = "t" + str(id)
+        self.value = value
+        self.__const_flag = True if value else False
+
+    @property
+    def name(self):
+        return self.__name
 
     def is_const(self):
-        return self.const_flag
+        return self.__const_flag
 
-    def make_const(self, value):
-        self.const_flag = True
-        self.value = value
+    @property
+    def value(self):
+        if self.is_const():
+            return self.__value
+        else:
+            raise Exception(self.name + " is not a constant and has no value attribute!")
 
-    def __str__(self):
-        return self.name
+    @value.setter
+    def value(self, value: Any):
+        self.__const_flag = True
+        self.__value = value
 
 
-class Operand:
-    def __init__(self, name: str, symbol: SymbolInfo):
-        self.name = name
-        self.symbol = symbol
+class ActualVar(Operand):
 
-    def __str__(self):
-        return self.name
+    def __init__(self, symbol: SymbolInfo):
+        self.__symbol = symbol
+        self.__const_flag = self.symbol.const
+
+    @property
+    def symbol(self):
+        return self.__symbol
+
+    @property
+    def name(self):
+        return self.symbol.name
+    
+    def is_const(self):
+        return self.__const_flag
+    
+    @property
+    def value(self):
+        if self.is_const():
+            return self.symbol.value
+        else:
+            raise Exception(self.name + " is not a constant and has no value attribute!")
+
+    @value.setter
+    def value(self, value: Any):
+        if self.symbol.const:
+            raise Exception(self.name + " is a defined constant and its value cannot be changed!")
+        self.__const_flag = True
+        self.symbol.value = value
 
 
 class IntermediateCode:
@@ -61,9 +120,9 @@ class IntermediateCode:
         self.code_list: List[Quad] = []
         self.temp_var_count = 0
 
-    def get_new_temp_var(self):
+    def get_new_temp_var(self, value: Any = None):
         self.temp_var_count += 1
-        return TempVar(self.temp_var_count)
+        return TempVar(self.temp_var_count, value)
         # return "t" + str(self.temp_var_count)
 
     def add_to_list(self, code: Quad):
@@ -110,8 +169,7 @@ def tac_Literal(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    temp = ic.get_new_temp_var()
-    temp.make_const(node.value)
+    temp = ic.get_new_temp_var(node.value)
 
     # TODO: how to handle type here?
     ic.add_to_list(Quad(temp, None, node.value, "="))
