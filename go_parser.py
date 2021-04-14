@@ -583,7 +583,7 @@ def p_Expression(p):
     # TODO : Add other binary operators
 
     if len(p) == 4:
-        p[0] = syntree.BinOp(p[2], left=p[1], right=p[3])
+        p[0] = syntree.BinOp(p[2], left=p[1], right=p[3], lineno=p.lineno(2))
     else:
         p[0] = p[1]
 
@@ -998,7 +998,7 @@ if __name__ == "__main__":
         # print(result)
 
         ast = syntree.optimize_AST(ast)
-        draw_AST(ast)
+        # draw_AST(ast)
 
         # Intermediate Code gen
         ic = intermediate_codegen(ast)
@@ -1019,10 +1019,10 @@ if __name__ == "__main__":
 
         print("Intermediate code:")
         print(ic)
-        ic.print_three_address_code()
+        # ic.print_three_address_code()
 
-        ico = optimize_ic(ic)
+        # ico = optimize_ic(ic)
 
-        print("Optimized intermediate code:")
-        print(ico)
-        ic.print_three_address_code()
+        # print("Optimized intermediate code:")
+        # print(ico)
+        # ic.print_three_address_code()

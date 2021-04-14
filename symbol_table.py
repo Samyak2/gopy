@@ -69,6 +69,7 @@ class TypeTable:
             self.add_type(typename, None, None, storage=storage)
 
         self.add_type("FUNCTION", None, None, None)
+        self.add_type("unknown", None, None, None)
         self.add_type("string", None, None, None, eltype="rune")
 
     def is_defined(self, name: str):

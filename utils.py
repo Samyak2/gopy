@@ -7,8 +7,8 @@ def print_lexer_error(err_str=""):
     print(f"{Fore.RED}ERROR: {err_str}{Style.RESET_ALL}")
 
 
-def print_error(err_str=""):
-    print(f"{Fore.RED}SYNTAX ERROR: {err_str}{Style.RESET_ALL}")
+def print_error(err_str="", kind="SYNTAX ERROR"):
+    print(f"{Fore.RED}{kind}: {err_str}{Style.RESET_ALL}")
 
 
 def print_line(lineno):

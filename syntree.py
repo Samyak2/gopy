@@ -1,8 +1,9 @@
 from symbol_table import SymbolInfo
 from typing import Any, Optional
+import traceback
 
 from go_lexer import symtab, type_table
-from utils import print_error, print_line, print_marker
+from utils import print_error, print_line, print_marker, lines
 
 
 class Node:
@@ -36,74 +37,66 @@ class Node:
 class BinOp(Node):
     """Node for binary operations"""
 
-    def __init__(self, operator, left=None, right=None, type_=None):
+    def __init__(self, operator, left=None, right=None, type_=None, lineno=None):
         super().__init__("Binary", children=[left, right], data=operator)
         self.operator = self.data
         self.left = left
         self.right = right
+        self.lineno = lineno
 
-        ###############
-        # Starts Here #
-        ###############
         self.type_ = None
-        #  print("This is binOp function")
         try:
-            if isinstance(self.children[0], PrimaryExpr):
-                if len(self.children[0].children) > 0 and isinstance(
-                    self.children[0].children[0], Index
-                ):
-                    x = symtab.get_symbol(self.children[0].data[1]).type_.eltype
+
+            def get_type(child: Node) -> str:
+
+                if isinstance(child, PrimaryExpr):
+                    if len(child.children) > 0 and isinstance(child.children[0], Index):
+                        x = symtab.get_symbol(child.data[1]).type_.eltype
+
+                    else:
+                        x = symtab.get_symbol(child.data[1]).type_.name
+
+                elif hasattr(child, "type_"):
+                    x = getattr(child, "type_")
 
                 else:
-                    x = symtab.get_symbol(self.children[0].data[1]).type_.name
+                    raise Exception("Could not determine type of child", child)
 
-            else:
-                x = self.children[0].type_  # left operand
+                return x
 
-            if isinstance(self.children[1], PrimaryExpr):
-                if len(self.children[1].children) > 0 and isinstance(
-                    self.children[1].children[0], Index
-                ):
-                    y = symtab.get_symbol(self.children[1].data[1]).type_.eltype
-
-                else:
-                    y = symtab.get_symbol(self.children[1].data[1]).type_.name
-
-            else:
-                y = self.children[1].type_  # right operand
-            #  print("x is: {}".format(x))
-            #  print("x is: {}".format(y))
+            x = get_type(self.children[0])
+            y = get_type(self.children[1])
 
             def check_type(x, y):
                 if x == "int":
                     if y == "float64":
                         self.type_ = "float64"
-
-                    #  elif y == "bool":
-                    #      self.type_ = "int"
-                    #  return 1
-
-                #  elif x == "float64":
-                #      if y == "bool":
-                #          self.type_ = "float64"
-                #          return 1
+                        return 1
 
                 return 0
 
             if x != y:
                 val1 = check_type(x, y)
                 val2 = check_type(y, x)
-                if not (val1 | val2):
-                    print_error("Type Mismatch")
+                if (
+                    not isinstance(self.children[0], Literal)
+                    and not isinstance(self.children[1], Literal)
+                ) or not (val1 | val2):
+                    print_error(
+                        "Type Mismatch",
+                        kind="TYPE ERROR",
+                    )
+                    print(
+                        f"Cannot apply operation {self.operator}"
+                        f" on types {x} and {y}"
+                    )
+                    print_line(self.lineno)
+                    print_marker(0, len(lines[self.lineno - 1]))
+
             else:
                 self.type_ = x
-        except Exception as e:
-            print(e)
-            pass
-        #  print("Type is", self.type_)
-        #############
-        # Ends here #
-        #############
+        except Exception:
+            traceback.format_exc()
 
 
 class Assignment(BinOp):
@@ -116,16 +109,16 @@ class UnaryOp(Node):
     def __init__(self, operator, operand):
         if isinstance(operand, UnaryOp) and operand.operator is None:
             operand = operand.operand
+
         super().__init__("Unary", children=[operand], data=operator)
         self.operand = operand
         self.operator = operator
         self.type_ = None
 
-        #  print(operand.data[0])
-        #  try:
-        self.type_ = operand.data[0]
-        #  except:
-        #      pass
+        if hasattr(operand, "type_"):
+            self.type_ = operand.type_
+        else:
+            self.type_ = operand.data[0]
 
 
 class PrimaryExpr(Node):
@@ -237,8 +230,7 @@ class FunctionCall(Node):
             return fn_name
         else:
             raise Exception(
-                "Function call name could not be determined from fn_name "
-                f"{fn_name}"
+                "Function call name could not be determined from fn_name " f"{fn_name}"
             )
 
     def data_str(self):
@@ -456,77 +448,37 @@ def make_variable_decls(
         ident: Identifier
         expr: Node
         for ident, expr in zip(identifier_list, expression_list):
-            # TODO: check value is appropriate for type
+            # type inference
+            inf_type = "unknown"
+            if isinstance(expr, BinOp) or isinstance(expr, UnaryOp):
+                inf_type = expr.type_
+            elif isinstance(expr, Literal):
+                inf_type = expr.type_
+            else:
+                print("Could not determine type: ", ident, expr)
 
-            ###############################
-            # From here the changes start #
-            ###############################
-            try:
-                if isinstance(expr, BinOp):
-                    type_ = expr.type_
+            if inf_type is None:
+                inf_type = "unknown"
 
-                if isinstance(expr, UnaryOp):
-                    #  print("type is:",type_)
-                    #  print("expr:",expr.data)
-                    type_ = expr.type_
-                    #  type_ = expr.type_
+            inf_typename = get_typename(inf_type)
 
-                #  expr -> right side
-                #  type -> left side
+            # now check if the LHS and RHS types match
+            if type_ is None:
+                type_ = inf_type
+            else:
+                # get just the type name
+                typename = get_typename(type_)
 
-                else:
-                    if expr is None:
-                        print("Variable is not defined earlier but used")
-                        return
-
-                    if (
-                        type_ is not None
-                        and type_.data
-                        in [
-                            "uint",
-                            "uint8",
-                            "uint16",
-                            "int8",
-                            "int16",
-                            "int32",
-                            "int64",
-                            "float32",
-                        ]
-                        and expr.data[0] != "string"
-                    ):
-                        type_ = type_.data
-                    if type_ is not None and isinstance(type_, Array):
-                        type_ = type_.children[0].data[0]
-
-                    elif (
-                        type_ is not None
-                        and type_ != "string"
-                        and type_.data != expr.data[0]
-                    ):
-                        #  print(type_.data, expr)
-                        if type_.data == "float64" and expr.data[0] == "int":
-                            expr.data = list(expr.data)
-                            expr.data[1] = float(expr.data[1])
-                            expr.data[0] = type_.data
-
-                        elif type_.data == "int" and expr.data[0] == "float64":
-                            expr.data = list(expr.data)
-                            expr.data[1] = int(expr.data[1])
-                            expr.data[0] = type_.data
-
-                        else:
-                            print_error("Mismatch in VarDecl types")
-                            return
-
-                    else:
-                        if not type_:
-                            type_ = expr.data[0]
-            except:
-                pass
-
-            ################
-            #  Ends here
-            ################
+                if typename != inf_typename:
+                    # special case for literal
+                    if not isinstance(expr, Literal):
+                        print_error("Type Mismatch", kind="TYPE ERROR")
+                        print(
+                            f"Cannot use expression of type {inf_typename} as "
+                            f"assignment to type {typename}"
+                        )
+                        print_line(ident.lineno)
+                        print_marker(0, len(lines[ident.lineno - 1]))
 
             symtab.declare_new_variable(
                 ident.ident_name,
@@ -646,6 +598,20 @@ class TypeDef(Node):
         super().__init__(name="TypeDef", children=[type_], data=typename)
 
         type_table.add_type(typename[1], lineno, typename[2], None)
+
+
+def get_typename(type_) -> str:
+    """Returns just the typename from given type"""
+    if isinstance(type_, str):
+        return type_
+    if isinstance(type_, Array) or isinstance(type_, Slice):
+        return type_.typename
+    if isinstance(type_, Struct):
+        raise NotImplementedError("Type name for struct not supported yet")
+    if isinstance(type_, Type):
+        return str(type_.data)
+
+    raise Exception("Could not determine type from given:", type_)
 
 
 def _optimize(node: Node) -> Node:
