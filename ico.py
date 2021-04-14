@@ -1,44 +1,67 @@
+from math import log2
 from copy import deepcopy
+
 from tac import IntermediateCode, Quad, Assign, Operand
 
 
 bools = {True: 'true', False: 'false'}
 
 
-def binary_eval(dest: Quad, op1: Quad, operator: str, op2: Quad):
-    op1, op2 = op1.value, op2.value
-    if operator == '+':
-        dest.value = op1 + op2
-    elif operator == '-':
-        dest.value = op1 - op2
-    elif operator == '*':
-        dest.value = op1 * op2
-    elif operator == '/':
-        # TODO: calculate result based on type of dest
-        # ints = {'int', 'int8', 'int16', 'int32', 'int64'}
-        # floats = {'float32', 'float64'}
-        # if dest.symbol.type_.name in ints:
-        #     dest.value = op1 // op2
-        # elif dest.symbol.type_.name in floats:
-        #     dest.value = op1 / op2
-        # else:
-        #     raise NotImplementedError("Support for types other than int and float have not been added yet!")
-        
-        dest.value = op1 / op2
-    elif operator == '==':
-        dest.value = bools[op1 == op2]
-    elif operator == '!=':
-        dest.value = bools[op1 != op2]
-    elif operator == '<':
-        dest.value = bools[op1 < op2]
-    elif operator == '>':
-        dest.value = bools[op1 > op2]
-    elif operator == '<=':
-        dest.value = bools[op1 <= op2]
-    elif operator == '>=':
-        dest.value = bools[op1 >= op2]
+def is_power_of_2(x):
+    return (x and (not(x & (x - 1))))
+
+
+def binary_eval(q: Quad):
+    dest, op1, operator, op2 = q.dest, q.op1, q.operator, q.op2
+
+    if op1.is_const() and op2.is_const():
+        if operator == '+':
+            dest.value = op1.value + op2.value
+        elif operator == '-':
+            dest.value = op1.value - op2.value
+        elif operator == '*':
+            dest.value = op1.value * op2.value
+        elif operator == '/':
+            # TODO: calculate result based on type of dest
+            # ints = {'int', 'int8', 'int16', 'int32', 'int64'}
+            # floats = {'float32', 'float64'}
+            # if dest.symbol.type_.name in ints:
+            #     dest.value = op1.value // op2.value
+            # elif dest.symbol.type_.name in floats:
+            #     dest.value = op1.value / op2.value
+            # else:
+            #     raise NotImplementedError("Support for types other than int and float have not been added yet!")
+            
+            dest.value = op1.value / op2.value
+        elif operator == '==':
+            dest.value = bools[op1.value == op2.value]
+        elif operator == '!=':
+            dest.value = bools[op1.value != op2.value]
+        elif operator == '<':
+            dest.value = bools[op1.value < op2.value]
+        elif operator == '>':
+            dest.value = bools[op1.value > op2.value]
+        elif operator == '<=':
+            dest.value = bools[op1.value <= op2.value]
+        elif operator == '>=':
+            dest.value = bools[op1.value >= op2.value]
+        else:
+            raise Exception(operator + " is an invalid binary operator!")
+        q = Assign(q.dest, q.dest.value)
+    elif op1.is_const():
+        if is_power_of_2(op1.value) and operator == '*':
+            q.op1, q.op2 = q.op2, int(log2(op1.value))
+            q.operator = '<<'
+    elif q.op2.is_const():
+        if is_power_of_2(op2.value):
+            q.op2 = int(log2(op2.value))
+            if operator == '*':
+                q.operator = '<<'
+            elif operator == '/':
+                q.operator = '>>'
     else:
-        raise Exception(operator + " is an invalid binary operator!")
+        pass
+    return q
 
 
 def print_quad_info(q: Quad):
@@ -50,6 +73,7 @@ def print_quad_info(q: Quad):
     print()
 
 
+# NOTE: Original ic is modified during optimization
 def optimize_ic(ic):
     ic = deepcopy(ic)
     ico = IntermediateCode()
@@ -63,10 +87,9 @@ def optimize_ic(ic):
             if isinstance(q, Assign) and q.op2.is_const():
                 q.dest.value = q.op2.value
                 q.op2 = q.dest.value
-            elif isinstance(q.op1, Operand) and q.op1.is_const() and q.op2.is_const():
-                binary_eval(q.dest, q.op1, q.operator, q.op2)
-                q = Assign(q.dest, q.dest.value)
-        
+            elif isinstance(q.op1, Operand):
+                q = binary_eval(q)
+
         print("after optimization:")
         print_quad_info(q)
         
