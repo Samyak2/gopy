@@ -56,10 +56,10 @@ func main2() {
 		//do something
 	}
 
-	var numbers [6]int
-	for i,x:= range numbers {
-		fmt.Printf("value of x = %d at %d\n", x,i)
-	}
+	// var numbers [6]int
+	// for i,x:= range numbers {
+	// 	fmt.Printf("value of x = %d at %d\n", x,i)
+	// }
 
 	for true  {
 		fmt.Printf("This loop will run forever.\n");
