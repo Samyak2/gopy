@@ -7,7 +7,13 @@ from colorama import Fore, Style
 from ply import yacc
 
 import go_lexer
-from go_lexer import required_tokens_for_parser as tokens, lex, find_column, symtab, type_table
+from go_lexer import (
+    required_tokens_for_parser as tokens,
+    lex,
+    find_column,
+    symtab,
+    type_table,
+)
 import utils
 from utils import print_error, print_line, print_marker
 import syntree
@@ -305,15 +311,17 @@ def p_IfStmt(p):
     | KW_IF new_scope SimpleStmt ';' Expression Block leave_scope KW_ELSE Block
     """
     if len(p) == 5:
-        p[0] = syntree.IfStmt(body=p[4], expr=p[3])
+        p[0] = syntree.IfStmt(body=p[4], expr=p[3], lineno=p.lineno(1))
         symtab.leave_scope()
     elif len(p) == 7:
-        p[0] = syntree.IfStmt(body=p[6], expr=p[5], statement=p[3])
+        p[0] = syntree.IfStmt(body=p[6], expr=p[5], statement=p[3], lineno=p.lineno(1))
         symtab.leave_scope()
     elif len(p) == 8:
-        p[0] = syntree.IfStmt(body=p[4], expr=p[3], next_=p[7])
+        p[0] = syntree.IfStmt(body=p[4], expr=p[3], next_=p[7], lineno=p.lineno(1))
     elif len(p) == 10:
-        p[0] = syntree.IfStmt(body=p[6], statement=p[3], expr=p[5], next_=p[9])
+        p[0] = syntree.IfStmt(
+            body=p[6], statement=p[3], expr=p[5], next_=p[9], lineno=p.lineno(1)
+        )
 
 
 def p_ForStmt(p):
@@ -639,8 +647,7 @@ def p_Arguments(p):
 
 
 def p_Index(p):
-    """Index : '[' Expression ']'
-    """
+    """Index : '[' Expression ']'"""
     p[0] = syntree.Index(p[2])
 
 
@@ -692,8 +699,7 @@ def p_Literal(p):
 
 
 def p_CompositeLit(p):
-    """CompositeLit : LiteralType LiteralValue
-    """
+    """CompositeLit : LiteralType LiteralValue"""
     p[0] = syntree.Literal(type_=p[1], value=p[2])
 
 
@@ -712,8 +718,7 @@ def p_LiteralType(p):
 
 
 def p_LiteralValue(p):
-    """LiteralValue : '{' ElementList '}'
-    """
+    """LiteralValue : '{' ElementList '}'"""
     if len(p) == 3:
         p[0] = None
     elif len(p) == 4:
@@ -725,8 +730,7 @@ def p_LiteralValue(p):
 
 
 def p_ElementList(p):
-    """ElementList : KeyedElementList
-    """
+    """ElementList : KeyedElementList"""
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -748,8 +752,7 @@ def p_KeyedElementList(p):
 
 
 def p_KeyedElement(p):
-    """KeyedElement : Element
-    """
+    """KeyedElement : Element"""
     # TODO: add `Key ':' Element`
     if len(p) == 2:
         p[0] = (None, p[1])
@@ -844,8 +847,7 @@ def p_Type(p):
 
 
 def p_TypeName(p):
-    """TypeName : BasicType
-    """
+    """TypeName : BasicType"""
     # TODO: QualifiedIdent here gives R/R conflict
     if isinstance(p[1], tuple) and p[1][0] == "identifier":
         p[0] = p[1][1]
@@ -903,8 +905,7 @@ def p_ElementType(p):
 
 
 def p_SliceType(p):
-    """SliceType : '[' ']' ElementType
-    """
+    """SliceType : '[' ']' ElementType"""
     p[0] = syntree.Slice(p[3])
 
 
