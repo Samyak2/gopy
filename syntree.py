@@ -447,6 +447,9 @@ def make_variable_decls(
     elif len(identifier_list) == len(expression_list):
         ident: Identifier
         expr: Node
+
+        orig_type = type_
+
         for ident, expr in zip(identifier_list, expression_list):
             # type inference
             inf_type = "unknown"
@@ -488,11 +491,9 @@ def make_variable_decls(
                 value=expr,
                 const=const,
             )
-            #  print(type_)
 
             var_list.append(VarDecl(ident, type_, expr, const))
-            #  Most important line
-            type_ = None
+            type_ = orig_type
     else:
         raise NotImplementedError("Declaration with unpacking not implemented yet")
 
