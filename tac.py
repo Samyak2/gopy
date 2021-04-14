@@ -32,7 +32,6 @@ class Quad:
 
 
 class Operand(metaclass=abc.ABCMeta):
-
     @property
     @abc.abstractmethod
     def name(self):
@@ -74,7 +73,9 @@ class TempVar(Operand):
         if self.is_const():
             return self.__value
         else:
-            raise Exception(self.name + " is not a constant and has no value attribute!")
+            raise Exception(
+                self.name + " is not a constant and has no value attribute!"
+            )
 
     @value.setter
     def value(self, value: Any):
@@ -83,7 +84,6 @@ class TempVar(Operand):
 
 
 class ActualVar(Operand):
-
     def __init__(self, symbol: SymbolInfo):
         self.__symbol = symbol
         self.symbol.const_flag = self.symbol.const
@@ -95,7 +95,7 @@ class ActualVar(Operand):
     @property
     def name(self):
         return self.symbol.name
-    
+
     def is_const(self):
         return self.symbol.const_flag
     
@@ -104,7 +104,9 @@ class ActualVar(Operand):
         if self.is_const():
             return self.symbol.value
         else:
-            raise Exception(self.name + " is not a constant and has no value attribute!")
+            raise Exception(
+                self.name + " is not a constant and has no value attribute!"
+            )
 
     @value.setter
     def value(self, value: Any):
@@ -265,6 +267,7 @@ def tac_VarDecl(
 ):
     ic.add_to_list(Quad(ActualVar(node.symbol), None, new_children[1][0], "="))
     return_val.append(node.ident.ident_name)
+
 
 # def tac_Array(
 #     ic: IntermediateCode,
