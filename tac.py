@@ -27,6 +27,7 @@ class Quad:
 
 class Assign(Quad):
     """An assignment operation (to a single value)"""
+
     def __init__(self, dest, value):
         self.dest = dest
         self.operator = "="
@@ -65,8 +66,8 @@ class GoTo(Quad):
 
 
 class ConditionalGoTo(Quad):
-    """if operation goto label_name1 else goto label_name2
-    """
+    """if operation goto label_name1 else goto label_name2"""
+
     def __init__(
         self, label_name1: str, operation: "TempVar", label_name2: Optional[str] = None
     ):
@@ -90,8 +91,8 @@ class ConditionalGoTo(Quad):
 
 
 class Single(Quad):
-    """Quad to store a single value like a keyword
-    """
+    """Quad to store a single value like a keyword"""
+
     def __init__(self, value: Any):
         self.operator = value
         self.op1 = None

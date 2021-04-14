@@ -3,7 +3,13 @@ from typing import Any, Optional
 import traceback
 
 from go_lexer import symtab, type_table
-from utils import print_error, print_line, print_line_marker_nowhitespace, print_marker, lines
+from utils import (
+    print_error,
+    print_line,
+    print_line_marker_nowhitespace,
+    print_marker,
+    lines,
+)
 
 
 class Node:
@@ -538,9 +544,11 @@ class IfStmt(Node):
         if isinstance(self.expr, BinOp):
             if not self.expr.is_relop:
                 print_error("Invalid operator in condition", kind="ERROR")
-                print("Cannot use non-boolean binary operator "
-                      f"{self.expr.operator}"
-                      " in a condition")
+                print(
+                    "Cannot use non-boolean binary operator "
+                    f"{self.expr.operator}"
+                    " in a condition"
+                )
                 print_line_marker_nowhitespace(lineno)
 
 
