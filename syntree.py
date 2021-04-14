@@ -37,12 +37,16 @@ class Node:
 class BinOp(Node):
     """Node for binary operations"""
 
-    def __init__(self, operator, left=None, right=None, type_=None, lineno=None):
+    rel_ops = {"==", "!=", "<", ">", "<=", ">="}
+
+    def __init__(self, operator, left=None, right=None, lineno=None):
         super().__init__("Binary", children=[left, right], data=operator)
         self.operator = self.data
         self.left = left
         self.right = right
         self.lineno = lineno
+
+        self.is_relop = self.operator in self.rel_ops
 
         self.type_ = None
         try:
@@ -535,12 +539,26 @@ class ParameterDecl(Node):
 
 
 class IfStmt(Node):
-    def __init__(self, body, expr, statement=None, next_=None):
+    def __init__(self, body, expr, statement=None, next_=None, lineno=None):
         super().__init__("IF", children=[statement, expr, body, next_])
         self.statement = statement
         self.expr = expr
         self.body = body
         self.next_ = next_
+
+        self.lineno = lineno
+
+        # signal the AST optimizer to not optimize these children
+        self._no_optim = True
+
+        if isinstance(self.expr, BinOp):
+            if not self.expr.is_relop:
+                print_error("Invalid operator in condition", kind="ERROR")
+                print("Cannot use non-boolean binary operator "
+                      f"{self.expr.operator}"
+                      " in a condition")
+                print_line(lineno)
+                print_marker(0, len(lines[lineno - 1]))
 
 
 class ForStmt(Node):
@@ -639,26 +657,29 @@ def get_typename(type_) -> str:
 def _optimize(node: Node) -> Node:
     num_list_childs = 0
 
-    for i, child in enumerate(node.children):
-        if isinstance(child, List):
-            num_list_childs += 1
+    # a _no_optim attribute set to True signals this to not touch
+    # the node's immediate children. Deeper children are optimized anyway.
+    if not (hasattr(node, "_no_optim") and getattr(node, "_no_optim")):
+        for i, child in enumerate(node.children):
+            if isinstance(child, List):
+                num_list_childs += 1
 
-            # if List has only one child, remove the list
-            if len(child) == 1:
-                node.children[i] = child.children[0]
-                if not isinstance(node.children[i], List):
-                    num_list_childs -= 1
+                # if List has only one child, remove the list
+                if len(child) == 1:
+                    node.children[i] = child.children[0]
+                    if not isinstance(node.children[i], List):
+                        num_list_childs -= 1
 
-    # if List has all List children, flatten out the nesting
-    if isinstance(node, List) and num_list_childs == len(node.children):
-        new_children = List([])
+        # if List has all List children, flatten out the nesting
+        if isinstance(node, List) and num_list_childs == len(node.children):
+            new_children = List([])
 
-        for child in node.children:
-            child: List
-            for child_child in child.children:
-                new_children.append(child_child)
+            for child in node.children:
+                child: List
+                for child_child in child.children:
+                    new_children.append(child_child)
 
-        node = new_children
+            node = new_children
 
     for i, child in enumerate(node.children):
         node.children[i] = _optimize(child)

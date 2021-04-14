@@ -1,4 +1,5 @@
 import abc
+from collections import defaultdict
 
 from symbol_table import SymbolInfo
 from typing import Any, Dict, List, Optional
@@ -18,10 +19,14 @@ class Quad:
         #  self.func_name = str(func_name)
 
     def __str__(self):
-        return "{} = {} {} {}".format(self.dest, self.op1, self.operator, self.op2)
+        return f"{self.dest} = {self.op1} {self.operator} {self.op2}"
+
+    def str_operation(self):
+        return f"{self.op1} {self.operator} {self.op2}"
 
 
 class Assign(Quad):
+    """An assignment operation (to a single value)"""
     def __init__(self, dest, value):
         self.dest = dest
         self.operator = "="
@@ -45,10 +50,6 @@ class Label(Quad):
     def __str__(self):
         return f"LABEL {self.name}:"
 
-    @staticmethod
-    def get_fn_label(fn_name: str):
-        return f"FUNCTION_{fn_name}"
-
 
 class GoTo(Quad):
     def __init__(self, label_name: str):
@@ -61,6 +62,44 @@ class GoTo(Quad):
 
     def __str__(self):
         return f"goto {self.label_name}"
+
+
+class ConditionalGoTo(Quad):
+    """if operation goto label_name1 else goto label_name2
+    """
+    def __init__(
+        self, label_name1: str, operation: "TempVar", label_name2: Optional[str] = None
+    ):
+        self.label_name1 = label_name1
+        self.label_name2 = label_name2
+        self.operation = operation
+
+        self.operator = "if"
+        self.op1 = label_name1
+        self.op2 = label_name2
+        self.dest = operation
+
+    def __str__(self):
+        if self.label_name2 is None:
+            return f"if {self.operation} goto {self.label_name1}"
+        else:
+            return (
+                f"if {self.operation} goto {self.label_name1}"
+                f" else goto {self.label_name2}"
+            )
+
+
+class Single(Quad):
+    """Quad to store a single value like a keyword
+    """
+    def __init__(self, value: Any):
+        self.operator = value
+        self.op1 = None
+        self.op2 = None
+        self.dest = None
+
+    def __str__(self):
+        return self.operator
 
 
 class Operand(metaclass=abc.ABCMeta):
@@ -130,7 +169,7 @@ class ActualVar(Operand):
 
     def is_const(self):
         return self.symbol.const_flag
-    
+
     @property
     def value(self):
         if self.is_const():
@@ -143,7 +182,9 @@ class ActualVar(Operand):
     @value.setter
     def value(self, value: Any):
         if self.symbol.const:
-            raise Exception(self.name + " is a defined constant and its value cannot be changed!")
+            raise Exception(
+                self.name + " is a defined constant and its value cannot be changed!"
+            )
         self.symbol.const_flag = True
         self.symbol.value = value
 
@@ -152,13 +193,13 @@ class IntermediateCode:
     def __init__(self):
         self.code_list: List[Quad] = []
         self.temp_var_count = 0
-        self.label_next_id = 0
+        self.label_prefix_counts: Dict[str, int] = defaultdict(lambda: 0)
         self.label_map: Dict[str, Label] = {}
 
         # BUILT-IN functions (or labels)
-        self._add_label(Label.get_fn_label("fmt__Println"))
-        self._add_label(Label.get_fn_label("fmt__Printf"))
-        self._add_label(Label.get_fn_label("fmt__Print"))
+        self._add_label(self.get_fn_label("fmt__Println"))
+        self._add_label(self.get_fn_label("fmt__Printf"))
+        self._add_label(self.get_fn_label("fmt__Print"))
 
     def get_new_temp_var(self, value: Any = None):
         self.temp_var_count += 1
@@ -166,6 +207,11 @@ class IntermediateCode:
 
     def add_to_list(self, code: Quad):
         self.code_list.append(code)
+
+    # generating labels
+    @staticmethod
+    def get_fn_label(fn_name: str):
+        return f"FUNCTION_{fn_name}"
 
     def _add_label(self, label_name: str, label_index: int = -1) -> Label:
         """Private function for adding label without adding
@@ -186,14 +232,16 @@ class IntermediateCode:
 
         return label
 
-    def new_increment_label(self) -> Label:
-        """Add and return a new label with an incremental number name.
+    def get_new_increment_label(self, prefix="label") -> str:
+        """Return a new label with an incremental number name.
         Ex: label_1, label_2, etc.
-        """
-        self.label_next_id += 1
-        name = f"label_{self.label_next_id}"
 
-        return self.add_label(name)
+        Must be added using self.add_label later!
+        """
+        self.label_prefix_counts[prefix] += 1
+        name = f"{prefix}_{self.label_prefix_counts[prefix]}"
+
+        return name
 
     def add_goto(self, label_name: str) -> GoTo:
         if label_name not in self.label_map:
@@ -245,6 +293,21 @@ def tac_Literal(
     ic.add_to_list(Assign(temp, node.value))
 
     return_val.append(temp)
+
+
+def tac_Keyword(
+    ic: IntermediateCode,
+    node: syntree.Keyword,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    if node.kw == "RETURN":
+        # TODO: build call stack and return to right caller
+        ic.add_to_list(Single("return"))
+    else:
+        print(f"Keyword {node.kw} not implement yet!")
+
+    return_val.append(node)
 
 
 def tac_PrimaryExpr(
@@ -347,12 +410,10 @@ def tac_List(
     return_val.extend(new_children)
 
 
-def tac_pre_Function(
-    ic: IntermediateCode,
-    node: syntree.Function
-):
+# TODO: handle return
+def tac_pre_Function(ic: IntermediateCode, node: syntree.Function):
     fn_name = syntree.FunctionCall.get_fn_name(node.fn_name)
-    fn_label = Label.get_fn_label(fn_name)
+    fn_label = ic.get_fn_label(fn_name)
     ic.add_label(fn_label)
     print("Added label", fn_label)
 
@@ -363,7 +424,44 @@ def tac_FunctionCall(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    ic.add_goto(Label.get_fn_label(node.get_fn_name(node.fn_name)))
+    ic.add_goto(ic.get_fn_label(node.get_fn_name(node.fn_name)))
+
+
+def tac_pre_IfStmt(
+    ic: IntermediateCode,
+    node: syntree.IfStmt,
+):
+    print(node, node.children)
+    # there can be a statement to be executed just before
+    # the condition. specified as "if a := 10; a > 5 {...}"
+    # we process the statement before anything else and remove
+    # it from the children
+    before_statement = node.statement
+    if before_statement is not None:
+        _recur_codegen(before_statement, ic)
+        node.children.remove(before_statement)
+
+    # we'll process the condition here
+    # so we are removing it from the children
+    condition = node.expr
+    node.children.remove(condition)
+
+    condition_res = _recur_codegen(condition, ic)[0]
+
+    # now add the actual if statement
+    true_label = ic.get_new_increment_label("if_true")
+    false_label = ic.get_new_increment_label("if_false")
+    g1 = ConditionalGoTo(true_label, condition_res, false_label)
+    ic.add_to_list(g1)
+    ic.add_label(true_label)
+
+    # now the body (after true label)
+    body = node.body
+    print(body, node, node.children)
+    node.children.remove(body)
+    _recur_codegen(body, ic)
+    # false label after body
+    ic.add_label(false_label)
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
