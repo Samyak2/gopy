@@ -90,9 +90,9 @@ class ConditionalGoTo(Quad):
         self.operation = operation
 
         self.operator = "if"
-        self.op1 = label_name1
+        self.op1 = operation
         self.op2 = label_name2
-        self.dest = operation
+        self.dest = label_name1
 
     def __str__(self):
         if self.label_name2 is None:
@@ -429,7 +429,7 @@ def tac_PrimaryExpr(
 
             if ident is not None:
                 ind = new_children[0][0][0]
-                width = type_table.get_type(ident.type_.eltype).storage
+                width = syntree.Literal("int", type_table.get_type(ident.type_.eltype).storage)
 
                 offset_t = ic.get_new_temp_var()
                 ic.add_to_list(Quad(offset_t, ind, width, "*"))

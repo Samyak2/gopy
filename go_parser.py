@@ -1031,6 +1031,6 @@ if __name__ == "__main__":
 
         ico = optimize_ic(ic)
 
-        print("Optimized intermediate code:")
-        print(ico)
+        # print("Optimized intermediate code:")
+        # print(ico)
         ico.print_three_address_code()
