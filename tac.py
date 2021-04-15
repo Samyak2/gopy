@@ -528,6 +528,28 @@ def tac_pre_Function(ic: IntermediateCode, node: syntree.Function):
     print("Added label", fn_label)
 
 
+def tac_Arguments(
+    ic: IntermediateCode,
+    node: syntree.Arguments,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    for child in new_children:
+        if isinstance(child, list):
+            print("child", child)
+            for subchild in child:
+                if isinstance(subchild, list):
+                    for subsubchild in subchild:
+                        ic.add_to_list(Double("push", subsubchild))
+                        return_val.append(subsubchild)
+                else:
+                    ic.add_to_list(Double("push", subchild))
+                    return_val.append(subchild)
+        else:
+            ic.add_to_list(Double("push", child[0]))
+            return_val.append(child[0])
+
+
 def tac_FunctionCall(
     ic: IntermediateCode,
     node: syntree.FunctionCall,
