@@ -2,6 +2,7 @@ from math import log2
 from copy import deepcopy
 
 from tac import IntermediateCode, Quad, Assign, Operand
+from syntree import Literal
 
 
 bools = {True: "true", False: "false"}
@@ -11,10 +12,18 @@ def is_power_of_2(x):
     return x and (not (x & (x - 1)))
 
 
+def is_literal_or_const_operand(op):
+    if isinstance(op, Literal):
+        return True
+    if isinstance(op, Operand) and op.is_const():
+        return True
+    return False
+
+
 def binary_eval(q: Quad):
     dest, op1, operator, op2 = q.dest, q.op1, q.operator, q.op2
 
-    if op1.is_const() and op2.is_const():
+    if is_literal_or_const_operand(op1) and is_literal_or_const_operand(op2):
         if operator == "+":
             dest.value = op1.value + op2.value
         elif operator == "-":
@@ -48,7 +57,7 @@ def binary_eval(q: Quad):
         else:
             raise Exception(operator + " is an invalid binary operator!")
         q = Assign(dest, dest.value)
-    elif op1.is_const():
+    elif is_literal_or_const_operand(op1) and isinstance(op2, Operand):
         if is_power_of_2(op1.value) and operator == "*":
             q.op1, q.op2 = q.op2, int(log2(op1.value))
             q.operator = "<<"
@@ -65,7 +74,7 @@ def binary_eval(q: Quad):
             q = Assign(dest, op2)
         elif op1.value == 'false' and operator == '||':
             q = Assign(dest, op2)
-    elif q.op2.is_const():
+    elif is_literal_or_const_operand(op2) and isinstance(op1, Operand):
         if is_power_of_2(op2.value):
             q.op2 = int(log2(op2.value))
             if operator == "*":
@@ -88,6 +97,36 @@ def binary_eval(q: Quad):
     else:
         pass
     return q
+
+
+def remove_deadcode(ic):
+    required_ops = set()
+    ico = IntermediateCode()
+
+    for q in reversed(ic.code_list):
+        if q.operator == 'return':
+            required_ops = set()
+            required_ops.add(q.op2)
+            ico = IntermediateCode()
+            ico.add_to_list(q)
+        elif q.dest in required_ops:
+            ico.add_to_list(q)
+            if isinstance(q.op1, Operand):
+                required_ops.add(q.op1)
+            if isinstance(q.op2, Operand):
+                required_ops.add(q.op2)
+    
+    ico.code_list = ico.code_list[::-1]
+
+    # ico = IntermediateCode()
+    # for q in ic.code_list:
+    #     if q.operator == 'return':
+    #         ico = IntermediateCode()
+    #         ico.add_to_list(q)
+    #     elif q.dest in required_ops:
+    #         ico.add_to_list(q)
+    
+    return ico
 
 
 def print_quad_info(q: Quad):
@@ -118,21 +157,30 @@ def optimize_ic(ic):
     ic = deepcopy(ic)
     ico = IntermediateCode()
 
-    for i, q in enumerate(ic.code_list):
+    for q in ic.code_list:
 
-        print("before optimization:")
-        print_quad_info(q)
+        # print("before optimization:")
+        # print_quad_info(q)
 
-        if isinstance(q.op2, Operand):
-            if isinstance(q, Assign) and q.op2.is_const():
+        if isinstance(q, Assign):
+            if isinstance(q.op2, Literal):
+                pass
+            elif isinstance(q.op2, Operand) and q.op2.is_const():
                 q.dest.value = q.op2.value
                 q.op2 = q.dest.value
-            elif isinstance(q.op1, Operand):
-                q = binary_eval(q)
 
-        print("after optimization:")
-        print_quad_info(q)
+        q = binary_eval(q)
+
+        # print("after optimization:")
+        # print_quad_info(q)
 
         ico.add_to_list(q)
+
+    print("Before removing dead code:")
+    print(ico)
+
+    ico = remove_deadcode(ico)
+
+    print("After removing dead code:")
 
     return ico
