@@ -183,6 +183,9 @@ class Literal(Node):
 
     def data_str(self):
         return f"type: {self.type_}, value: {self.value}"
+    
+    def __str__(self):
+        return str(self.value)
 
 
 class Import(Node):

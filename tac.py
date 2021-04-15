@@ -215,6 +215,19 @@ class ActualVar(Operand):
             )
         self.symbol.const_flag = True
         self.symbol.value = value
+    
+    def __hash__(self):
+        return hash(self.symbol.name + self.symbol.scope_id)
+
+    def __eq__(self, other):
+        if isinstance(other, ActualVar):
+            if (
+                self.symbol.name == other.symbol.name
+                and self.symbol.scope_id == self.symbol.scope_id
+            ):
+                return True
+            return False
+        return False
 
 
 class IntermediateCode:
@@ -330,7 +343,7 @@ def tac_Literal(
     # ic.add_to_list(node.value)
 
     if not isinstance(node.value, syntree.Node):
-        return_val.append(node.value)
+        return_val.append(node)
     else:
         if len(new_children) > 1:
             return_val.append(new_children[1][0])
@@ -442,7 +455,7 @@ def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
             op.right, syntree.Literal
         ):
             ic.add_to_list(
-                Quad(ActualVar(node.symbol), op.left.value, op.right.value, op.operator)
+                Quad(ActualVar(node.symbol), op.left, op.right, op.operator)
             )
 
             node.children.remove(op)
