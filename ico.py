@@ -47,11 +47,24 @@ def binary_eval(q: Quad):
             dest.value = bools[op1.value >= op2.value]
         else:
             raise Exception(operator + " is an invalid binary operator!")
-        q = Assign(q.dest, q.dest.value)
+        q = Assign(dest, dest.value)
     elif op1.is_const():
         if is_power_of_2(op1.value) and operator == "*":
             q.op1, q.op2 = q.op2, int(log2(op1.value))
             q.operator = "<<"
+        elif op1.value == 0:
+            if operator == '+':
+                q = Assign(dest, op2)
+            elif operator == '*':
+                q = Assign(dest, 0)
+            elif operator == '/':
+                q = Assign(dest, 0)
+        elif op1.value == 1 and operator == '*':
+            q = Assign(dest, op2)
+        elif op1.value == 'true' and operator == '&&':
+            q = Assign(dest, op2)
+        elif op1.value == 'false' and operator == '||':
+            q = Assign(dest, op2)
     elif q.op2.is_const():
         if is_power_of_2(op2.value):
             q.op2 = int(log2(op2.value))
@@ -59,6 +72,19 @@ def binary_eval(q: Quad):
                 q.operator = "<<"
             elif operator == "/":
                 q.operator = ">>"
+        elif op2.value == 0:
+            if operator == '+':
+                q = Assign(dest, op1)
+            elif operator == '*':
+                q = Assign(dest, 0)
+            elif operator == '/':
+                q = Assign(dest, 0)
+        elif op2.value == 1 and operator == '*':
+            q = Assign(dest, op1)
+        elif op2.value == 'true' and operator == '&&':
+            q = Assign(dest, op1)
+        elif op2.value == 'false' and operator == '||':
+            q = Assign(dest, op1)
     else:
         pass
     return q
