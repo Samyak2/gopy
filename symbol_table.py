@@ -108,8 +108,6 @@ class TypeTable:
                 [
                     [
                         symbol.name,
-                        symbol.lineno,
-                        symbol.col_num,
                         symbol.storage,
                         symbol.eltype,
                     ]
@@ -117,8 +115,6 @@ class TypeTable:
                 ],
                 headers=[
                     "Type Name",
-                    "Line No.",
-                    "Col no.",
                     "Storage",
                     "Element Type",
                 ],
