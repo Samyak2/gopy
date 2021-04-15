@@ -1013,6 +1013,8 @@ if __name__ == "__main__":
         #     print_tree(ast, nameattr=None, horizontal=True)
         #     sys.stdout = sys.__stdout__
 
+        symtab.check_unused()
+
         print("Finished Parsing!")
         print("Symbol Table: ")
         print(symtab)

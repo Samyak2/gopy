@@ -301,6 +301,26 @@ class SymbolTable:
                 symbol, lineno, col_num=col_num, type_=type_, const=const, value=value
             )
 
+    def check_unused(self):
+        func_type = self.type_table.get_type("FUNCTION")
+
+        for symbol in self.symbols:
+            if (
+                symbol.uses == []
+                and symbol.scope_id != "1"
+                and symbol.type_ != func_type
+            ):
+                print_error("Unused variable", kind="ERROR")
+                print(
+                    f"Variable {symbol.name} is defined at line {symbol.lineno} "
+                    "but never used."
+                )
+                print_line(symbol.lineno)
+
+                pos = symbol.col_num - 1
+                width = len(symbol.name)
+                print_marker(pos, width)
+
     def __str__(self):
         return str(
             tabulate(
