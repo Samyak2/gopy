@@ -333,7 +333,7 @@ def p_ForStmt(p):
     | KW_FOR new_scope RangeClause Block leave_scope
     """
     if len(p) == 5:
-        p[0] = syntree.ForStmt(body=p[3])
+        p[0] = syntree.ForStmt(body=p[3], clause=syntree.Literal("bool", "true"))
     elif len(p) == 6:
         p[0] = syntree.ForStmt(body=p[4], clause=p[3])
 
@@ -348,7 +348,7 @@ def p_ForClause(p):
     | InitStmt ';' Condition ';' PostStmt
     """
     if len(p) == 5:
-        p[0] = syntree.ForClause(p[1], cond=None, post=p[4])
+        p[0] = syntree.ForClause(p[1], cond=syntree.Literal("bool", "true"), post=p[4])
     elif len(p) == 6:
         p[0] = syntree.ForClause(p[1], cond=p[3], post=p[5])
 
@@ -1008,13 +1008,10 @@ if __name__ == "__main__":
         ast = syntree.optimize_AST(ast)
         draw_AST(ast)
 
-        # Intermediate Code gen
-        ic = intermediate_codegen(ast)
-
-        with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
-            sys.stdout = ast_file
-            print_tree(ast, nameattr=None, horizontal=True)
-            sys.stdout = sys.__stdout__
+        # with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
+        #     sys.stdout = ast_file
+        #     print_tree(ast, nameattr=None, horizontal=True)
+        #     sys.stdout = sys.__stdout__
 
         print("Finished Parsing!")
         print("Symbol Table: ")
@@ -1025,12 +1022,19 @@ if __name__ == "__main__":
         print("Type Table: ")
         print(type_table)
 
+        # Intermediate Code gen
+        ic = intermediate_codegen(ast)
+
         print("Intermediate code:")
         print(ic)
         ic.print_three_address_code()
+
+        print(symtab)
 
         ico = optimize_ic(ic)
 
         # print("Optimized intermediate code:")
         # print(ico)
         ico.print_three_address_code()
+
+        print(symtab)

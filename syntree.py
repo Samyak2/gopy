@@ -197,7 +197,7 @@ class Literal(Node):
 
     def data_str(self):
         return f"type: {self.type_}, value: {self.value}"
-    
+
     def __str__(self):
         return str(self.value)
 
@@ -501,8 +501,20 @@ def make_variable_decls(
             inf_type = "unknown"
             if isinstance(expr, BinOp) or isinstance(expr, UnaryOp):
                 inf_type = expr.type_
+                if type_ != None:
+                    inf_type = type_
+
             elif isinstance(expr, Literal):
                 inf_type = expr.type_
+
+            elif isinstance(expr, PrimaryExpr):
+                if len(expr.children) > 0 and isinstance(
+                        expr.children[0], Index):
+                    inf_type = symtab.get_symbol(expr.data[1]).type_.eltype
+
+                else:
+                    inf_type = symtab.get_symbol(expr.data[1]).type_.name
+
             else:
                 print("Could not determine type: ", ident, expr)
 
@@ -586,7 +598,7 @@ class IfStmt(Node):
 
 class ForStmt(Node):
 
-    def __init__(self, body, clause=None):
+    def __init__(self, body, clause):
         super().__init__("FOR", children=[body, clause])
         self.body = body
         self.clause = clause

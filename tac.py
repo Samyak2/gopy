@@ -2,7 +2,7 @@ import abc
 from collections import defaultdict
 
 from symbol_table import SymbolInfo
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from tabulate import tabulate
 
@@ -158,22 +158,24 @@ class Operand(metaclass=abc.ABCMeta):
 
 
 class TempVar(Operand):
-    def __init__(self, id: int, value: Any = None):
+    def __init__(self, id: int, value: Any = None, type_: Any = None):
         self.__name = "t" + str(id)
-        self.value = value
-        self.__const_flag = True if value != None else False
+        self.symbol = symtab.add_if_not_exists(self.name)
+        self.symbol.const_flag = True if value is not None else False
+        self.symbol.value = value
+        self.symbol.type_ = type_
 
     @property
     def name(self):
         return self.__name
 
     def is_const(self):
-        return self.__const_flag
+        return self.symbol.const_flag
 
     @property
     def value(self):
         if self.is_const():
-            return self.__value
+            return self.symbol.value
         else:
             raise Exception(
                 self.name + " is not a constant and has no value attribute!"
@@ -181,8 +183,16 @@ class TempVar(Operand):
 
     @value.setter
     def value(self, value: Any):
-        self.__const_flag = True
-        self.__value = value
+        self.symbol.const_flag = True
+        self.symbol.value = value
+
+    @property
+    def type_(self):
+        return self.symbol.type_
+
+    @type_.setter
+    def type_(self, value: Any):
+        self.symbol.type_ = value
 
 
 class ActualVar(Operand):
@@ -239,6 +249,7 @@ class IntermediateCode:
         self.temp_var_count = 0
         self.label_prefix_counts: Dict[str, int] = defaultdict(lambda: 0)
         self.label_map: Dict[str, Label] = {}
+        self.loop_stack: List[Tuple[Label, Label]] = []
 
         # BUILT-IN functions (or labels)
         self._add_label(self.get_fn_label("fmt__Println"))
@@ -303,6 +314,18 @@ class IntermediateCode:
 
         return call_stmt
 
+    def enter_new_loop(self, start_label: Label, end_label: Label):
+        self.loop_stack.append((start_label, end_label))
+
+    def exit_loop(self):
+        self.loop_stack.pop()
+
+    def is_inloop(self):
+        return len(self.loop_stack) > 0
+
+    def get_nearest_loop(self):
+        return self.loop_stack[-1]
+
     def print_three_address_code(self):
         for i in self.code_list:
             print(i)
@@ -342,6 +365,7 @@ def tac_BinOp(
     return_val: List[Any],
 ):
     temp = ic.get_new_temp_var()
+    temp.type_ = node.type_
 
     # the children can be temporaries made in the _recur_codegen call above
     # so they are stored in new_children which is used here
@@ -358,6 +382,7 @@ def tac_UnaryOp(
     return_val: List[Any],
 ):
     temp = ic.get_new_temp_var()
+    temp.type_ = node.type_
 
     ic.add_to_list(Double(node.operator, new_children[0][0], temp))
 
@@ -424,6 +449,7 @@ def tac_PrimaryExpr(
             ident: Optional[SymbolInfo] = node.ident
 
             base_addr_t = ic.get_new_temp_var()
+            base_addr_t.type_ = "int"
             ic.add_to_list(Assign(base_addr_t, f"base({arr_name})"))
             # return_val.append(base_addr_t)
 
@@ -432,12 +458,15 @@ def tac_PrimaryExpr(
                 width = syntree.Literal("int", type_table.get_type(ident.type_.eltype).storage)
 
                 offset_t = ic.get_new_temp_var()
+                offset_t.type_ = "int"
                 ic.add_to_list(Quad(offset_t, ind, width, "*"))
 
                 index_t = ic.get_new_temp_var()
+                index_t.type_ = "int"
                 ic.add_to_list(Quad(index_t, base_addr_t, offset_t, "+"))
 
                 res_t = ic.get_new_temp_var()
+                res_t.type_ = ident.type_.eltype
                 ic.add_to_list(Quad(res_t, arr_name, index_t, "[]"))
 
                 return_val.append(res_t)
@@ -463,6 +492,7 @@ def tac_PrimaryExpr(
 
         # temp1 = ic.get_new_temp_var()
         base_addr_t = ic.get_new_temp_var()
+        base_addr_t.type_ = "int"
         ic.add_to_list(Assign(base_addr_t, f"base({arr_name})"))
         return_val.append(base_addr_t)
 
@@ -528,6 +558,27 @@ def tac_pre_Function(ic: IntermediateCode, node: syntree.Function):
     print("Added label", fn_label)
 
 
+def tac_Arguments(
+    ic: IntermediateCode,
+    node: syntree.Arguments,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    for child in new_children:
+        if isinstance(child, list):
+            for subchild in child:
+                if isinstance(subchild, list):
+                    for subsubchild in subchild:
+                        ic.add_to_list(Double("push", subsubchild))
+                        return_val.append(subsubchild)
+                else:
+                    ic.add_to_list(Double("push", subchild))
+                    return_val.append(subchild)
+        else:
+            ic.add_to_list(Double("push", child[0]))
+            return_val.append(child[0])
+
+
 def tac_FunctionCall(
     ic: IntermediateCode,
     node: syntree.FunctionCall,
@@ -577,11 +628,11 @@ def tac_pre_IfStmt(
 
 def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
     if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
-        print("boolean clause")
-
+        # start of loop
         start_label = ic.get_new_increment_label("for_simple_start")
         ic.add_label(start_label)
 
+        # the condition
         condition = node.clause
         node.children.remove(condition)
 
@@ -590,26 +641,64 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         true_label = ic.get_new_increment_label("for_simple_true")
         end_label = ic.get_new_increment_label("for_simple_end")
 
+        # actual if else
         g1 = ConditionalGoTo(true_label, condition_res, end_label)
         ic.add_to_list(g1)
         ic.add_label(true_label)
 
+        # ic.enter_new_loop()
+
         # now the body (after true label)
         body = node.body
-        node.children.remove(body)
-        _recur_codegen(body, ic)
+        if body is not None:
+            node.children.remove(body)
+            _recur_codegen(body, ic)
         # loop back to start label
         ic.add_goto(start_label)
         # end label after body
         ic.add_label(end_label)
 
     elif isinstance(node.clause, syntree.ForClause):
-        print("compound clause")
+        clause = node.clause
+
+        # init statement (first part of for)
+        if clause.init is not None:
+            _recur_codegen(clause.init, ic)
+            clause.children.remove(clause.init)
+
+        # start of loop (just before condition)
+        start_label = ic.get_new_increment_label("for_cmpd_start")
+        ic.add_label(start_label)
+
+        # the condition
+        condition = clause.cond
+        clause.children.remove(condition)
+        condition_res = _recur_codegen(condition, ic)[0]
+
+        true_label = ic.get_new_increment_label("for_cmpd_true")
+        end_label = ic.get_new_increment_label("for_cmpd_end")
+
+        # actual if else
+        g1 = ConditionalGoTo(true_label, condition_res, end_label)
+        ic.add_to_list(g1)
+        ic.add_label(true_label)
+
+        # now the body (after true label)
+        body = node.body
+        if body is not None:
+            node.children.remove(body)
+            _recur_codegen(body, ic)
+        # the post statement (increment/decrement)
+        if clause.post is not None:
+            _recur_codegen(clause.post, ic)
+            clause.children.remove(clause.post)
+        # loop back to start label
+        ic.add_goto(start_label)
+        # end label after body
+        ic.add_label(end_label)
 
     else:
         print("Could not determine clause type")
-
-    print(node.body, node.clause)
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
