@@ -1,5 +1,4 @@
 from math import log2, floor, ceil
-from copy import deepcopy
 
 from tac import IntermediateCode, Quad, Assign, Operand, TempVar, ActualVar
 from syntree import Literal
@@ -119,37 +118,66 @@ def pack_temps(ic):
 
     ico.code_list = ico.code_list[::-1]
 
+    modified_temp_var_count = 0
+    modified_temp_vars = set()
+
+    for q in ico.code_list:
+        # print_quad_info(q)
+        for op in (q.op1, q.op2, q.dest):
+            if isinstance(op, TempVar):
+                temp = op
+                if temp in modified_temp_vars:
+                    continue
+                modified_temp_var_count += 1
+                temp.name = modified_temp_var_count
+                modified_temp_vars.add(temp)
+
     return ico
 
 
 def remove_deadcode(ic):
-    required_ops = set()
-    ico = IntermediateCode()
+    ico1 = IntermediateCode()
 
-    for q in reversed(ic.code_list):
-        if q.operator == "return":
-            required_ops = set()
+    curr_scope = "0"
+    discard = False
+    for q in ic.code_list:
+        if discard:
+            if q.operator == 'LABEL':
+                ico1.add_to_list(q)
+            elif q.scope_id == curr_scope:
+                continue
+            else:
+                discard = False
+                ico1.add_to_list(q)
+        else:
+            ico1.add_to_list(q)
+        if q.operator == 'return':
+            discard = True
+            curr_scope = q.scope_id
+
+    ico2 = IntermediateCode()
+
+    required_ops = set()
+
+    for q in reversed(ico1.code_list):
+        if q.operator == 'LABEL':
+            ico2.add_to_list(q)
+        elif q.operator == 'call':
+            ico2.add_to_list(q)
+            required_ops.add(q.dest)
+        elif q.operator in ("return", "push"):
+            ico2.add_to_list(q)
             required_ops.add(q.op2)
-            ico = IntermediateCode()
-            ico.add_to_list(q)
         elif q.dest in required_ops:
-            ico.add_to_list(q)
+            ico2.add_to_list(q)
             if isinstance(q.op1, Operand):
                 required_ops.add(q.op1)
             if isinstance(q.op2, Operand):
                 required_ops.add(q.op2)
 
-    ico.code_list = ico.code_list[::-1]
+    ico2.code_list = ico2.code_list[::-1]
 
-    # ico = IntermediateCode()
-    # for q in ic.code_list:
-    #     if q.operator == 'return':
-    #         ico = IntermediateCode()
-    #         ico.add_to_list(q)
-    #     elif q.dest in required_ops:
-    #         ico.add_to_list(q)
-
-    return ico
+    return ico2
 
 
 def copy_prop(ic):
@@ -200,7 +228,6 @@ def print_quad_info(q: Quad):
 
 # NOTE: Original ic is modified during optimization
 def optimize_ic(ic):
-    ic = deepcopy(ic)
     ico = IntermediateCode()
 
     for q in ic.code_list:
@@ -224,13 +251,13 @@ def optimize_ic(ic):
 
     print("After Constant Folding, Constant Propagation and Strength Reduction:")
     print(ico)
-    print("The above table is before removing unused temps")
-    print()
+    # print("The above table is before removing unused temps")
+    # print()
 
-    ico = pack_temps(ico)
+    # ico = pack_temps(ico)
 
-    print("After removing unsued temps:")
-    print(ico)
+    # print("After removing unsued temps:")
+    # print(ico)
     print("The above table is before performing Copy Propagation")
     print()
 
@@ -251,8 +278,9 @@ def optimize_ic(ic):
     # print("Before removing dead code:")
     # print(ico)
 
-    # ico = remove_deadcode(ico)
+    ico = remove_deadcode(ico)
 
-    # print("After removing dead code:")
+    print("After removing dead code:")
+    print(ico)
 
     return ico

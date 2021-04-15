@@ -149,6 +149,10 @@ class TempVar(Operand):
     def name(self):
         return self.__name
 
+    @name.setter
+    def name(self, id: int):
+        self.__name = "t" + str(id)
+
     def is_const(self):
         return self.symbol.const_flag
 

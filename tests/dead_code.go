@@ -20,7 +20,7 @@ func main() {
 
     something(abc)
 
-    return
+    return abc
 
     var bcd int = abc
 
