@@ -149,20 +149,33 @@ class SymbolTable:
     related to them"""
 
     def __init__(self, type_table: TypeTable):
-        self.stack: List[Dict[str, SymbolInfo]] = [{}]
         self.symbols: List[SymbolInfo] = []
+        self.reset_depth()
+
+        self.type_table = type_table
+
+    def reset_depth(self):
+        self.stack: List[Dict[str, SymbolInfo]] = [{}]
         self.cur_scope = "1"
         self.depth = 1
         self.scopes_at_depth: Dict[int, int] = defaultdict(lambda: 0)
+
+        self._add_cur_scope_symbols()
+
         self.scopes_at_depth[0] = 1
 
-        self.type_table = type_table
+    def _add_cur_scope_symbols(self):
+        for symbol in self.symbols:
+            if symbol.scope_id == self.cur_scope:
+                self.stack[-1][symbol.name] = symbol
 
     def enter_scope(self):
         self.depth += 1
         self.scopes_at_depth[self.depth] += 1
         self.cur_scope += f".{self.scopes_at_depth[self.depth]}"
         self.stack.append({})
+
+        self._add_cur_scope_symbols()
 
     def leave_scope(self):
         self.depth -= 1

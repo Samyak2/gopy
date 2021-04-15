@@ -1024,6 +1024,7 @@ if __name__ == "__main__":
         print("Type Table: ")
         print(type_table)
 
+        symtab.reset_depth()
         # Intermediate Code gen
         ic = intermediate_codegen(ast)
 

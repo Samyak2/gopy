@@ -17,7 +17,7 @@ class Quad:
         self.op1 = op1
         self.op2 = op2
         self.operator = operator
-        #  self.func_name = str(func_name)
+        self.scope_id = symtab.cur_scope
 
     def __str__(self):
         return f"{self.dest} = {self.op1} {self.operator} {self.op2}"
@@ -30,10 +30,7 @@ class Assign(Quad):
     """An assignment operation (to a single value)"""
 
     def __init__(self, dest, value):
-        self.dest = dest
-        self.operator = "="
-        self.op2 = value
-        self.op1 = None
+        super().__init__(dest, None, value, "=")
 
     def __str__(self):
         return f"{self.dest} = {self.op2}"
@@ -44,10 +41,7 @@ class Label(Quad):
         self.name = name
         self.index = index
 
-        self.dest = name
-        self.operator = "LABEL"
-        self.op1 = None
-        self.op2 = None
+        super().__init__(name, None, None, "LABEL")
 
     def __str__(self):
         return f"LABEL {self.name}:"
@@ -57,10 +51,7 @@ class GoTo(Quad):
     def __init__(self, label_name: str):
         self.label_name = label_name
 
-        self.operator = "goto"
-        self.op2 = None
-        self.op1 = None
-        self.dest = label_name
+        super().__init__(label_name, None, None, "goto")
 
     def __str__(self):
         return f"goto {self.label_name}"
@@ -71,10 +62,7 @@ class Call(Quad):
         self.label_name = label_name
         self.res = res
 
-        self.operator = "call"
-        self.op2 = label_name
-        self.op1 = None
-        self.dest = res
+        super().__init__(res, None, label_name, "call")
 
     def __str__(self):
         return f"{self.dest} = call {self.op2}"
@@ -90,10 +78,7 @@ class ConditionalGoTo(Quad):
         self.label_name2 = label_name2
         self.operation = operation
 
-        self.operator = "if"
-        self.op1 = operation
-        self.op2 = label_name2
-        self.dest = label_name1
+        super().__init__(label_name1, operation, label_name2, "if")
 
     def __str__(self):
         if self.label_name2 is None:
@@ -109,10 +94,7 @@ class Single(Quad):
     """Quad to store a single value like a keyword"""
 
     def __init__(self, value: Any):
-        self.operator = value
-        self.op1 = None
-        self.op2 = None
-        self.dest = None
+        super().__init__(None, None, None, value)
 
     def __str__(self):
         return self.operator
@@ -122,10 +104,7 @@ class Double(Quad):
     """Quad to store two values"""
 
     def __init__(self, op, value, dest=None):
-        self.operator = op
-        self.op1 = None
-        self.op2 = value
-        self.dest = dest
+        super().__init__(dest, None, value, op)
 
     def __str__(self):
         if self.dest is None:
@@ -341,8 +320,8 @@ class IntermediateCode:
     def __str__(self) -> str:
         return str(
             tabulate(
-                [[i.dest, i.op1, i.operator, i.op2] for i in self.code_list],
-                headers=["Dest", "Operand 1", "Operator", "Operand 2"],
+                [[i.dest, i.op1, i.operator, i.op2, i.scope_id] for i in self.code_list],
+                headers=["Dest", "Operand 1", "Operator", "Operand 2", "Scope"],
                 tablefmt="psql",
             )
         )
@@ -574,6 +553,9 @@ def tac_List(
 
 
 def tac_pre_Function(ic: IntermediateCode, node: syntree.Function):
+    symtab.enter_scope()
+    symtab.enter_scope()
+
     fn_name = syntree.FunctionCall.get_fn_name(node.fn_name)
     fn_label = ic.get_fn_label(fn_name)
     ic.add_label(fn_label)
@@ -588,6 +570,9 @@ def tac_Function(
     fn_name = syntree.FunctionCall.get_fn_name(node.fn_name)
     fn_label = ic.get_fn_end_label(fn_name)
     ic.add_label(fn_label)
+
+    symtab.leave_scope()
+    symtab.leave_scope()
 
 
 def tac_Arguments(
@@ -628,6 +613,8 @@ def tac_pre_IfStmt(
     ic: IntermediateCode,
     node: syntree.IfStmt,
 ):
+    symtab.enter_scope()
+
     # there can be a statement to be executed just before
     # the condition. specified as "if a := 10; a > 5 {...}"
     # we process the statement before anything else and remove
@@ -658,6 +645,18 @@ def tac_pre_IfStmt(
     # false label after body
     ic.add_label(false_label)
 
+    symtab.leave_scope()
+
+    # else part
+    next_ = node.next_
+    if next_ is not None:
+        symtab.enter_scope()
+
+        node.children.remove(next_)
+        _recur_codegen(next_, ic)
+
+        symtab.leave_scope()
+
 
 def tac_IfStmt(
     ic: IntermediateCode,
@@ -669,6 +668,8 @@ def tac_IfStmt(
 
 
 def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
+    symtab.enter_scope()
+
     if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
         # start of loop
         start_label = ic.get_new_increment_label("for_simple_start")
@@ -755,7 +756,7 @@ def tac_ForStmt(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    pass
+    symtab.leave_scope()
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
