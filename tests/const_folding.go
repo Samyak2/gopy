@@ -7,7 +7,7 @@ func main() {
 	var d bool = 14 == (15-1)
 	var e bool = 1 != 1
 	var f bool = false
-	// c = 16 / 4;
+	c = 16 / 4;
 	return a
 	return a + b;
 }
