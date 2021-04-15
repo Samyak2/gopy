@@ -1026,4 +1026,4 @@ if __name__ == "__main__":
 
         print("Optimized intermediate code:")
         print(ico)
-        ic.print_three_address_code()
+        ico.print_three_address_code()
