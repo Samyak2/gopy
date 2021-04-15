@@ -120,14 +120,17 @@ class Single(Quad):
 class Double(Quad):
     """Quad to store two values"""
 
-    def __init__(self, op, value):
+    def __init__(self, op, value, dest=None):
         self.operator = op
         self.op1 = None
         self.op2 = value
-        self.dest = None
+        self.dest = dest
 
     def __str__(self):
-        return f"{self.operator} {self.op2}"
+        if self.dest is None:
+            return f"{self.operator} {self.op2}"
+        else:
+            return f"{self.dest} = {self.operator} {self.op2}"
 
 
 class Operand(metaclass=abc.ABCMeta):
@@ -313,6 +316,19 @@ def tac_BinOp(
     # so they are stored in new_children which is used here
     # each return value is a list, so the second [0] is needed
     ic.add_to_list(Quad(temp, new_children[0][0], new_children[1][0], node.operator))
+
+    return_val.append(temp)
+
+
+def tac_UnaryOp(
+    ic: IntermediateCode,
+    node: syntree.UnaryOp,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    temp = ic.get_new_temp_var()
+
+    ic.add_to_list(Double(node.operator, new_children[0][0], temp))
 
     return_val.append(temp)
 
