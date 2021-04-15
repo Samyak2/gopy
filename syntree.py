@@ -44,6 +44,7 @@ class BinOp(Node):
     """Node for binary operations"""
 
     rel_ops = {"==", "!=", "<", ">", "<=", ">="}
+    logical_ops = {"&&", "||"}
 
     def __init__(self, operator, left=None, right=None, lineno=None):
         super().__init__("Binary", children=[left, right], data=operator)
@@ -53,6 +54,7 @@ class BinOp(Node):
         self.lineno = lineno
 
         self.is_relop = self.operator in self.rel_ops
+        self.is_logical = self.operator in self.logical_ops
 
         self.type_ = None
         try:
@@ -74,10 +76,6 @@ class BinOp(Node):
                     raise Exception("Could not determine type of child", child)
 
                 return x
-
-            Logical_Oper = ["&&", "||"]
-            if self.data in Logical_Oper:
-                self.type = "bool"
 
             x = get_type(self.children[0])
             y = get_type(self.children[1])
@@ -105,11 +103,17 @@ class BinOp(Node):
                     print_line_marker_nowhitespace(self.lineno)
 
                 if self.is_relop:
-                    self.type = "bool"
+                    self.type_ = "bool"
 
             else:
                 if self.is_relop:
-                    self.type = "bool"
+                    self.type_ = "bool"
+
+                elif self.is_logical:
+                    if x == "bool":
+                        self.type_ = "bool"
+                    else:
+                        print_error("Invalid Operation", kind="Operation Error")
 
                 else:
                     self.type_ = x
@@ -137,6 +141,12 @@ class UnaryOp(Node):
             self.type_ = operand.type_
         else:
             self.type_ = operand.data[0]
+
+        if self.type_ == "string":
+            print_error("Type Error", kind="Invalid Operation")
+
+        if self.operator == '!' and self.type_ != "bool":
+            print_error("Type Error", kind="Invalid Operation")
 
 
 class PrimaryExpr(Node):
@@ -560,9 +570,7 @@ class IfStmt(Node):
         self._no_optim = True
 
         if isinstance(self.expr, BinOp):
-            if self.expr.data in ["&&", "||"]:
-                pass
-            elif not self.expr.is_relop:
+            if self.expr.type_ != "bool":
                 print_error("Invalid operator in condition", kind="ERROR")
                 print("Cannot use non-boolean binary operator "
                       f"{self.expr.operator}"

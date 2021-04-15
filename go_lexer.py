@@ -28,7 +28,7 @@ def find_column(token):
 states = (("InsertSemi", "exclusive"),)
 
 # List of literal tokens
-literals = ";,.=+-*/%()[]{}"
+literals = ";,.=+-*/%()[]!{}"
 
 # List of token names. This is always required
 tokens = (
@@ -45,7 +45,7 @@ tokens = (
     "BAR",
     "AMPER_AMPER",
     "BAR_BAR",
-    "EXCLAMATION",
+    #  "EXCLAMATION",
     "COLON",
     # assignment operators
     "WALRUS",
@@ -197,7 +197,7 @@ t_AMPERSAND = r"&"
 t_BAR = r"\|"
 t_AMPER_AMPER = r"&&"
 t_BAR_BAR = r"\|\|"
-t_EXCLAMATION = r"!"
+#  t_EXCLAMATION = r"!"
 t_COLON = r":"
 t_WALRUS = r":="
 # TODO: Move the assignment operators above, below

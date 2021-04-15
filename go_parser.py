@@ -617,6 +617,7 @@ def p_UnaryExpr(p):
 def p_UnaryOp(p):
     """UnaryOp : '+' %prec UNARY
     | '-' %prec UNARY
+    | '!' %prec UNARY
     """
     # TODO : Add other unary operators
     p[0] = p[1]
