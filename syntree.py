@@ -249,6 +249,12 @@ class FunctionCall(Node):
         self.fn_name = fn_name
         self.arguments = arguments
 
+        self.fn_sym = symtab.get_symbol(str(fn_name))
+        self.type_ = None
+        if self.fn_sym is not None:
+            if self.fn_sym.value is not None:
+                self.type_ = self.fn_sym.value.signature.ret_type
+
         super().__init__("FunctionCall", children=[arguments], data=fn_name)
 
     @staticmethod
@@ -274,9 +280,14 @@ class Signature(Node):
     """Node to store function signature"""
 
     def __init__(self, parameters, result=None):
-        super().__init__("signature", children=[parameters, result])
         self.parameters = parameters
         self.result = result
+
+        self.ret_type = None
+        if self.result is not None:
+            self.ret_type = get_typename(self.result)
+
+        super().__init__("signature", children=[parameters, result])
 
 
 class Function(Node):
@@ -287,22 +298,19 @@ class Function(Node):
                          children=[signature, body],
                          data=(name, lineno))
         self.data: tuple
+
+        self.fn_name = name
+        self.lineno = lineno
+        self.signature = signature
+        self.body = body
+
         if name is not None:
-            # self.add_func_to_symtab(name[1], lineno, self)
-            # symtab.declare_new_variable(
-            #     name[1], lineno, 0, type_="FUNCTION", const=True, value=self
-            # )
             symtab.update_info(name[1],
                                lineno,
                                0,
                                type_="FUNCTION",
                                const=True,
                                value=self)
-
-        self.fn_name = name
-        self.lineno = lineno
-        self.signature = signature
-        self.body = body
 
     @staticmethod
     def add_func_to_symtab(name, lineno, value=None):
@@ -741,4 +749,23 @@ def _optimize(node: Node) -> Node:
 
 
 def optimize_AST(ast: Node):
+    return _optimize(ast)
+
+
+def _postprocess(node: Node) -> Node:
+
+    if isinstance(node, FunctionCall):
+        if node.type_ is None:
+            if node.fn_sym is not None:
+                if node.fn_sym.value is not None:
+                    node.type_ = node.fn_sym.value.signature.ret_type
+
+    for i, child in enumerate(node.children):
+        node.children[i] = _postprocess(child)
+
+    return node
+
+
+def postprocess_AST(ast: Node):
+    ast = _postprocess(ast)
     return _optimize(ast)

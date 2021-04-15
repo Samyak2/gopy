@@ -541,6 +541,16 @@ def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
 
             node.children.remove(op)
 
+        elif isinstance(op.children[0], syntree.PrimaryExpr) and isinstance(
+            op.children[1], syntree.PrimaryExpr
+        ):
+            left = _recur_codegen(op.children[0], ic)[0]
+            right = _recur_codegen(op.children[1], ic)[0]
+
+            ic.add_to_list(Quad(ActualVar(node.symbol), left, right, op.operator))
+
+            node.children.remove(op)
+
 
 def tac_VarDecl(
     ic: IntermediateCode,
@@ -609,6 +619,7 @@ def tac_FunctionCall(
 ):
     label = ic.get_fn_label(node.get_fn_name(node.fn_name))
     temp = ic.get_new_temp_var()
+    temp.type_ = node.type_
     ic.add_call(label, temp)
     return_val.append(temp)
 

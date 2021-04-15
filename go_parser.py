@@ -1005,7 +1005,7 @@ if __name__ == "__main__":
         result = parser.parse(input_code, tracking=True, debug=False)
         # print(result)
 
-        ast = syntree.optimize_AST(ast)
+        ast = syntree.postprocess_AST(ast)
         draw_AST(ast)
 
         # with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
