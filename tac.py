@@ -8,6 +8,7 @@ from tabulate import tabulate
 
 import syntree
 from go_lexer import symtab, type_table
+from utils import print_error, print_line_marker_nowhitespace
 
 
 class Quad:
@@ -228,7 +229,7 @@ class ActualVar(Operand):
             )
         self.symbol.const_flag = True
         self.symbol.value = value
-    
+
     def __hash__(self):
         return hash(self.symbol.name + self.symbol.scope_id)
 
@@ -249,7 +250,7 @@ class IntermediateCode:
         self.temp_var_count = 0
         self.label_prefix_counts: Dict[str, int] = defaultdict(lambda: 0)
         self.label_map: Dict[str, Label] = {}
-        self.loop_stack: List[Tuple[Label, Label]] = []
+        self.loop_stack: List[Tuple[str, str]] = []
 
         # BUILT-IN functions (or labels)
         self._add_label(self.get_fn_label("fmt__Println"))
@@ -267,6 +268,10 @@ class IntermediateCode:
     @staticmethod
     def get_fn_label(fn_name: str):
         return f"FUNCTION_{fn_name}"
+
+    @staticmethod
+    def get_fn_end_label(fn_name: str):
+        return f"FUNCTION_END_{fn_name}"
 
     def _add_label(self, label_name: str, label_index: int = -1) -> Label:
         """Private function for adding label without adding
@@ -298,6 +303,9 @@ class IntermediateCode:
 
         return name
 
+    def get_label(self, label_name: str) -> Label:
+        return self.label_map[label_name]
+
     def add_goto(self, label_name: str) -> GoTo:
         if label_name not in self.label_map:
             raise Exception(f"Label {label_name} does not exist, cannot goto to it")
@@ -314,7 +322,7 @@ class IntermediateCode:
 
         return call_stmt
 
-    def enter_new_loop(self, start_label: Label, end_label: Label):
+    def enter_new_loop(self, start_label: str, end_label: str):
         self.loop_stack.append((start_label, end_label))
 
     def exit_loop(self):
@@ -425,6 +433,11 @@ def tac_Keyword(
             ic.add_to_list(Double("return", new_children[0][0]))
         else:
             ic.add_to_list(Single("return"))
+    elif node.kw == "BREAK" or node.kw == "CONTINUE":
+        if not ic.is_inloop():
+            print_error("Invalid keyword usage")
+            print(f"Keyword {node.kw} not allowed outside a loop")
+            print_line_marker_nowhitespace(node.lineno)
     else:
         print(f"Keyword {node.kw} not implemented yet!")
 
@@ -522,9 +535,7 @@ def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
         if isinstance(op.left, syntree.Literal) and isinstance(
             op.right, syntree.Literal
         ):
-            ic.add_to_list(
-                Quad(ActualVar(node.symbol), op.left, op.right, op.operator)
-            )
+            ic.add_to_list(Quad(ActualVar(node.symbol), op.left, op.right, op.operator))
 
             node.children.remove(op)
 
@@ -550,12 +561,21 @@ def tac_List(
     return_val.extend(new_children)
 
 
-# TODO: handle return
 def tac_pre_Function(ic: IntermediateCode, node: syntree.Function):
     fn_name = syntree.FunctionCall.get_fn_name(node.fn_name)
     fn_label = ic.get_fn_label(fn_name)
     ic.add_label(fn_label)
-    print("Added label", fn_label)
+
+
+def tac_Function(
+    ic: IntermediateCode,
+    node: syntree.Function,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    fn_name = syntree.FunctionCall.get_fn_name(node.fn_name)
+    fn_label = ic.get_fn_end_label(fn_name)
+    ic.add_label(fn_label)
 
 
 def tac_Arguments(
@@ -626,6 +646,15 @@ def tac_pre_IfStmt(
     ic.add_label(false_label)
 
 
+def tac_IfStmt(
+    ic: IntermediateCode,
+    node: syntree.IfStmt,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    pass
+
+
 def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
     if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
         # start of loop
@@ -646,7 +675,7 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         ic.add_to_list(g1)
         ic.add_label(true_label)
 
-        # ic.enter_new_loop()
+        ic.enter_new_loop(start_label, end_label)
 
         # now the body (after true label)
         body = node.body
@@ -657,6 +686,8 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         ic.add_goto(start_label)
         # end label after body
         ic.add_label(end_label)
+
+        ic.exit_loop()
 
     elif isinstance(node.clause, syntree.ForClause):
         clause = node.clause
@@ -683,6 +714,8 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         ic.add_to_list(g1)
         ic.add_label(true_label)
 
+        ic.enter_new_loop(start_label, end_label)
+
         # now the body (after true label)
         body = node.body
         if body is not None:
@@ -697,8 +730,19 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         # end label after body
         ic.add_label(end_label)
 
+        ic.exit_loop()
+
     else:
         print("Could not determine clause type")
+
+
+def tac_ForStmt(
+    ic: IntermediateCode,
+    node: syntree.ForStmt,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    pass
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
