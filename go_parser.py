@@ -1008,13 +1008,10 @@ if __name__ == "__main__":
         ast = syntree.optimize_AST(ast)
         draw_AST(ast)
 
-        # Intermediate Code gen
-        ic = intermediate_codegen(ast)
-
-        with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
-            sys.stdout = ast_file
-            print_tree(ast, nameattr=None, horizontal=True)
-            sys.stdout = sys.__stdout__
+        # with open("syntax_tree.txt", "wt", encoding="utf-8") as ast_file:
+        #     sys.stdout = ast_file
+        #     print_tree(ast, nameattr=None, horizontal=True)
+        #     sys.stdout = sys.__stdout__
 
         print("Finished Parsing!")
         print("Symbol Table: ")
@@ -1025,12 +1022,19 @@ if __name__ == "__main__":
         print("Type Table: ")
         print(type_table)
 
+        # Intermediate Code gen
+        ic = intermediate_codegen(ast)
+
         print("Intermediate code:")
         print(ic)
         ic.print_three_address_code()
+
+        print(symtab)
 
         ico = optimize_ic(ic)
 
         print("Optimized intermediate code:")
         print(ico)
         ico.print_three_address_code()
+
+        print(symtab)
