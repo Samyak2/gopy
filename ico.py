@@ -1,4 +1,4 @@
-from math import log2
+from math import log2, floor, ceil
 from copy import deepcopy
 
 from tac import IntermediateCode, Quad, Assign, Operand, TempVar, ActualVar
@@ -9,6 +9,9 @@ bools = {True: "true", False: "false"}
 
 
 def is_power_of_2(x):
+    if floor(x) != ceil(x):
+        return False
+    x = int(x)
     return x and (not (x & (x - 1)))
 
 
@@ -169,6 +172,10 @@ def copy_prop(ic):
     return ico
 
 
+# def common_subexpression_elimination(ic):
+    
+
+
 def print_quad_info(q: Quad):
     print("Quad (q):", q)
     print("type of q:", type(q))
@@ -230,9 +237,17 @@ def optimize_ic(ic):
 
     ico = copy_prop(ico)
 
-    print("Final Optimized Intermediate Code after Copy Propogation:")
+    print("After Copy Propogation:")
     print(ico)
-    print()
+    # print("The above table is before performing Common Subexpression Elimination")
+    # print()
+
+    # ico = common_subexpression_elimination(ico)
+
+    # print("Final Optimized Intermediate Code after Common Subexpression Elimination:")
+    # print(ico)
+
+
 
     # print("Before removing dead code:")
     # print(ico)
