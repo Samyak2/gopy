@@ -588,6 +588,9 @@ class ForStmt(Node):
         self.body = body
         self.clause = clause
 
+        # signal the AST optimizer to not optimize these children
+        self._no_optim = True
+
 
 class ForClause(Node):
 
@@ -596,6 +599,9 @@ class ForClause(Node):
         self.init = init
         self.cond = cond
         self.post = post
+
+        # signal the AST optimizer to not optimize these children
+        self._no_optim = True
 
 
 class RangeClause(Node):

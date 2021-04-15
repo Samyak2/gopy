@@ -304,6 +304,24 @@ class IntermediateCode:
         )
 
 
+def tac_Assignment(
+    ic: IntermediateCode,
+    node: syntree.Assignment,
+    new_children: List[List[Any]],
+    return_val: List[Any],
+):
+    left = new_children[0][0]
+    right = new_children[1][0]
+    if len(node.operator) == 2 and node.operator[1] == "=":
+        ic.add_to_list(Quad(left, left, right, node.operator[0]))
+        return_val.append(left)
+    elif node.operator == "=":
+        ic.add_to_list(Assign(left, right))
+        return_val.append(left)
+
+    return_val.append(node)
+
+
 def tac_BinOp(
     ic: IntermediateCode,
     node: syntree.BinOp,
@@ -370,7 +388,7 @@ def tac_Keyword(
         else:
             ic.add_to_list(Single("return"))
     else:
-        print(f"Keyword {node.kw} not implement yet!")
+        print(f"Keyword {node.kw} not implemented yet!")
 
     return_val.append(node)
 
@@ -542,6 +560,43 @@ def tac_pre_IfStmt(
     _recur_codegen(body, ic)
     # false label after body
     ic.add_label(false_label)
+
+
+def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
+    if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
+        print("boolean clause")
+
+        start_label = ic.get_new_increment_label("for_simple_start")
+        ic.add_label(start_label)
+
+        condition = node.clause
+        node.children.remove(condition)
+
+        condition_res = _recur_codegen(condition, ic)[0]
+
+        true_label = ic.get_new_increment_label("for_simple_true")
+        end_label = ic.get_new_increment_label("for_simple_end")
+
+        g1 = ConditionalGoTo(true_label, condition_res, end_label)
+        ic.add_to_list(g1)
+        ic.add_label(true_label)
+
+        # now the body (after true label)
+        body = node.body
+        node.children.remove(body)
+        _recur_codegen(body, ic)
+        # loop back to start label
+        ic.add_goto(start_label)
+        # end label after body
+        ic.add_label(end_label)
+
+    elif isinstance(node.clause, syntree.ForClause):
+        print("compound clause")
+
+    else:
+        print("Could not determine clause type")
+
+    print(node.body, node.clause)
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
