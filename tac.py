@@ -230,6 +230,14 @@ class ActualVar(Operand):
         self.symbol.const_flag = True
         self.symbol.value = value
 
+    @property
+    def type_(self):
+        return self.symbol.type_
+
+    @type_.setter
+    def type_(self, value: Any):
+        self.symbol.type_ = value
+
     def __hash__(self):
         return hash(self.symbol.name + self.symbol.scope_id)
 

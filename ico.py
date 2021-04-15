@@ -34,17 +34,16 @@ def binary_eval(q: Quad):
         elif operator == "*":
             dest.value = op1.value * op2.value
         elif operator == "/":
-            # TODO: calculate result based on type of dest
-            # ints = {'int', 'int8', 'int16', 'int32', 'int64'}
-            # floats = {'float32', 'float64'}
-            # if dest.symbol.type_.name in ints:
-            #     dest.value = op1.value // op2.value
-            # elif dest.symbol.type_.name in floats:
-            #     dest.value = op1.value / op2.value
-            # else:
-            #     raise NotImplementedError("Support for types other than int and float have not been added yet!")
+            ints = {'int', 'int8', 'int16', 'int32', 'int64'}
+            floats = {'float32', 'float64'}
+            print(dest, dest.type_)
+            if dest.type_ in ints:
+                dest.value = op1.value // op2.value
+            elif dest.type_ in floats:
+                dest.value = op1.value / op2.value
+            else:
+                raise NotImplementedError("Support for types other than int and float have not been added yet!")
 
-            dest.value = op1.value / op2.value
         elif operator == "==":
             dest.value = bools[op1.value == op2.value]
         elif operator == "!=":
@@ -102,7 +101,7 @@ def binary_eval(q: Quad):
     return q
 
 
-def remove_unused_temps(ic):
+def pack_temps(ic):
     required_temps = set()
     ico = IntermediateCode()
 
@@ -228,7 +227,7 @@ def optimize_ic(ic):
     print("The above table is before removing unused temps")
     print()
 
-    ico = remove_unused_temps(ico)
+    ico = pack_temps(ico)
 
     print("After removing unsued temps:")
     print(ico)
