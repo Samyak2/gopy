@@ -12,8 +12,8 @@ func main() {
         fmt.Println("True")
     }
 
-    if(!(p==q)){
-        fmt.Println("True")
-    }
+    // if(!(p==q)){
+    //     fmt.Println("True")
+    // }
 
 }

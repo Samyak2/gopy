@@ -44,6 +44,8 @@ precedence = (
     # ("right", "=", "WALRUS", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
     ("right", "="),
     ("left", ","),
+    ("left", "BAR_BAR"),
+    ("left", "AMPER_AMPER"),
     ("left", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
     ("left", "+", "-"),
     ("left", "*", "/", "%"),
@@ -586,6 +588,9 @@ def p_Expression(p):
     | Expression LT_EQ Expression
     | Expression GT Expression
     | Expression GT_EQ Expression
+    | Expression BAR_BAR Expression
+    | Expression AMPER_AMPER Expression
+
     """
     # TODO : Add Logical Operators
     # TODO : Add other binary operators

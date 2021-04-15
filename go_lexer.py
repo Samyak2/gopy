@@ -134,16 +134,13 @@ types = {
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 unused_tokens = {
     "AMPERSAND",
-    "AMPER_AMPER",
     "AMP_CARET_EQ",
     "AMP_EQ",
     "BAR",
-    "BAR_BAR",
     "BAR_EQ",
     "CARET",
     "CARET_EQ",
     "COLON",
-    "EXCLAMATION",
     "KW_CASE",
     "KW_CHAN",
     "KW_DEFAULT",
