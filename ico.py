@@ -1,7 +1,7 @@
 from math import log2
 from copy import deepcopy
 
-from tac import IntermediateCode, Quad, Assign, Operand
+from tac import IntermediateCode, Quad, Assign, Operand, TempVar, ActualVar
 from syntree import Literal
 
 
@@ -99,6 +99,24 @@ def binary_eval(q: Quad):
     return q
 
 
+def remove_unused_temps(ic):
+    required_temps = set()
+    ico = IntermediateCode()
+
+    for q in reversed(ic.code_list):
+        if isinstance(q.dest, TempVar) and not (q.dest in required_temps):
+            continue
+        ico.add_to_list(q)
+        if isinstance(q.op1, TempVar):
+            required_temps.add(q.op1)
+        if isinstance(q.op2, TempVar):
+            required_temps.add(q.op2)
+
+    ico.code_list = ico.code_list[::-1]
+
+    return ico
+
+
 def remove_deadcode(ic):
     required_ops = set()
     ico = IntermediateCode()
@@ -175,6 +193,8 @@ def optimize_ic(ic):
         # print_quad_info(q)
 
         ico.add_to_list(q)
+
+    ico = remove_unused_temps(ico)
 
     print("Before removing dead code:")
     print(ico)
