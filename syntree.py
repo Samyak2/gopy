@@ -187,6 +187,9 @@ class Literal(Node):
         if isinstance(type_, Node):
             children.append(type_)
 
+        if isinstance(value, Node):
+            children.append(value)
+
         super().__init__("LITERAL", children=children, data=(type_, value))
 
         self.type_ = type_

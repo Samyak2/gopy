@@ -761,9 +761,10 @@ def p_KeyedElement(p):
     """KeyedElement : Element"""
     # TODO: add `Key ':' Element`
     if len(p) == 2:
-        p[0] = (None, p[1])
+        p[0] = p[1]
     elif len(p) == 4:
-        p[0] = (p[1], p[3])
+        raise Exception("Bad grammar or rules!")
+        # p[0] = (p[1], p[3])
     else:
         raise Exception("Bad grammar or rules!")
 

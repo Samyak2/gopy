@@ -349,7 +349,11 @@ def tac_Literal(
         return_val.append(node.value)
     else:
         if len(new_children) > 1:
-            return_val.append(new_children[1][0])
+            if isinstance(new_children[0][0], syntree.Array):
+                arr = "{" + ", ".join(map(lambda x: str(x[0]), new_children[1])) + "}"
+                return_val.append(arr)
+            else:
+                return_val.append(new_children[1][0])
         else:
             return_val.append(new_children[0][0])
 
