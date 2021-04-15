@@ -65,6 +65,20 @@ class GoTo(Quad):
         return f"goto {self.label_name}"
 
 
+class Call(Quad):
+    def __init__(self, label_name: str, res: Any):
+        self.label_name = label_name
+        self.res = res
+
+        self.operator = "call"
+        self.op2 = label_name
+        self.op1 = None
+        self.dest = res
+
+    def __str__(self):
+        return f"{self.dest} = call {self.op2}"
+
+
 class ConditionalGoTo(Quad):
     """if operation goto label_name1 else goto label_name2"""
 
@@ -101,6 +115,19 @@ class Single(Quad):
 
     def __str__(self):
         return self.operator
+
+
+class Double(Quad):
+    """Quad to store two values"""
+
+    def __init__(self, op, value):
+        self.operator = op
+        self.op1 = None
+        self.op2 = value
+        self.dest = None
+
+    def __str__(self):
+        return f"{self.operator} {self.op2}"
 
 
 class Operand(metaclass=abc.ABCMeta):
@@ -252,6 +279,14 @@ class IntermediateCode:
 
         return goto_stmt
 
+    def add_call(self, label_name: str, res) -> Call:
+        if label_name not in self.label_map:
+            raise Exception(f"Label {label_name} does not exist, cannot goto to it")
+        call_stmt = Call(label_name, res)
+        self.add_to_list(call_stmt)
+
+        return call_stmt
+
     def print_three_address_code(self):
         for i in self.code_list:
             print(i)
@@ -288,12 +323,19 @@ def tac_Literal(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    temp = ic.get_new_temp_var(node.value)
+    # temp = ic.get_new_temp_var(node.value)
 
     # TODO: how to handle type here?
-    ic.add_to_list(Assign(temp, node.value))
+    # ic.add_to_list(Assign(temp, node.value))
+    # ic.add_to_list(node.value)
 
-    return_val.append(temp)
+    if not isinstance(node.value, syntree.Node):
+        return_val.append(node.value)
+    else:
+        if len(new_children) > 1:
+            return_val.append(new_children[1][0])
+        else:
+            return_val.append(new_children[0][0])
 
 
 def tac_Keyword(
@@ -303,8 +345,10 @@ def tac_Keyword(
     return_val: List[Any],
 ):
     if node.kw == "RETURN":
-        # TODO: build call stack and return to right caller
-        ic.add_to_list(Single("return"))
+        if len(new_children) > 0 and len(new_children[0]) > 0:
+            ic.add_to_list(Double("return", new_children[0][0]))
+        else:
+            ic.add_to_list(Single("return"))
     else:
         print(f"Keyword {node.kw} not implement yet!")
 
@@ -391,15 +435,29 @@ def tac_Index(
     return_val.append(new_children[0])
 
 
+def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
+    if len(node.children) > 1 and isinstance(node.children[1], syntree.BinOp):
+        op = node.children[1]
+        if isinstance(op.left, syntree.Literal) and isinstance(
+            op.right, syntree.Literal
+        ):
+            ic.add_to_list(
+                Quad(ActualVar(node.symbol), op.left.value, op.right.value, op.operator)
+            )
+
+            node.children.remove(op)
+
+
 def tac_VarDecl(
     ic: IntermediateCode,
     node: syntree.VarDecl,
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    if len(new_children[1]) > 0:
-        ic.add_to_list(Assign(ActualVar(node.symbol), new_children[1][0]))
-    return_val.append(node.ident.ident_name)
+    if len(new_children) > 1:
+        if len(new_children[1]) > 0:
+            ic.add_to_list(Assign(ActualVar(node.symbol), new_children[1][0]))
+        return_val.append(node.ident.ident_name)
 
 
 def tac_List(
@@ -425,14 +483,16 @@ def tac_FunctionCall(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    ic.add_goto(ic.get_fn_label(node.get_fn_name(node.fn_name)))
+    label = ic.get_fn_label(node.get_fn_name(node.fn_name))
+    temp = ic.get_new_temp_var()
+    ic.add_call(label, temp)
+    return_val.append(temp)
 
 
 def tac_pre_IfStmt(
     ic: IntermediateCode,
     node: syntree.IfStmt,
 ):
-    print(node, node.children)
     # there can be a statement to be executed just before
     # the condition. specified as "if a := 10; a > 5 {...}"
     # we process the statement before anything else and remove
@@ -458,7 +518,6 @@ def tac_pre_IfStmt(
 
     # now the body (after true label)
     body = node.body
-    print(body, node, node.children)
     node.children.remove(body)
     _recur_codegen(body, ic)
     # false label after body
