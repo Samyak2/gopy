@@ -44,6 +44,8 @@ precedence = (
     # ("right", "=", "WALRUS", "ADD_EQ", "SUB_EQ", "MUL_EQ", "DIV_EQ", "MOD_EQ"),
     ("right", "="),
     ("left", ","),
+    ("left", "BAR_BAR"),
+    ("left", "AMPER_AMPER"),
     ("left", "EQ_EQ", "NOT_EQ", "LT", "LT_EQ", "GT", "GT_EQ"),
     ("left", "+", "-"),
     ("left", "*", "/", "%"),
@@ -586,6 +588,9 @@ def p_Expression(p):
     | Expression LT_EQ Expression
     | Expression GT Expression
     | Expression GT_EQ Expression
+    | Expression BAR_BAR Expression
+    | Expression AMPER_AMPER Expression
+
     """
     # TODO : Add Logical Operators
     # TODO : Add other binary operators
@@ -612,6 +617,7 @@ def p_UnaryExpr(p):
 def p_UnaryOp(p):
     """UnaryOp : '+' %prec UNARY
     | '-' %prec UNARY
+    | '!' %prec UNARY
     """
     # TODO : Add other unary operators
     p[0] = p[1]
@@ -755,9 +761,10 @@ def p_KeyedElement(p):
     """KeyedElement : Element"""
     # TODO: add `Key ':' Element`
     if len(p) == 2:
-        p[0] = (None, p[1])
+        p[0] = p[1]
     elif len(p) == 4:
-        p[0] = (p[1], p[3])
+        raise Exception("Bad grammar or rules!")
+        # p[0] = (p[1], p[3])
     else:
         raise Exception("Bad grammar or rules!")
 

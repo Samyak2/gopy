@@ -3,9 +3,6 @@ package forr
 import "fmt"
 
 func main() {
-	/* testing
-	for
-	*/
 	a,b := 1,2
 
 	for a < b {
@@ -14,11 +11,6 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		//do something
-	}
-
-	var numbers [6]int
-	for i,x:= range numbers {
-		fmt.Printf("value of x = %d at %d\n", x,i)
 	}
 
 	for true  {
@@ -43,7 +35,7 @@ func main() {
 		   continue;
 		}
 		fmt.Printf("value of a: %d\n", a);
-		a++;     
+		a++;
 	}
 
 }

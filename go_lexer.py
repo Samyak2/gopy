@@ -28,7 +28,7 @@ def find_column(token):
 states = (("InsertSemi", "exclusive"),)
 
 # List of literal tokens
-literals = ";,.=+-*/%()[]{}"
+literals = ";,.=+-*/%()[]!{}"
 
 # List of token names. This is always required
 tokens = (
@@ -45,7 +45,7 @@ tokens = (
     "BAR",
     "AMPER_AMPER",
     "BAR_BAR",
-    "EXCLAMATION",
+    #  "EXCLAMATION",
     "COLON",
     # assignment operators
     "WALRUS",
@@ -134,16 +134,13 @@ types = {
 tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
 unused_tokens = {
     "AMPERSAND",
-    "AMPER_AMPER",
     "AMP_CARET_EQ",
     "AMP_EQ",
     "BAR",
-    "BAR_BAR",
     "BAR_EQ",
     "CARET",
     "CARET_EQ",
     "COLON",
-    "EXCLAMATION",
     "KW_CASE",
     "KW_CHAN",
     "KW_DEFAULT",
@@ -200,7 +197,7 @@ t_AMPERSAND = r"&"
 t_BAR = r"\|"
 t_AMPER_AMPER = r"&&"
 t_BAR_BAR = r"\|\|"
-t_EXCLAMATION = r"!"
+#  t_EXCLAMATION = r"!"
 t_COLON = r":"
 t_WALRUS = r":="
 # TODO: Move the assignment operators above, below
