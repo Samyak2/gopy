@@ -191,6 +191,12 @@ class SymbolTable:
 
         return new_symbol
 
+    def remove_symbol(self, symbol: SymbolInfo):
+        self.symbols.remove(symbol)
+        for symtab_ in reversed(self.stack):
+            if symbol in symtab_:
+                symtab_.pop(symbol.name)
+
     def get_symbol(self, symbol: str) -> Optional[SymbolInfo]:
         """Finds the symbol in the closest symtab
 
