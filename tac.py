@@ -228,7 +228,7 @@ class ActualVar(Operand):
             )
         self.symbol.const_flag = True
         self.symbol.value = value
-    
+
     def __hash__(self):
         return hash(self.symbol.name + self.symbol.scope_id)
 
@@ -455,7 +455,9 @@ def tac_PrimaryExpr(
 
             if ident is not None:
                 ind = new_children[0][0][0]
-                width = syntree.Literal("int", type_table.get_type(ident.type_.eltype).storage)
+                width = syntree.Literal(
+                    "int", type_table.get_type(ident.type_.eltype).storage
+                )
 
                 offset_t = ic.get_new_temp_var()
                 offset_t.type_ = "int"
@@ -522,9 +524,7 @@ def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
         if isinstance(op.left, syntree.Literal) and isinstance(
             op.right, syntree.Literal
         ):
-            ic.add_to_list(
-                Quad(ActualVar(node.symbol), op.left, op.right, op.operator)
-            )
+            ic.add_to_list(Quad(ActualVar(node.symbol), op.left, op.right, op.operator))
 
             node.children.remove(op)
 

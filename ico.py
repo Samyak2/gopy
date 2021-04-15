@@ -62,17 +62,17 @@ def binary_eval(q: Quad):
             q.op1, q.op2 = q.op2, int(log2(op1.value))
             q.operator = "<<"
         elif op1.value == 0:
-            if operator == '+':
+            if operator == "+":
                 q = Assign(dest, op2)
-            elif operator == '*':
+            elif operator == "*":
                 q = Assign(dest, 0)
-            elif operator == '/':
+            elif operator == "/":
                 q = Assign(dest, 0)
-        elif op1.value == 1 and operator == '*':
+        elif op1.value == 1 and operator == "*":
             q = Assign(dest, op2)
-        elif op1.value == 'true' and operator == '&&':
+        elif op1.value == "true" and operator == "&&":
             q = Assign(dest, op2)
-        elif op1.value == 'false' and operator == '||':
+        elif op1.value == "false" and operator == "||":
             q = Assign(dest, op2)
     elif is_literal_or_const_operand(op2) and isinstance(op1, Operand):
         if is_power_of_2(op2.value):
@@ -82,17 +82,17 @@ def binary_eval(q: Quad):
             elif operator == "/":
                 q.operator = ">>"
         elif op2.value == 0:
-            if operator == '+':
+            if operator == "+":
                 q = Assign(dest, op1)
-            elif operator == '*':
+            elif operator == "*":
                 q = Assign(dest, 0)
-            elif operator == '/':
+            elif operator == "/":
                 q = Assign(dest, 0)
-        elif op2.value == 1 and operator == '*':
+        elif op2.value == 1 and operator == "*":
             q = Assign(dest, op1)
-        elif op2.value == 'true' and operator == '&&':
+        elif op2.value == "true" and operator == "&&":
             q = Assign(dest, op1)
-        elif op2.value == 'false' and operator == '||':
+        elif op2.value == "false" and operator == "||":
             q = Assign(dest, op1)
     else:
         pass
@@ -105,7 +105,7 @@ def remove_unused_temps(ic):
 
     for q in reversed(ic.code_list):
         if isinstance(q.dest, TempVar):
-            if q.operator == 'call':
+            if q.operator == "call":
                 pass
             elif not (q.dest in required_temps):
                 continue
@@ -125,7 +125,7 @@ def remove_deadcode(ic):
     ico = IntermediateCode()
 
     for q in reversed(ic.code_list):
-        if q.operator == 'return':
+        if q.operator == "return":
             required_ops = set()
             required_ops.add(q.op2)
             ico = IntermediateCode()
@@ -136,7 +136,7 @@ def remove_deadcode(ic):
                 required_ops.add(q.op1)
             if isinstance(q.op2, Operand):
                 required_ops.add(q.op2)
-    
+
     ico.code_list = ico.code_list[::-1]
 
     # ico = IntermediateCode()
@@ -146,7 +146,7 @@ def remove_deadcode(ic):
     #         ico.add_to_list(q)
     #     elif q.dest in required_ops:
     #         ico.add_to_list(q)
-    
+
     return ico
 
 
@@ -233,7 +233,7 @@ def optimize_ic(ic):
     print("Final Optimized Intermediate Code after Copy Propogation:")
     print(ico)
     print()
-    
+
     # print("Before removing dead code:")
     # print(ico)
 
