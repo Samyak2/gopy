@@ -586,7 +586,7 @@ class IfStmt(Node):
 
 class ForStmt(Node):
 
-    def __init__(self, body, clause=None):
+    def __init__(self, body, clause):
         super().__init__("FOR", children=[body, clause])
         self.body = body
         self.clause = clause

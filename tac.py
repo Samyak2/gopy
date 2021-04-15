@@ -577,11 +577,11 @@ def tac_pre_IfStmt(
 
 def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
     if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
-        print("boolean clause")
-
+        # start of loop
         start_label = ic.get_new_increment_label("for_simple_start")
         ic.add_label(start_label)
 
+        # the condition
         condition = node.clause
         node.children.remove(condition)
 
@@ -590,26 +590,62 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         true_label = ic.get_new_increment_label("for_simple_true")
         end_label = ic.get_new_increment_label("for_simple_end")
 
+        # actual if else
         g1 = ConditionalGoTo(true_label, condition_res, end_label)
         ic.add_to_list(g1)
         ic.add_label(true_label)
 
         # now the body (after true label)
         body = node.body
-        node.children.remove(body)
-        _recur_codegen(body, ic)
+        if body is not None:
+            node.children.remove(body)
+            _recur_codegen(body, ic)
         # loop back to start label
         ic.add_goto(start_label)
         # end label after body
         ic.add_label(end_label)
 
     elif isinstance(node.clause, syntree.ForClause):
-        print("compound clause")
+        clause = node.clause
+
+        # init statement (first part of for)
+        if clause.init is not None:
+            _recur_codegen(clause.init, ic)
+            clause.children.remove(clause.init)
+
+        # start of loop (just before condition)
+        start_label = ic.get_new_increment_label("for_cmpd_start")
+        ic.add_label(start_label)
+
+        # the condition
+        condition = clause.cond
+        clause.children.remove(condition)
+        condition_res = _recur_codegen(condition, ic)[0]
+
+        true_label = ic.get_new_increment_label("for_cmpd_true")
+        end_label = ic.get_new_increment_label("for_cmpd_end")
+
+        # actual if else
+        g1 = ConditionalGoTo(true_label, condition_res, end_label)
+        ic.add_to_list(g1)
+        ic.add_label(true_label)
+
+        # now the body (after true label)
+        body = node.body
+        if body is not None:
+            node.children.remove(body)
+            _recur_codegen(body, ic)
+        # the post statement (increment/decrement)
+        if clause.post is not None:
+            _recur_codegen(clause.post, ic)
+            clause.children.remove(clause.post)
+        # loop back to start label
+        ic.add_goto(start_label)
+        # end label after body
+        ic.add_label(end_label)
 
     else:
         print("Could not determine clause type")
-
-    print(node.body, node.clause)
 
 
 ignored_nodes = {"Identifier", "Type", "Array"}
