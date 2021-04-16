@@ -29,8 +29,9 @@ class Quad:
 class Assign(Quad):
     """An assignment operation (to a single value)"""
 
-    def __init__(self, dest, value):
+    def __init__(self, dest, value, scope_id = "1"):
         super().__init__(dest, None, value, "=")
+        self.scope_id = scope_id
 
     def __str__(self):
         return f"{self.dest} = {self.op2}"
@@ -210,6 +211,9 @@ class ActualVar(Operand):
 
     def is_const(self):
         return self.symbol.const_flag
+
+    def deconstantize(self):
+        self.symbol.const_flag = False
 
     @property
     def value(self):

@@ -59,24 +59,24 @@ def binary_eval(q: Quad):
             dest.value = bools[op1.value >= op2.value]
         else:
             raise Exception(operator + " is an invalid binary operator!")
-        q = Assign(dest, dest.value)
+        q = Assign(dest, dest.value, q.scope_id)
     elif is_literal_or_const_operand(op1) and isinstance(op2, Operand):
         if is_power_of_2(op1.value) and operator == "*":
             q.op1, q.op2 = q.op2, int(log2(op1.value))
             q.operator = "<<"
         elif op1.value == 0:
             if operator == "+":
-                q = Assign(dest, op2)
+                q = Assign(dest, op2, q.scope_id)
             elif operator == "*":
-                q = Assign(dest, 0)
+                q = Assign(dest, 0, q.scope_id)
             elif operator == "/":
-                q = Assign(dest, 0)
+                q = Assign(dest, 0, q.scope_id)
         elif op1.value == 1 and operator == "*":
-            q = Assign(dest, op2)
+            q = Assign(dest, op2, q.scope_id)
         elif op1.value == "true" and operator == "&&":
-            q = Assign(dest, op2)
+            q = Assign(dest, op2, q.scope_id)
         elif op1.value == "false" and operator == "||":
-            q = Assign(dest, op2)
+            q = Assign(dest, op2, q.scope_id)
     elif is_literal_or_const_operand(op2) and isinstance(op1, Operand):
         if is_power_of_2(op2.value):
             q.op2 = int(log2(op2.value))
@@ -86,17 +86,17 @@ def binary_eval(q: Quad):
                 q.operator = ">>"
         elif op2.value == 0:
             if operator == "+":
-                q = Assign(dest, op1)
+                q = Assign(dest, op1, q.scope_id)
             elif operator == "*":
-                q = Assign(dest, 0)
+                q = Assign(dest, 0, q.scope_id)
             elif operator == "/":
-                q = Assign(dest, 0)
+                q = Assign(dest, 0, q.scope_id)
         elif op2.value == 1 and operator == "*":
-            q = Assign(dest, op1)
+            q = Assign(dest, op1, q.scope_id)
         elif op2.value == "true" and operator == "&&":
-            q = Assign(dest, op1)
+            q = Assign(dest, op1, q.scope_id)
         elif op2.value == "false" and operator == "||":
-            q = Assign(dest, op1)
+            q = Assign(dest, op1, q.scope_id)
     else:
         pass
     return q
