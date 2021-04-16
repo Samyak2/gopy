@@ -864,7 +864,6 @@ def _recur_codegen(node: syntree.Node, ic: IntermediateCode):
         return_val.append(node)
 
     else:
-        print(f"Intermediate code is not yet implemented for node {node}")
 
         return_val.append(node)
 
