@@ -411,7 +411,7 @@ def p_IncDecStmt(p):
 
 def p_Assignment(p):
     """Assignment : ExpressionList assign_op ExpressionList"""
-    p[0] = syntree.Assignment(p[2], p[1], p[3])
+    p[0] = syntree.Assignment(p[2], p[1], p[3], lineno=p.lineno(1))
 
 
 def p_assign_op(p):
