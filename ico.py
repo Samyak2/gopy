@@ -102,6 +102,39 @@ def binary_eval(q: Quad):
     return q
 
 
+def deconstantize_loop(ic: IntermediateCode, line_num: int):
+    label_start = ic.code_list[line_num].dest
+    label_end = label_start.replace('start', 'end')
+
+    for i in range(line_num+1, len(ic.code_list)):
+        q = ic.code_list[i]
+        if q.dest == label_end:
+            break
+        if isinstance(q.dest, ActualVar):
+            q.dest.deconstantize()
+
+
+def const_folding_propagation(ic: IntermediateCode):
+    ico = IntermediateCode()
+
+    for i, q in enumerate(ic.code_list):
+
+        if isinstance(q, Assign):
+            if isinstance(q.op2, Literal):
+                q.dest.value = q.op2.value
+            elif isinstance(q.op2, Operand) and q.op2.is_const():
+                q.dest.value = q.op2.value
+                q.op2 = q.dest.value
+        elif q.operator == 'LABEL' and q.dest.startswith('for_'):
+            deconstantize_loop(ic, i)
+
+        q = binary_eval(q)
+
+        ico.add_to_list(q)
+    
+    return ico
+
+
 def loop_invariant(ic: IntermediateCode):
     loops = {}
 
@@ -320,26 +353,7 @@ def optimize_ic(ic):
     print("Intermediate Code after loop invariant")
     print(ic)
 
-    ico = IntermediateCode()
-
-    for q in ic.code_list:
-
-        # print("before optimization:")
-        # print_quad_info(q)
-
-        if isinstance(q, Assign):
-            if isinstance(q.op2, Literal):
-                q.dest.value = q.op2.value
-            elif isinstance(q.op2, Operand) and q.op2.is_const():
-                q.dest.value = q.op2.value
-                q.op2 = q.dest.value
-
-        q = binary_eval(q)
-
-        # print("after optimization:")
-        # print_quad_info(q)
-
-        ico.add_to_list(q)
+    ico = const_folding_propagation(ic)
 
     print("After Constant Folding, Constant Propagation and Strength Reduction:")
     print(ico)
