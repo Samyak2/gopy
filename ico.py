@@ -350,8 +350,6 @@ def print_quad_info(q: Quad):
 def optimize_ic(ic):
     loop_invariant(ic)
 
-    print("Intermediate Code after loop invariant optimization:")
-    print(ic)
     print("The above table is before Constant Folding, Constant Propagation and Strength Reduction:")
     print()
 
@@ -364,8 +362,6 @@ def optimize_ic(ic):
 
     # loop_invariant(ico)
 
-    print("Intermediate Code after loop invariant")
-    print(ico)
     print("The above table is before performing Copy Propagation")
     print()
 
@@ -394,7 +390,7 @@ def optimize_ic(ic):
 
     ico = remove_deadcode(ico)
 
-    print("After performing Dead Code Elimination:")
+    print("Final Optimized IC after performing Dead Code Elimination:")
     print(ico)
 
     return ico
