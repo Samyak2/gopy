@@ -678,6 +678,8 @@ def tac_pre_IfStmt(
 
     condition_res = _recur_codegen(condition, ic)[0]
 
+    symtab.enter_scope()
+
     # now add the actual if statement
     true_label = ic.get_new_increment_label("if_true")
     false_label = ic.get_new_increment_label("if_false")
@@ -703,6 +705,8 @@ def tac_pre_IfStmt(
         _recur_codegen(next_, ic)
 
         symtab.leave_scope()
+
+    symtab.leave_scope()
 
 
 def tac_IfStmt(
@@ -730,6 +734,8 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
 
         true_label = ic.get_new_increment_label("for_simple_true")
         end_label = ic.get_new_increment_label("for_simple_end")
+
+        symtab.enter_scope()
 
         # actual if else
         g1 = ConditionalGoTo(true_label, condition_res, end_label)
@@ -770,6 +776,8 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
         true_label = ic.get_new_increment_label("for_cmpd_true")
         end_label = ic.get_new_increment_label("for_cmpd_end")
 
+        symtab.enter_scope()
+
         # actual if else
         g1 = ConditionalGoTo(true_label, condition_res, end_label)
         ic.add_to_list(g1)
@@ -795,6 +803,8 @@ def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
 
     else:
         print("Could not determine clause type")
+
+    symtab.leave_scope()
 
 
 def tac_ForStmt(
