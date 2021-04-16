@@ -356,10 +356,10 @@ class IntermediateCode:
         return str(
             tabulate(
                 [
-                    [i.dest, i.op1, i.operator, i.op2, i.scope_id]
+                    [i.dest, i.op1, i.operator, i.op2]
                     for i in self.code_list
                 ],
-                headers=["Dest", "Operand 1", "Operator", "Operand 2", "Scope"],
+                headers=["Dest", "Operand 1", "Operator", "Operand 2"],
                 tablefmt="psql",
             )
         )
