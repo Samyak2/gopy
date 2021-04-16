@@ -56,6 +56,7 @@ precedence = (
 def p_SourceFile(p):
     """SourceFile : PackageClause ';' ImportDeclList TopLevelDeclList"""
     ast.data = p[1]
+    utils.package_name = ast.data
     ast.add_child(p[3])
     ast.add_child(p[4])
 
@@ -682,7 +683,7 @@ def p_OperandName(p):
             print_line(lineno)
             line: str = utils.lines[lineno - 1]
             # TODO: get correct position of token rather than searching
-            pos = line.find(ident[1])
+            pos = ident[2] - 1
             width = len(ident[1])
             print_marker(pos, width)
         else:

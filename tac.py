@@ -476,7 +476,10 @@ def tac_PrimaryExpr(
     if isinstance(node.data, tuple) and node.data[0] == "identifier":
         # a simple identifier
         if not node.children:
-            return_val.append(ActualVar(node.ident))
+            if node.ident is None:
+                print(f"Skipping undeclared identifier {node.data[1]}")
+            else:
+                return_val.append(ActualVar(node.ident))
 
         # not so simple identifier
         elif len(node.children) == 1 and isinstance(node.children[0], syntree.Index):

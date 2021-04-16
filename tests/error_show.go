@@ -6,7 +6,7 @@ var c = a + 3
 
 var d float64 = b + 3
 
-func main() {
+func nomain() {
     if a + 5 {
         a = 5
     }
@@ -22,4 +22,8 @@ func main() {
     }
 
     var e int
+
+    fmt.Println(f)
+
+    e := 5.0
 }

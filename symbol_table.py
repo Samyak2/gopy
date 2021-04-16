@@ -336,6 +336,14 @@ class SymbolTable:
                 width = len(symbol.name)
                 print_marker(pos, width)
 
+        if utils.package_name == "main":
+            main_fn = self.get_symbol("main")
+
+            if main_fn is None:
+                print_error("main is undeclared in package main", kind="ERROR")
+
+                print("main function is not declared in a file with 'main' package")
+
     def __str__(self):
         return str(
             tabulate(

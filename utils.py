@@ -1,6 +1,7 @@
 from colorama import Fore, Style
 
 lines = []
+package_name = None
 
 
 def print_lexer_error(err_str=""):
