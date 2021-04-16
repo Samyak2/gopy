@@ -29,9 +29,9 @@ class Quad:
 class Assign(Quad):
     """An assignment operation (to a single value)"""
 
-    def __init__(self, dest, value, scope_id = "1"):
-        super().__init__(dest, None, value, "=")
+    def __init__(self, dest, value, scope_id="1"):
         self.scope_id = scope_id
+        super().__init__(dest, None, value, "=")
 
     def __str__(self):
         return f"{self.dest} = {self.op2}"
@@ -564,22 +564,33 @@ def tac_Index(
 def tac_pre_VarDecl(ic: IntermediateCode, node: syntree.VarDecl):
     if len(node.children) > 1 and isinstance(node.children[1], syntree.BinOp):
         op = node.children[1]
-        if isinstance(op.left, syntree.Literal) and isinstance(
-            op.right, syntree.Literal
-        ):
-            ic.add_to_list(Quad(ActualVar(node.symbol), op.left, op.right, op.operator))
 
-            node.children.remove(op)
+        if isinstance(op.left, syntree.Literal):
+            if isinstance(op.right, syntree.Literal):
+                ic.add_to_list(
+                    Quad(ActualVar(node.symbol), op.left, op.right, op.operator)
+                )
+                node.children.remove(op)
+            elif isinstance(op.children[1], syntree.PrimaryExpr):
+                right = _recur_codegen(op.children[1], ic)[0]
+                ic.add_to_list(
+                    Quad(ActualVar(node.symbol), op.left, right, op.operator)
+                )
+                node.children.remove(op)
 
-        elif isinstance(op.children[0], syntree.PrimaryExpr) and isinstance(
-            op.children[1], syntree.PrimaryExpr
-        ):
+        elif isinstance(op.children[0], syntree.PrimaryExpr):
             left = _recur_codegen(op.children[0], ic)[0]
-            right = _recur_codegen(op.children[1], ic)[0]
 
-            ic.add_to_list(Quad(ActualVar(node.symbol), left, right, op.operator))
+            if isinstance(op.right, syntree.Literal):
+                ic.add_to_list(
+                    Quad(ActualVar(node.symbol), left, op.right, op.operator)
+                )
+                node.children.remove(op)
 
-            node.children.remove(op)
+            elif isinstance(op.children[1], syntree.PrimaryExpr):
+                right = _recur_codegen(op.children[1], ic)[0]
+                ic.add_to_list(Quad(ActualVar(node.symbol), left, right, op.operator))
+                node.children.remove(op)
 
 
 def tac_VarDecl(
