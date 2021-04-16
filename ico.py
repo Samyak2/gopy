@@ -8,7 +8,7 @@ bools = {True: "true", False: "false"}
 
 
 def is_power_of_2(x):
-    if floor(x) != ceil(x):
+    if floor(x) != ceil(x) or x == 1:
         return False
     x = int(x)
     return x and (not (x & (x - 1)))
@@ -35,15 +35,15 @@ def binary_eval(q: Quad):
         elif operator == "/":
             ints = {"int", "int8", "int16", "int32", "int64"}
             floats = {"float32", "float64"}
-            print(dest, dest.type_)
             if dest.type_ in ints:
                 dest.value = op1.value // op2.value
             elif dest.type_ in floats:
                 dest.value = op1.value / op2.value
             else:
-                raise NotImplementedError(
-                    "Support for types other than int and float have not been added yet!"
-                )
+                # raise NotImplementedError(
+                #     "Support for types other than int and float have not been added yet!"
+                # )
+                pass
 
         elif operator == "==":
             dest.value = bools[op1.value == op2.value]
@@ -249,6 +249,7 @@ def remove_deadcode(ic):
     for q in reversed(ico1.code_list):
         if q.operator == "LABEL":
             ico2.add_to_list(q)
+            required_ops.add(q.dest)
         elif q.operator == "call":
             ico2.add_to_list(q)
             required_ops.add(q.dest)
