@@ -1,6 +1,6 @@
 from math import log2, floor, ceil
 
-from tac import IntermediateCode, Quad, Assign, Operand, TempVar, ActualVar
+from tac import IntermediateCode, Label, Quad, Assign, Operand, TempVar, ActualVar
 from syntree import Literal
 
 
@@ -33,15 +33,17 @@ def binary_eval(q: Quad):
         elif operator == "*":
             dest.value = op1.value * op2.value
         elif operator == "/":
-            ints = {'int', 'int8', 'int16', 'int32', 'int64'}
-            floats = {'float32', 'float64'}
+            ints = {"int", "int8", "int16", "int32", "int64"}
+            floats = {"float32", "float64"}
             print(dest, dest.type_)
             if dest.type_ in ints:
                 dest.value = op1.value // op2.value
             elif dest.type_ in floats:
                 dest.value = op1.value / op2.value
             else:
-                raise NotImplementedError("Support for types other than int and float have not been added yet!")
+                raise NotImplementedError(
+                    "Support for types other than int and float have not been added yet!"
+                )
 
         elif operator == "==":
             dest.value = bools[op1.value == op2.value]
@@ -100,6 +102,91 @@ def binary_eval(q: Quad):
     return q
 
 
+def loop_invariant(ic: IntermediateCode):
+    loops = {}
+
+    for i, code in enumerate(ic.code_list):
+        if isinstance(code, Label):
+            if code.name.startswith("for_simple_start") or code.name.startswith(
+                "for_cmpd_start"
+            ):
+                loops[code.name] = (i,)
+
+            elif code.name.startswith("for_simple_end") or code.name.startswith(
+                "for_cmpd_end"
+            ):
+                start_name = code.name.replace("end", "start")
+                loops[start_name] = (loops[start_name][0], i)
+
+    print("got loops", loops)
+
+    def _loop_invar(ic: IntermediateCode, loop_start: int, loop_end: int):
+        required = {}
+        blacklisted = set()
+
+        def _is_literal_const_or_required(op: Quad):
+            return (
+                is_literal_or_const_operand(op) or op in required
+            ) and op not in blacklisted
+
+        for ind, code in enumerate(ic.code_list[loop_start:loop_end]):
+
+            if isinstance(code, Assign) or isinstance(code.dest, (ActualVar, TempVar)):
+                flag = False
+
+                if code.op1 is None:
+                    if _is_literal_const_or_required(code.op2):
+                        required[code.dest] = (ind, code, [code.op2])
+                        flag = True
+
+                else:
+                    if _is_literal_const_or_required(
+                        code.op1
+                    ) and _is_literal_const_or_required(code.op2):
+                        required[code.dest] = (ind, code, [code.op1, code.op2])
+                        flag = True
+
+                if not flag:
+                    if code.dest in required:
+                        print("is dest, removing", code.dest)
+                        required.pop(code.dest)
+                        blacklisted.add(code.dest)
+
+        print("required in loop", required.keys())
+
+        codes = []
+        moved = set()
+        for ind, code, dep_list in reversed(required.values()):
+            flag = True
+            for dep in dep_list:
+                if not _is_literal_const_or_required(dep):
+                    flag = False
+
+            if not flag:
+                continue
+
+            new_ind = loop_start + ind
+
+            codes.append((ic.code_list.pop(new_ind), dep_list))
+            moved.add(codes[-1][0].dest)
+
+        for code_, dep_list in codes:
+            flag = True
+            for dep in dep_list:
+                if dep in required and dep not in moved:
+                    flag = False
+
+            if not flag:
+                continue
+
+            print("moving to", loop_start, ic.code_list[loop_start])
+
+            ic.code_list.insert(loop_start, code_)
+
+    for _, (start, end) in loops.items():
+        _loop_invar(ic, start, end)
+
+
 def pack_temps(ic):
     required_temps = set()
     ico = IntermediateCode()
@@ -142,7 +229,7 @@ def remove_deadcode(ic):
     discard = False
     for q in ic.code_list:
         if discard:
-            if q.operator == 'LABEL':
+            if q.operator == "LABEL":
                 ico1.add_to_list(q)
             elif q.scope_id == curr_scope:
                 continue
@@ -151,7 +238,7 @@ def remove_deadcode(ic):
                 ico1.add_to_list(q)
         else:
             ico1.add_to_list(q)
-        if q.operator == 'return':
+        if q.operator == "return":
             discard = True
             curr_scope = q.scope_id
 
@@ -160,9 +247,9 @@ def remove_deadcode(ic):
     required_ops = set()
 
     for q in reversed(ico1.code_list):
-        if q.operator == 'LABEL':
+        if q.operator == "LABEL":
             ico2.add_to_list(q)
-        elif q.operator == 'call':
+        elif q.operator == "call":
             ico2.add_to_list(q)
             required_ops.add(q.dest)
         elif q.operator in ("return", "push"):
@@ -200,7 +287,6 @@ def copy_prop(ic):
 
 
 # def common_subexpression_elimination(ic):
-    
 
 
 def print_quad_info(q: Quad):
@@ -228,6 +314,11 @@ def print_quad_info(q: Quad):
 
 # NOTE: Original ic is modified during optimization
 def optimize_ic(ic):
+    loop_invariant(ic)
+
+    print("Intermediate Code after loop invariant")
+    print(ic)
+
     ico = IntermediateCode()
 
     for q in ic.code_list:
@@ -272,8 +363,6 @@ def optimize_ic(ic):
 
     # print("Final Optimized Intermediate Code after Common Subexpression Elimination:")
     # print(ico)
-
-
 
     # print("Before removing dead code:")
     # print(ico)

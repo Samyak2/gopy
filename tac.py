@@ -178,6 +178,22 @@ class TempVar(Operand):
     def type_(self, value: Any):
         self.symbol.type_ = value
 
+    def __repr__(self):
+        return f"<Temp {self.name}>"
+
+    def __hash__(self):
+        return hash(self.symbol.name + self.symbol.scope_id)
+
+    def __eq__(self, other):
+        if isinstance(other, ActualVar):
+            if (
+                self.symbol.name == other.symbol.name
+                and self.symbol.scope_id == self.symbol.scope_id
+            ):
+                return True
+            return False
+        return False
+
 
 class ActualVar(Operand):
     def __init__(self, symbol: Optional[SymbolInfo]):
@@ -233,6 +249,9 @@ class ActualVar(Operand):
                 return True
             return False
         return False
+
+    def __repr__(self):
+        return f"<ActualVar {self.name}>"
 
 
 class IntermediateCode:
@@ -332,7 +351,10 @@ class IntermediateCode:
     def __str__(self) -> str:
         return str(
             tabulate(
-                [[i.dest, i.op1, i.operator, i.op2, i.scope_id] for i in self.code_list],
+                [
+                    [i.dest, i.op1, i.operator, i.op2, i.scope_id]
+                    for i in self.code_list
+                ],
                 headers=["Dest", "Operand 1", "Operator", "Operand 2", "Scope"],
                 tablefmt="psql",
             )
@@ -380,12 +402,22 @@ def tac_UnaryOp(
     new_children: List[List[Any]],
     return_val: List[Any],
 ):
-    temp = ic.get_new_temp_var()
-    temp.type_ = node.type_
+    if node.operator == "++" or node.operator == "--":
+        print("found incdec")
 
-    ic.add_to_list(Double(node.operator, new_children[0][0], temp))
+        ic.add_to_list(
+            Quad(new_children[0][0], new_children[0][0], 1, node.operator[0])
+        )
 
-    return_val.append(temp)
+        return_val.append(new_children[0][0])
+
+    else:
+        temp = ic.get_new_temp_var()
+        temp.type_ = node.type_
+
+        ic.add_to_list(Double(node.operator, new_children[0][0], temp))
+
+        return_val.append(temp)
 
 
 def tac_Literal(
