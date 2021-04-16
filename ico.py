@@ -114,7 +114,7 @@ def deconstantize_loop(ic: IntermediateCode, line_num: int):
             q.dest.deconstantize()
 
 
-def const_folding_propagation(ic: IntermediateCode):
+def const_fold_const_prop_strength_red(ic: IntermediateCode):
     ico = IntermediateCode()
 
     for i, q in enumerate(ic.code_list):
@@ -350,32 +350,37 @@ def print_quad_info(q: Quad):
 def optimize_ic(ic):
     loop_invariant(ic)
 
-    print("Intermediate Code after loop invariant")
+    print("Intermediate Code after loop invariant optimization:")
     print(ic)
+    print("The above table is before Constant Folding, Constant Propagation and Strength Reduction:")
+    print()
 
-    ico = const_folding_propagation(ic)
+    ico = const_fold_const_prop_strength_red(ic)
 
     print("After Constant Folding, Constant Propagation and Strength Reduction:")
     print(ico)
     # print("The above table is before removing unused temps")
     # print()
 
-    loop_invariant(ico)
+    # loop_invariant(ico)
 
     print("Intermediate Code after loop invariant")
     print(ico)
+    print("The above table is before performing Copy Propagation")
+    print()
 
     # ico = pack_temps(ico)
 
     # print("After removing unsued temps:")
     # print(ico)
-    print("The above table is before performing Copy Propagation")
-    print()
 
     ico = copy_prop(ico)
 
     print("After Copy Propogation:")
     print(ico)
+    print("The above table is before performing Dead Code Elimination")
+    print()
+    
     # print("The above table is before performing Common Subexpression Elimination")
     # print()
 
@@ -389,7 +394,7 @@ def optimize_ic(ic):
 
     ico = remove_deadcode(ico)
 
-    print("After removing dead code:")
+    print("After performing Dead Code Elimination:")
     print(ico)
 
     return ico
