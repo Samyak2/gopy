@@ -124,6 +124,17 @@ class BinOp(Node):
 class Assignment(BinOp):
     """Node for assignment operations"""
 
+    def __init__(self, operator, left=None, right=None, lineno=None):
+        if isinstance(left, List) and len(left.children) == 1 and isinstance(left.children[0], PrimaryExpr):
+            left_ = left.children[0]
+            if left_.ident is not None:
+                if left_.ident.const:
+                    print_error("Constant assignment")
+                    print(f"Constant {left_.ident.name} cannot be assigned to")
+                    print_line_marker_nowhitespace(lineno)
+
+        super().__init__(operator, left, right, lineno)
+
 
 class UnaryOp(Node):
     """Node for unary operations"""
