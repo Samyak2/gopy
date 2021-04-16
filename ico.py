@@ -159,7 +159,7 @@ def loop_invariant(ic: IntermediateCode):
 
         def _is_literal_const_or_required(op: Quad):
             return (
-                is_literal_or_const_operand(op) or op in required
+                is_literal_or_const_operand(op) or op in required or isinstance(op, int) or isinstance(op, float)
             ) and op not in blacklisted
 
         for ind, code in enumerate(ic.code_list[loop_start:loop_end]):
@@ -359,6 +359,11 @@ def optimize_ic(ic):
     print(ico)
     # print("The above table is before removing unused temps")
     # print()
+
+    loop_invariant(ico)
+
+    print("Intermediate Code after loop invariant")
+    print(ico)
 
     # ico = pack_temps(ico)
 
