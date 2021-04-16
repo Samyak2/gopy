@@ -603,29 +603,49 @@ class IfStmt(Node):
                       f"{self.expr.operator}"
                       " in a condition")
                 print_line_marker_nowhitespace(lineno)
+        elif hasattr(self.expr, "type_") and getattr(self.expr, "type_") != "bool":
+            print_error("Invalid condition", kind="TYPE ERROR")
+            print("Cannot use non-binary expression in condition")
+            print_line_marker_nowhitespace(lineno)
 
 
 class ForStmt(Node):
 
-    def __init__(self, body, clause):
+    def __init__(self, body, clause, lineno):
         super().__init__("FOR", children=[body, clause])
         self.body = body
         self.clause = clause
+        self.lineno = lineno
 
         # signal the AST optimizer to not optimize these children
         self._no_optim = True
+
+        if hasattr(clause, "type_") and getattr(clause, "type_") == "bool":
+            pass
+        elif isinstance(clause, ForClause):
+            pass
+        else:
+            print_error("Invalid condition", kind="TYPE ERROR")
+            print("Cannot use non-binary expression in for loop")
+            print_line_marker_nowhitespace(lineno)
 
 
 class ForClause(Node):
 
-    def __init__(self, init, cond, post):
+    def __init__(self, init, cond, post, lineno):
         super().__init__("FOR_CLAUSE", children=[init, cond, post])
         self.init = init
         self.cond = cond
         self.post = post
+        self.lineno = lineno
 
         # signal the AST optimizer to not optimize these children
         self._no_optim = True
+
+        if hasattr(cond, "type_") and getattr(cond, "type_") != "bool":
+            print_error("Invalid condition", kind="TYPE ERROR")
+            print("Cannot use non-binary expression in for loop")
+            print_line_marker_nowhitespace(lineno)
 
 
 class RangeClause(Node):
