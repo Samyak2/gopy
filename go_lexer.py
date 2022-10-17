@@ -105,25 +105,25 @@ keywords = {
 # List of types
 # types -> (symbol, storage in bytes)
 types = {
-    #For INT
+    # For INT
     "int": ("INT", 8),
     "int8": ("INT8", 1),
     "int16": ("INT16", 2),
     "int32": ("INT32", 4),
     "int64": ("INT64", 8),
-    #For Float
+    # For Float
     "float32": ("FLOAT32", 4),
     "float64": ("FLOAT64", 8),
-    #For UINT
+    # For UINT
     "uint": ("UINT", 8),
     "uint8": ("UINT8", 1),
     "uint16": ("UINT16", 2),
     "uint32": ("UINT32", 4),
     "uint64": ("UINT64", 8),
-    #For Complex
+    # For Complex
     "complex64": ("COMPLEX64", 8),
     "complex128": ("COMPLEX128", 16),
-    #For Misc
+    # For Misc
     "string": ("STRING", None),
     "byte": ("BYTE", 1),
     "bool": ("BOOL", 1),
@@ -220,19 +220,19 @@ t_INT8 = r"int8"
 t_INT16 = r"int16"
 t_INT32 = r"int32"
 t_INT64 = r"int64"
-#FLOAT Type
+# FLOAT Type
 t_FLOAT32 = r"float32"
 t_FLOAT64 = r"float64"
-#UNIT Type
+# UNIT Type
 t_UINT = r"uint"
 t_UINT8 = r"uint8"
 t_UINT16 = r"uint16"
 t_UINT32 = r"uint32"
 t_UINT64 = r"uint64"
-#Complex Type
+# Complex Type
 t_COMPLEX64 = r"complex64"
 t_COMPLEX128 = r"complex128"
-#MISC Type
+# MISC Type
 t_BOOL = r"bool"
 t_RUNE = r"rune"
 t_BYTE = r"byte"

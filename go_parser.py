@@ -597,8 +597,8 @@ def p_Expression(p):
     | Expression AMPER_AMPER Expression
 
     """
-    # TODO : Add Logical Operators
-    # TODO : Add other binary operators
+    # TODO : Add Logical Operator
+    # TODO : Add other binary opeators
 
     if len(p) == 4:
         p[0] = syntree.BinOp(p[2], left=p[1], right=p[3], lineno=p.lineno(2))
@@ -642,7 +642,7 @@ def p_PrimaryExpr(p):
             p[0] = syntree.PrimaryExpr(operand=p[1])
     elif len(p) == 3:
         if isinstance(p[2], syntree.Arguments):
-            p[0] = syntree.FunctionCall(p[1], p[2])
+            p[0] = syntree.FunctionCall(p[1], p[2], on_line=p.lineno(1))
         else:
             p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
 
@@ -685,8 +685,6 @@ def p_OperandName(p):
             print_error()
             print(f"Undeclared symbol '{ident[1]}' at line {lineno}")
             print_line(lineno)
-            line: str = utils.lines[lineno - 1]
-            # TODO: get correct position of token rather than searching
             pos = ident[2] - 1
             width = len(ident[1])
             print_marker(pos, width)
