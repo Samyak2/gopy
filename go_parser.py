@@ -597,8 +597,8 @@ def p_Expression(p):
     | Expression AMPER_AMPER Expression
 
     """
-    # TODO : Add Logical Operator
-    # TODO : Add other binary opeators
+    # TODO : Add Logical Operators
+    # TODO : Add other binary operators
 
     if len(p) == 4:
         p[0] = syntree.BinOp(p[2], left=p[1], right=p[3], lineno=p.lineno(2))
@@ -642,7 +642,13 @@ def p_PrimaryExpr(p):
             p[0] = syntree.PrimaryExpr(operand=p[1])
     elif len(p) == 3:
         if isinstance(p[2], syntree.Arguments):
-            p[0] = syntree.FunctionCall(p[1], p[2], on_line=p.lineno(1))
+            data = p[1].data
+            length = len(data)
+            col_no = data[length - 1]
+            if isinstance(col_no, tuple):  # fmt.print
+                col_no = data[length - 1][2]
+            pos = (p.lineno(1), col_no)
+            p[0] = syntree.FunctionCall(p[1], p[2], pos=pos)
         else:
             p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
 

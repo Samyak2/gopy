@@ -1,16 +1,13 @@
 from symbol_table import SymbolInfo
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 import traceback
 
-import utils
-from utils import print_error, print_line, print_marker
 from go_lexer import symtab, type_table
 from utils import (
     print_error,
-    # print_line,
+    print_line,
     print_line_marker_nowhitespace,
-    # print_marker,
-    # lines,
+    print_marker,
 )
 
 
@@ -253,7 +250,7 @@ class FunctionCall(Node):
 
     Is a part of PrimaryExpr in the grammar, but separated here"""
 
-    def __init__(self, fn_name: Any, arguments: Arguments, on_line: int=None):
+    def __init__(self, fn_name: Any, arguments: Arguments, pos: Tuple[int, int]=None):
         if (isinstance(fn_name, PrimaryExpr) and
                 isinstance(fn_name.data, tuple) and
                 fn_name.data[0] == "identifier"):
@@ -272,47 +269,38 @@ class FunctionCall(Node):
                 parameters = []
             para_types = []  # list of types in declared order
             for para in parameters:
-                buf = []
-                for decl in para.var_decl:
-                    buf.append(decl.type_.data)  # decl.type_.data is a name type
-                buf.reverse()
-                para_types.extend(buf)
+                para_types.extend(
+                    [decl.symbol.type_.name for decl in para.var_decl]  # decl.type_.data is a type name
+                )
+
+            def print_func_err(pos: Tuple[int, int], width: int, err_msg: str):
+                line_no = pos[0]
+                col_no = pos[1]
+                print(err_msg)
+                print_line(line_no)
+                print_marker(col_no - 1, width)
 
             expected_count = len(para_types)
             recieved_count = len(expression_list)
             if recieved_count != expected_count:
                 print_error("Arguments Number Mismatch Declaration", kind="TYPE ERROR")
-                # inspired by python error message
-                print(
-                    f"{fn_name}() takes {expected_count} arguments"
-                    f" but {recieved_count} were given")
-
-                line: str = utils.lines[on_line - 1]
-                pos = line.find(fn_name)
-                width = len(fn_name)
-                print_line(on_line)
-                print_marker(pos, width)
+                tense = "were" if recieved_count > 1 else "was"
+                err_msg = (f"{fn_name}() takes {expected_count} arguments"
+                           f" but {recieved_count} {tense} given")
+                print_func_err(len(fn_name), err_msg)
             else:
-                # TODO: do better
-                exp_list = [e for e in expression_list]
-                exp_list.reverse()
-
-                for arg, para_type in zip(exp_list, para_types):
-                    arg_type = self.get_type_of_exp(arg)
+                para_types.reverse()  # to match order of expression_list
+                for arg, para_type in zip(expression_list, para_types):
+                    arg_type = self.infer_exp_type(arg)
+                    data = arg.data
                     if arg_type != para_type:
                         print_error("Arguments Type Mismatch Declaration", kind="TYPE ERROR")
-                        # inspired by python error message
-                        exp = arg.data
-                        if isinstance(arg.data, tuple):
-                            exp = arg.data[1]
-                        print(
-                            f"{exp} has type {arg_type} "
-                            f"which is not compatible with type {para.type_.data}")
-                        line: str = utils.lines[on_line - 1]
-                        pos = line.find(fn_name)  # TODO: remove linear search
-                        width = len(fn_name)
-                        print_line(on_line)
-                        print_marker(pos, width)
+                        exp = data
+                        if isinstance(data, tuple):
+                            exp = data[1]
+                        err_msg = (f"{exp} has type {arg_type} "
+                                   f"which is not compatible with type {para_type}")
+                        print_func_err(len(fn_name), err_msg)
 
         self.type_ = None
         if self.fn_sym is not None:
@@ -321,7 +309,7 @@ class FunctionCall(Node):
 
         super().__init__("FunctionCall", children=[arguments], data=fn_name)
 
-    def get_type_of_exp(self, expr: Node):
+    def infer_exp_type(self, expr: Node):
         # TODO
         # type inference
         inf_type = None

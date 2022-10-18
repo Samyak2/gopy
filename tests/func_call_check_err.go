@@ -9,12 +9,14 @@ var a int = 20
 func sum(a, b int) int {
 	fmt.Printf("value of a in sum() = %d\n", a)
 	fmt.Printf("value of b in sum() = %d\n", b)
-
 	return a + b
 }
 
 func zoro(a int, b string) float32 {
 	return 3.2
+}
+
+func array_test(a [2]int) {
 }
 
 func main() {
@@ -24,21 +26,28 @@ func main() {
 	var c int = 0
 	var str string = "str"
 	var bin bool = true
-	var array = [2]int{2, 4}
+	var array2 = [2]int{2, 4}
+	var array3 = [3]int{2, 4, 3}
 
-	// should produce: Arguments Number Mismatch Declaration
+	// should report error: Arguments Number Mismatch Declaration
 	sum(a, b, c)
 	sum()
 	sum(a)
 
-	// should produce: Arguments Type Mismatch Declaration
+	// should report error: Arguments Type Mismatch Declaration
 	// and/or Arguments Number Mismatch Declaration
 	zoro(a, "str")
+    sum(sum(2, 4), bin)
+    sum(sum(a, str), 3)
 	sum(a, str)
 	sum(a, zoro())
 	sum(a, zoro(2))
 	sum(a, zoro(2, "str"))
-	sum(array, b)
+	sum(array2, b)
+    sum("str", 4.5 + 1.4)
 	sum("str", 4.8)
 	sum("str", bin)
+    
+    array_test(array2)
+    array_test(array3)  // typechecker gets this wrong :/
 }
