@@ -287,7 +287,7 @@ class FunctionCall(Node):
                 tense = "were" if recieved_count > 1 else "was"
                 err_msg = (f"{fn_name}() takes {expected_count} arguments"
                            f" but {recieved_count} {tense} given")
-                print_func_err(len(fn_name), err_msg)
+                print_func_err(pos, len(fn_name), err_msg)
             else:
                 para_types.reverse()  # to match order of expression_list
                 for arg, para_type in zip(expression_list, para_types):
@@ -300,7 +300,7 @@ class FunctionCall(Node):
                             exp = data[1]
                         err_msg = (f"{exp} has type {arg_type} "
                                    f"which is not compatible with type {para_type}")
-                        print_func_err(len(fn_name), err_msg)
+                        print_func_err(pos, len(fn_name), err_msg)
 
         self.type_ = None
         if self.fn_sym is not None:
@@ -446,7 +446,7 @@ class Array(Type):
         #     storage = None
         storage = self.length.value * type_table.get_type(eltype).storage
 
-        self.typename = f"ARRAY_{eltype}"
+        self.typename = f"ARRAY_[{self.length}]{eltype}"
         type_table.add_type(
             self.typename,
             lineno=None,

@@ -1,14 +1,10 @@
 package main
 
-import "fmt"
-
 /* global variable declaration */
 var a int = 20
 
 /* function to add two integers */
 func sum(a, b int) int {
-	fmt.Printf("value of a in sum() = %d\n", a)
-	fmt.Printf("value of b in sum() = %d\n", b)
 	return a + b
 }
 
@@ -19,6 +15,8 @@ func zoro(a int, b string) float32 {
 func array_test(a [2]int) {
 }
 
+func slice_test(a []int, b []string) {}
+
 func main() {
 	/* local variable declaration in main function */
 	var a int = 3
@@ -28,6 +26,8 @@ func main() {
 	var bin bool = true
 	var array2 = [2]int{2, 4}
 	var array3 = [3]int{2, 4, 3}
+    var int_slice = []int{4, 5}
+    var str_slice = []string{ "hey", "there"}
 
 	// should report error: Arguments Number Mismatch Declaration
 	sum(a, b, c)
@@ -36,7 +36,6 @@ func main() {
 
 	// should report error: Arguments Type Mismatch Declaration
 	// and/or Arguments Number Mismatch Declaration
-	zoro(a, "str")
     sum(sum(2, 4), bin)
     sum(sum(a, str), 3)
 	sum(a, str)
@@ -48,6 +47,8 @@ func main() {
 	sum("str", 4.8)
 	sum("str", bin)
     
-    array_test(array2)
-    array_test(array3)  // typechecker gets this wrong :/
+    array_test(array3)
+
+    slice_test(str_slice, array2)
+    slice_test(4, str)
 }
