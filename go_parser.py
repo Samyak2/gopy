@@ -639,14 +639,16 @@ def p_PrimaryExpr(p):
             # p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
             p[0] = p[1]
         else:
-            p[0] = syntree.PrimaryExpr(operand=p[1])
+            p[0] = syntree.PrimaryExpr(operand=p[1], lineno=p.lineno(1))
     elif len(p) == 3:
         if isinstance(p[2], syntree.Arguments):
-            col_no = p[1].col_no
-            pos = (p.lineno(1), col_no)
-            p[0] = syntree.FunctionCall(p[1], p[2], pos=pos)
+            p[0] = syntree.FunctionCall(p[1], p[2])
         else:
-            p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
+            p[0] = syntree.PrimaryExpr(
+                      operand=None,
+                      lineno=p.lineno(1),
+                      children=[p[1], p[2]]
+                   )
 
 
 def p_Arguments(p):
@@ -698,7 +700,7 @@ def p_OperandName(p):
 
 def p_QualifiedIdent(p):
     """QualifiedIdent : PackageName '.' IDENTIFIER"""
-    p[0] = syntree.QualifiedIdent(p[1], p[3])
+    p[0] = syntree.QualifiedIdent(p[1], p[3], p.lineno(3))
 
 
 def p_Literal(p):

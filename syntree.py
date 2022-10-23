@@ -165,7 +165,7 @@ class PrimaryExpr(Node):
     Ref: https://golang.org/ref/spec#PrimaryExpr
     """
 
-    def __init__(self, operand, children=None):
+    def __init__(self, operand, lineno: int, children=None):
         # small optimization for the case when PrimaryExpr
         # has children of [PrimaryExpr, something]
         # with PrimaryExpr having only data and no children
@@ -180,6 +180,7 @@ class PrimaryExpr(Node):
                          data=operand)
         self.ident: Optional[SymbolInfo] = symtab.get_symbol(
             operand[1] if isinstance(operand, tuple) else "")
+        self.lineno = lineno
 
     @property
     def operand(self) -> tuple:
@@ -258,7 +259,9 @@ class FunctionCall(Node):
 
     Is a part of PrimaryExpr in the grammar, but separated here"""
 
-    def __init__(self, fn_name: Any, arguments: Arguments, pos: Tuple[int, int]=None):
+    def __init__(self, fn_name: Any, arguments: Arguments):
+        pos = fn_name.lineno, fn_name.col_no
+
         if (isinstance(fn_name, PrimaryExpr) and
                 isinstance(fn_name.data, tuple) and
                 fn_name.data[0] == "identifier"):
@@ -520,10 +523,11 @@ class Identifier(Node):
 class QualifiedIdent(Node):
     """Node for qualified identifiers"""
 
-    def __init__(self, package_name, identifier):
+    def __init__(self, package_name, identifier, lineno: int):
         super().__init__("IDENTIFIER",
                          children=[],
                          data=(package_name, identifier))
+        self.lineno = lineno
 
     @property
     def col_no(self) -> int:
