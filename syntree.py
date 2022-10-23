@@ -181,6 +181,14 @@ class PrimaryExpr(Node):
         self.ident: Optional[SymbolInfo] = symtab.get_symbol(
             operand[1] if isinstance(operand, tuple) else "")
 
+    @property
+    def operand(self) -> tuple:
+        return self.data
+
+    @property
+    def col_no(self):
+        return self.operand[-1]
+
     def data_str(self):
         # self.data can be an IDENTIFIER sometimes, so just show the name
         if isinstance(self.data, tuple) and self.data[0] == "identifier":
@@ -516,6 +524,10 @@ class QualifiedIdent(Node):
         super().__init__("IDENTIFIER",
                          children=[],
                          data=(package_name, identifier))
+
+    @property
+    def col_no(self) -> int:
+        self.data[-1][-1]
 
     def data_str(self):
         return f"package: {self.data[0][1]}, name: {self.data[1][1]}"
