@@ -138,7 +138,7 @@ class Assignment(BinOp):
 class UnaryOp(Node):
     """Node for unary operations"""
 
-    def __init__(self, operator, operand):
+    def __init__(self, operator, operand, lineno: int):
         if isinstance(operand, UnaryOp) and operand.operator is None:
             operand = operand.operand
 
@@ -146,6 +146,7 @@ class UnaryOp(Node):
         self.operand = operand
         self.operator = operator
         self.type_ = None
+        self.lineno = lineno
 
         if hasattr(operand, "type_"):
             self.type_ = operand.type_
@@ -201,7 +202,7 @@ class PrimaryExpr(Node):
 class Literal(Node):
     """Node to store literals"""
 
-    def __init__(self, type_, value):
+    def __init__(self, type_, value, lineno: int):
         children = []
         if isinstance(type_, Node):
             children.append(type_)
@@ -213,6 +214,7 @@ class Literal(Node):
 
         self.type_ = type_
         self.value = value
+        self.lineno = lineno
 
     def data_str(self):
         return f"type: {self.type_}, value: {self.value}"
@@ -278,20 +280,30 @@ class FunctionCall(Node):
             parameters = self.fn_sym.value.signature.parameters
             if parameters is None:
                 parameters = []
-            para_types = []  # list of types in declared order
+            param_decls = []  # list of types in declared order
             for para in parameters:
-                para_types.extend(
-                    [decl.symbol.type_.name for decl in para.var_decl]  # decl.type_.data is a type name
+                param_decls.extend(
+                    [decl for decl in para.var_decl]  # decl.type_.data is a type name
                 )
 
-            def print_func_err(pos: Tuple[int, int], width: int, err_msg: str):
+            def print_func_err(
+                pos: Tuple[int, int],
+                width: int,
+                err_msg_call: str,
+                err_msg_decl: Optional[str] = None,
+                param_ident: Optional[Identifier] = None
+            ):
                 line_no = pos[0]
                 col_no = pos[1]
-                print(err_msg)
+                print(err_msg_call)
                 print_line(line_no)
                 print_marker(col_no - 1, width)
+                if param_ident is not None:
+                    print(err_msg_decl)
+                    print_line(param_ident.lineno)
+                    print_marker(param_ident.col_num - 1, len(param_ident.ident_name))
 
-            expected_count = len(para_types)
+            expected_count = len(param_decls)
             recieved_count = len(expression_list)
             if recieved_count != expected_count:
                 print_error("Arguments Number Mismatch Declaration", kind="TYPE ERROR")
@@ -300,18 +312,19 @@ class FunctionCall(Node):
                            f" but {recieved_count} {tense} given")
                 print_func_err(pos, len(fn_name), err_msg)
             else:
-                para_types.reverse()  # to match order of expression_list
-                for arg, para_type in zip(expression_list, para_types):
+                param_decls.reverse()  # to match order of expression_list
+                for arg, param_decl in zip(expression_list, param_decls):
                     arg_type = self.infer_exp_type(arg)
                     data = arg.data
+                    para_type = param_decl.symbol.type_.name
                     if arg_type != para_type:
                         print_error("Arguments Type Mismatch Declaration", kind="TYPE ERROR")
                         exp = data
                         if isinstance(data, tuple):
                             exp = data[1]
-                        err_msg = (f"{exp} has type {arg_type} "
-                                   f"which is not compatible with type {para_type}")
-                        print_func_err(pos, len(fn_name), err_msg)
+                        err_msg_call = (f"{exp} has type {arg_type}")
+                        err_msg_decl = f"but function wanted {para_type}"
+                        print_func_err(pos, len(fn_name), err_msg_call, err_msg_decl, param_decl.ident)
 
         self.type_ = None
         if self.fn_sym is not None:

@@ -611,7 +611,7 @@ def p_UnaryExpr(p):
     | UnaryOp UnaryExpr
     """
     if len(p) == 3:
-        p[0] = syntree.UnaryOp(p[1], p[2])
+        p[0] = syntree.UnaryOp(p[1], p[2], lineno=p.lineno(1))
     else:
         # TODO : handle more stuff in PrimaryExpr
         # also change the PrimaryExpr class in syntree when doing so
@@ -713,7 +713,7 @@ def p_Literal(p):
 
 def p_CompositeLit(p):
     """CompositeLit : LiteralType LiteralValue"""
-    p[0] = syntree.Literal(type_=p[1], value=p[2])
+    p[0] = syntree.Literal(type_=p[1], value=p[2], lineno=p.lineno(1))
 
 
 def p_LiteralType(p):
@@ -804,7 +804,7 @@ def p_BasicLit(p):
     | bool_lit
     """
     # TODO : Add other basic literals
-    p[0] = syntree.Literal(p[1][0], p[1][1])
+    p[0] = syntree.Literal(p[1][0], p[1][1], lineno=p.lineno(1))
 
 
 def p_FunctionLit(p):
