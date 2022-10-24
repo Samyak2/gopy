@@ -282,9 +282,9 @@ class FunctionCall(Node):
                 parameters = []
             param_decls = []  # list of types in declared order
             for para in parameters:
-                param_decls.extend(
-                    [decl for decl in para.var_decl]  # decl.type_.data is a type name
-                )
+                para_list = [decl for decl in para.var_decl]
+                para_list.reverse()
+                param_decls.extend(para_list)
 
             def print_func_err(
                 pos: Tuple[int, int],
@@ -324,7 +324,13 @@ class FunctionCall(Node):
                             exp = data[1]
                         err_msg_call = (f"{exp} has type {arg_type}")
                         err_msg_decl = f"but function wanted {para_type}"
-                        print_func_err(pos, len(fn_name), err_msg_call, err_msg_decl, param_decl.ident)
+                        print_func_err(
+                            pos,
+                            len(fn_name),
+                            err_msg_call,
+                            err_msg_decl,
+                            param_decl.ident
+                        )
 
         self.type_ = None
         if self.fn_sym is not None:

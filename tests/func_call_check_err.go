@@ -46,7 +46,7 @@ func main() {
     sum("str", 4.5 + 1.4)
 	sum("str", 4.8)
 	sum("str", bin)
-    
+
     array_test(array3)
 
     slice_test(str_slice, array2)
