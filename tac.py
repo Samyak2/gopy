@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from tabulate import tabulate
 
 import syntree
-from go_lexer import symtab, type_table
+from go_lexer import symtab  # type_table
 from utils import print_error, print_line_marker_nowhitespace
 
 
@@ -498,8 +498,11 @@ def tac_PrimaryExpr(
 
             if ident is not None:
                 ind = new_children[0][0][0]
+                # width = syntree.Literal(
+                #     "int", type_table.get_type(ident.type_.eltype).storage
+                # )
                 width = syntree.Literal(
-                    "int", type_table.get_type(ident.type_.eltype).storage
+                    "int", ident.type_.storage
                 )
 
                 offset_t = ic.get_new_temp_var()

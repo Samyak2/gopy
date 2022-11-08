@@ -1,8 +1,8 @@
 package main
 
 /* global variable declaration */
-var a int = 20
-
+// var a int = 20
+//
 /* function to add two integers */
 func sum(a, b int) int {
 	return a + b

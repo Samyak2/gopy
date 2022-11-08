@@ -1,8 +1,8 @@
-from symbol_table import SymbolInfo
-from typing import Any, Optional, Tuple
 import traceback
 
-from go_lexer import symtab, type_table
+from symbol_table import SymbolInfo
+from typing import Any, Optional, Tuple
+from go_lexer import symtab
 from utils import (
     print_error,
     print_line,
@@ -59,17 +59,19 @@ class BinOp(Node):
         try:
 
             def get_type(child: Node) -> str:
-
                 if isinstance(child, PrimaryExpr):
-                    if len(child.children) > 0 and isinstance(
-                            child.children[0], Index):
-                        x = symtab.get_symbol(child.data[1]).type_.eltype
+                    if (len(child.children) > 0
+                        and isinstance(child.children[0], Index)):
+                        assert hasattr(child.data[1].type_, "eltype")
+                        x = symtab.get_symbol(child.data[1]).type_.eltype.typename
 
                     else:
-                        x = symtab.get_symbol(child.data[1]).type_.name
+                        assert hasattr(child.data[1].type_, "typename")
+                        x = symtab.get_symbol(child.data[1]).type_.typename
 
-                elif hasattr(child, "type_"):
-                    x = getattr(child, "type_")
+                # elif hasattr(child, "type_"):
+                elif hasattr(child, "typename"):
+                    x = child.typename
 
                 else:
                     raise Exception("Could not determine type of child", child)
@@ -90,9 +92,9 @@ class BinOp(Node):
             if x != y:
                 val1 = check_type(x, y)
                 val2 = check_type(y, x)
-                if (not isinstance(self.children[0], Literal) and
-                        not isinstance(self.children[1],
-                                       Literal)) or not (val1 | val2):
+                if ((not isinstance(self.children[0], Literal)
+                    and not isinstance(self.children[1], Literal))
+                    or not (val1 | val2)):
                     print_error(
                         "Type Mismatch",
                         kind="TYPE ERROR",
@@ -278,11 +280,11 @@ class FunctionCall(Node):
         self.fn_sym = symtab.get_symbol(str(fn_name))
         if self.fn_sym is not None:
             parameters = self.fn_sym.value.signature.parameters
-            if parameters is None:
-                parameters = []
             param_decls = []  # list of types in declared order
             for para in parameters:
-                para_list = [decl for decl in para.var_decl]
+                para_list: List[VarDecl] = [
+                    decl for decl in para.var_decl
+                ]
                 para_list.reverse()
                 param_decls.extend(para_list)
 
@@ -316,7 +318,7 @@ class FunctionCall(Node):
                 for arg, param_decl in zip(expression_list, param_decls):
                     arg_type = self.infer_exp_type(arg)
                     data = arg.data
-                    para_type = param_decl.symbol.type_.name
+                    para_type = param_decl.symbol.type_.typename
                     if arg_type != para_type:
                         print_error("Arguments Type Mismatch Declaration", kind="TYPE ERROR")
                         exp = data
@@ -354,16 +356,17 @@ class FunctionCall(Node):
                 if expr.fn_sym is not None:
                     if expr.fn_sym.value is not None:
                         inf_type = expr.fn_sym.value.signature.ret_type
+                        inf_type = getattr(inf_type, "typename", inf_type)
             else:
                 inf_type = expr.type_
 
         elif isinstance(expr, PrimaryExpr):
             if len(expr.children) > 0 and isinstance(
                     expr.children[0], Index):
-                inf_type = symtab.get_symbol(expr.data[1]).type_.eltype
+                inf_type = symtab.get_symbol(expr.data[1]).type_.eltype.typename
 
             else:
-                inf_type = symtab.get_symbol(expr.data[1]).type_.name
+                inf_type = symtab.get_symbol(expr.data[1]).type_.typename
 
         else:
             print("Could not determine type: ", expr)
@@ -425,16 +428,17 @@ class Function(Node):
             symtab.update_info(name[1],
                                lineno,
                                0,
-                               type_="FUNCTION",
+                               type_= FunctionType(signature),
                                const=True,
                                value=self)
 
     @staticmethod
     def add_func_to_symtab(name, lineno, value=None):
+        sig = Signature(List([]))
         symtab.declare_new_variable(name,
                                     lineno,
                                     0,
-                                    type_="FUNCTION",
+                                    type_=FunctionType(sig),
                                     const=True,
                                     value=value)
 
@@ -460,55 +464,88 @@ class Keyword(Node):
 class Type(Node):
     """Parent class for all types"""
 
+    def __init__(
+        self,
+        type_class: str,
+        typename: str,
+        storage: Optional[int] = None
+    ):
+        # type_class could be ARRAY, SLICE, FUNCTION, BasicType
+        self.typename = typename
+        self.storage = storage
+        super().__init__(type_class, children=[], data=(typename, storage))
+
+    def __str__(self):
+        return f"<{self.typename}>"
+
+
+class FunctionType(Type):
+    """Node for FunctionType"""
+
+    def __init__(self, signature: Signature):
+        self.signature = signature
+        typename = self.get_func_typename(self.signature)
+        super().__init__("FUNCTION", typename)
+
+    def get_func_typename(self, signature: Signature) -> str:
+        para_types: List[str] = []
+        for para in signature.parameters:
+            ellipsis: str = "..." if para.vararg else ""
+            if para.ident_list is None:
+                typename: str = f"{ellipsis}{para.type_.typename}"
+                para_types.append(typename)
+            else:
+                for para_decl in para.var_decl:
+                    typename: str = f"{ellipsis}{para_decl.type_.typename}"
+                    para_types.append(typename)
+
+        result_typename: str = ""
+        if signature.result is not None:
+            result_typename = get_typename(signature.result)
+
+        func_typename = "func("
+        for typename in para_types:
+            func_typename = f"{func_typename}{typename}, "
+
+        if para_types != []:
+            func_typename = func_typename[:-2] + ") "  # replace last comma with parenthesis
+        else:
+            func_typename = "func()"
+
+        return f"{func_typename}{result_typename}"
+
 
 class Array(Type):
     """Node for an array type"""
 
     def __init__(self, eltype, length):
-        super().__init__("ARRAY", children=[length], data=eltype)
-        eltype = eltype.data
         self.eltype = eltype
-        self.length = length
+        self.length = length.value
 
-        # if hasattr(eltype, "type_"):
-        #     storage = self.length * type_table.get_type(eltype.type_).storage
-        # else:
-        #     storage = None
-        storage = self.length.value * type_table.get_type(eltype).storage
+        eltype_info = symtab.get_symbol(eltype.typename)
+        if eltype_info is None:
+            # TODO: handle error
+            ...
 
-        self.typename = f"ARRAY_[{self.length}]{eltype}"
-        type_table.add_type(
-            self.typename,
-            lineno=None,
-            col_num=None,
-            storage=storage,
-            eltype=eltype,
-            check=False,
-        )
+        eltype_storage = eltype_info.value.storage
+        storage = self.length * eltype_storage
+        typename = f"ARRAY_[{self.length}]{eltype.typename}"
+        super().__init__("ARRAY", typename, storage)
 
     def data_str(self):
-        return f"eltype: {self.eltype}"
+        return f"eltype: {self.eltype.typename}"
 
 
 class Slice(Type):
     """Node for a slice type"""
 
     def __init__(self, eltype):
-        super().__init__("SLICE", children=[], data=eltype)
-        eltype = eltype.data
         self.eltype = eltype
-        self.typename = f"SLICE_{eltype}"
-        type_table.add_type(
-            self.typename,
-            lineno=None,
-            col_num=None,
-            storage=None,
-            eltype=eltype,
-            check=False,
-        )
+        typename = f"SLICE_{self.eltype.typename}"
+        super().__init__("SLICE", typename, storage=None)
 
     def data_str(self):
-        return f"eltype: {self.eltype}"
+        return f"eltype: {self.eltype.typename}"
 
 
 class Index(Node):
@@ -834,14 +871,22 @@ class StructFieldDecl:
 
 
 class TypeDef(Node):
-
-    def __init__(self, typename, type_: Type, type_table, lineno):
+    def __init__(self, typename: tuple, type_: Type, lineno: int):
         self.typename = typename
         self.type_ = type_
 
         super().__init__(name="TypeDef", children=[type_], data=typename)
 
-        type_table.add_type(typename[1], lineno, typename[2], None)
+        identifier: str = typename[1]
+        symtab.add_if_not_exists(identifier)
+        symtab.declare_new_variable(
+                symbol=identifier,
+                lineno=lineno,
+                col_num=typename[2],
+                type_=None,
+                const=False,
+                value=type_
+            )
 
 
 def get_typename(type_) -> str:
@@ -852,8 +897,10 @@ def get_typename(type_) -> str:
         return type_.typename
     if isinstance(type_, Struct):
         raise NotImplementedError("Type name for struct not supported yet")
+    if isinstance(type_, List):
+        raise NotImplementedError("Type name for List not supported yet")
     if isinstance(type_, Type):
-        return str(type_.data)
+        return str(type_.typename)
 
     raise Exception("Could not determine type from given:", type_)
 
