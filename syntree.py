@@ -418,44 +418,6 @@ class Function(Node):
         return f"name: {self.fn_name}, lineno: {self.lineno}"
 
 
-def infer_expr_typename(expr: Union[
-        BinOp | UnaryOp | PrimaryExpr | Function | Type | FunctionCall
-    ]) -> Optional[str]:
-    """performance type inference on expr returns optional string representing typename
-    """
-    if isinstance(expr, Type):
-        return expr.typename
-
-    elif isinstance(expr, BinOp):
-        return expr.type_
-
-    elif isinstance(expr, UnaryOp):
-        return expr.type_
-
-    elif isinstance(expr, FunctionCall):
-        fn_name_info = symtab.get_symbol(expr.fn_name)
-        return fn_name_info.type_.ret_typename
-
-    elif isinstance(expr, Literal):
-        lit_type = expr.type_
-        return getattr(lit_type, "typename", lit_type)
-
-    elif isinstance(expr, Function):
-        return FunctionType.get_func_typename(expr.signature)
-
-    elif isinstance(expr, PrimaryExpr):
-        if (len(expr.children) > 0 and isinstance(expr.children[0], Index)):
-            # primaryExp[Index]
-            # operand: primaryExpr, children[0]: Index
-            return symtab.get_symbol(expr.data[1]).type_.eltype.typename
-
-        else:
-            # identifier
-            return symtab.get_symbol(expr.data[1]).type_.typename
-
-    return None
-
-
 class Keyword(Node):
     """Node to store a single keyword - like return, break, continue, etc."""
 
@@ -606,6 +568,44 @@ def infer_expr_type(expr: Union[Node | str]) -> Optional[
 
     if isinstance(infered_type, (Array, Type, Slice, FunctionType)):
         return infered_type
+
+    return None
+
+
+def infer_expr_typename(expr: Union[
+        BinOp | UnaryOp | PrimaryExpr | Function | Type | FunctionCall
+    ]) -> Optional[str]:
+    """performance type inference on expr returns optional string representing typename
+    """
+    if isinstance(expr, Type):
+        return expr.typename
+
+    elif isinstance(expr, BinOp):
+        return expr.type_
+
+    elif isinstance(expr, UnaryOp):
+        return expr.type_
+
+    elif isinstance(expr, FunctionCall):
+        fn_name_info = symtab.get_symbol(expr.fn_name)
+        return fn_name_info.type_.ret_typename
+
+    elif isinstance(expr, Literal):
+        lit_type = expr.type_
+        return getattr(lit_type, "typename", lit_type)
+
+    elif isinstance(expr, Function):
+        return FunctionType.get_func_typename(expr.signature)
+
+    elif isinstance(expr, PrimaryExpr):
+        if (len(expr.children) > 0 and isinstance(expr.children[0], Index)):
+            # primaryExp[Index]
+            # operand: primaryExpr, children[0]: Index
+            return symtab.get_symbol(expr.data[1]).type_.eltype.typename
+
+        else:
+            # identifier
+            return symtab.get_symbol(expr.data[1]).type_.typename
 
     return None
 
