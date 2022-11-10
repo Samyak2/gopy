@@ -17,16 +17,24 @@ func array_test(a [2]int) {
 
 func slice_test(a []int, b []string) {}
 
+var integer = func() int {
+    return 4
+}
+
 func main() {
 	/* local variable declaration in main function */
-	var a int = 3
-	var b int = 20
-	var c int = 0
+    A := [4]int{4, 5}
+    func_int := func(g int, h bool) int { 
+        return 4
+    }
+    var bin bool = 4 > A[1] && 4 == 5 && 4 < func_int(4, A[1])
+	var a int = -3
+	var b int = 20 * A[0] + integer()
+	var c int = 0 / func_int(4, 5 != 4)
 	var str string = "str"
-	var bin bool = true
-	var array2 = [2]int{2, 4}
+    var func_result int = integer()
+	var array2 []int = []int{2, 4}
 	var array3 = [3]int{2, 4, 3}
-    var int_slice = []int{4, 5}
     var str_slice = []string{ "hey", "there"}
 
 	// should report error: Arguments Number Mismatch Declaration
@@ -36,12 +44,15 @@ func main() {
 
 	// should report error: Arguments Type Mismatch Declaration
 	// and/or Arguments Number Mismatch Declaration
+    zoro(4.0, func_result)
     sum(sum(2, 4), bin)
-    sum(sum(a, str), 3)
+    sum(sum(a, str), func_result)
+	sum(a, str)
 	sum(a, str)
 	sum(a, zoro())
 	sum(a, zoro(2))
 	sum(a, zoro(2, "str"))
+	sum(a, zoro(2, integer()))
 	sum(array2, b)
     sum("str", 4.5 + 1.4)
 	sum("str", 4.8)

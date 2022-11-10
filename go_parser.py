@@ -662,6 +662,7 @@ def p_PrimaryExpr(p):
             # p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
             p[0] = p[1]
         else:
+            # IDENTIFIER
             p[0] = syntree.PrimaryExpr(operand=p[1], lineno=p.lineno(1))
     elif len(p) == 3:
         if isinstance(p[2], syntree.Arguments):

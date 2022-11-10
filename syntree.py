@@ -1,7 +1,7 @@
 import traceback
 
 from symbol_table import SymbolInfo
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 from go_lexer import symtab
 from utils import (
     print_error,
@@ -39,6 +39,25 @@ class Node:
             self.children.append(child)
 
 
+class Identifier(Node):
+    """Node for identifiers"""
+
+    def __init__(self, ident_tuple, lineno):
+        super().__init__("IDENTIFIER",
+                         children=[],
+                         data=(ident_tuple[1], lineno, ident_tuple[2]))
+        # symtab.add_if_not_exists(ident_tuple[1])
+        self.ident_name = ident_tuple[1]
+        self.lineno = lineno
+        self.col_num = ident_tuple[2]
+
+    def add_symtab(self):
+        symtab.add_if_not_exists(self.ident_name)
+
+    def data_str(self):
+        return f"name: {self.ident_name}, lineno: {self.lineno}"
+
+
 class BinOp(Node):
     """Node for binary operations"""
 
@@ -55,28 +74,15 @@ class BinOp(Node):
         self.is_relop = self.operator in self.rel_ops
         self.is_logical = self.operator in self.logical_ops
 
-        self.type_ = None
+        self.type_: str = None
+
         try:
+            def get_type(expr: Node) -> str:
+                infered_type = infer_expr_typename(expr)
+                if infered_type is None:
+                    raise Exception(f"type inference failed on expression '{expr}: {type(expr)}'")
 
-            def get_type(child: Node) -> str:
-                if isinstance(child, PrimaryExpr):
-                    if (len(child.children) > 0
-                        and isinstance(child.children[0], Index)):
-                        assert hasattr(child.data[1].type_, "eltype")
-                        x = symtab.get_symbol(child.data[1]).type_.eltype.typename
-
-                    else:
-                        assert hasattr(child.data[1].type_, "typename")
-                        x = symtab.get_symbol(child.data[1]).type_.typename
-
-                # elif hasattr(child, "type_"):
-                elif hasattr(child, "typename"):
-                    x = child.typename
-
-                else:
-                    raise Exception("Could not determine type of child", child)
-
-                return x
+                return infered_type
 
             x = get_type(self.children[0])
             y = get_type(self.children[1])
@@ -118,8 +124,9 @@ class BinOp(Node):
 
                 else:
                     self.type_ = x
+
         except Exception:
-            traceback.format_exc()
+            print(traceback.format_exc())
 
 
 class Assignment(BinOp):
@@ -279,7 +286,7 @@ class FunctionCall(Node):
 
         self.fn_sym = symtab.get_symbol(str(fn_name))
         if self.fn_sym is not None:
-            parameters = self.fn_sym.value.signature.parameters
+            parameters = self.fn_sym.type_.signature.parameters
             param_decls = []  # list of types in declared order
             for para in parameters:
                 para_list: List[VarDecl] = [
@@ -287,23 +294,6 @@ class FunctionCall(Node):
                 ]
                 para_list.reverse()
                 param_decls.extend(para_list)
-
-            def print_func_err(
-                pos: Tuple[int, int],
-                width: int,
-                err_msg_call: str,
-                err_msg_decl: Optional[str] = None,
-                param_ident: Optional[Identifier] = None
-            ):
-                line_no = pos[0]
-                col_no = pos[1]
-                print(err_msg_call)
-                print_line(line_no)
-                print_marker(col_no - 1, width)
-                if param_ident is not None:
-                    print(err_msg_decl)
-                    print_line(param_ident.lineno)
-                    print_marker(param_ident.col_num - 1, len(param_ident.ident_name))
 
             expected_count = len(param_decls)
             recieved_count = len(expression_list)
@@ -316,7 +306,7 @@ class FunctionCall(Node):
             else:
                 param_decls.reverse()  # to match order of expression_list
                 for arg, param_decl in zip(expression_list, param_decls):
-                    arg_type = self.infer_exp_type(arg)
+                    arg_type = infer_expr_typename(arg)
                     data = arg.data
                     para_type = param_decl.symbol.type_.typename
                     if arg_type != para_type:
@@ -341,41 +331,23 @@ class FunctionCall(Node):
 
         super().__init__("FunctionCall", children=[arguments], data=fn_name)
 
-    def infer_exp_type(self, expr: Node):
-        # TODO
-        # type inference
-        inf_type = None
-        if isinstance(expr, BinOp) or isinstance(expr, UnaryOp):
-            inf_type = expr.type_
 
-        elif isinstance(expr, Literal):
-            inf_type = expr.type_
-
-        elif isinstance(expr, FunctionCall):
-            if expr.type_ is None:
-                if expr.fn_sym is not None:
-                    if expr.fn_sym.value is not None:
-                        inf_type = expr.fn_sym.value.signature.ret_type
-                        inf_type = getattr(inf_type, "typename", inf_type)
-            else:
-                inf_type = expr.type_
-
-        elif isinstance(expr, PrimaryExpr):
-            if len(expr.children) > 0 and isinstance(
-                    expr.children[0], Index):
-                inf_type = symtab.get_symbol(expr.data[1]).type_.eltype.typename
-
-            else:
-                inf_type = symtab.get_symbol(expr.data[1]).type_.typename
-
-        else:
-            print("Could not determine type: ", expr)
-
-        if inf_type is None:
-            inf_type = "unknown"
-
-        inf_typename = get_typename(inf_type)
-        return inf_typename
+def print_func_err(
+    pos: Tuple[int, int],
+    width: int,
+    err_msg_call: str,
+    err_msg_decl: Optional[str] = None,
+    param_ident: Optional[Identifier] = None
+):
+    line_no = pos[0]
+    col_no = pos[1]
+    print(err_msg_call)
+    print_line(line_no)
+    print_marker(col_no - 1, width)
+    if param_ident is not None:
+        print(err_msg_decl)
+        print_line(param_ident.lineno)
+        print_marker(param_ident.col_num - 1, len(param_ident.ident_name))
 
     @staticmethod
     def get_fn_name(fn_name) -> str:
@@ -405,7 +377,7 @@ class Signature(Node):
 
         self.ret_type = None
         if self.result is not None:
-            self.ret_type = get_typename(self.result)
+            self.ret_type = infer_expr_typename(self.result)
 
         super().__init__("signature", children=[parameters, result])
 
@@ -413,7 +385,7 @@ class Signature(Node):
 class Function(Node):
     """Node to store function declaration"""
 
-    def __init__(self, name, signature, lineno: int, body=None):
+    def __init__(self, name: Optional[tuple], signature, lineno: int, body=None):
         super().__init__("FUNCTION",
                          children=[signature, body],
                          data=(name, lineno))
@@ -446,6 +418,44 @@ class Function(Node):
         return f"name: {self.fn_name}, lineno: {self.lineno}"
 
 
+def infer_expr_typename(expr: Union[
+        BinOp | UnaryOp | PrimaryExpr | Function | Type | FunctionCall
+    ]) -> Optional[str]:
+    """performance type inference on expr returns optional string representing typename
+    """
+    if isinstance(expr, Type):
+        return expr.typename
+
+    elif isinstance(expr, BinOp):
+        return expr.type_
+
+    elif isinstance(expr, UnaryOp):
+        return expr.type_
+
+    elif isinstance(expr, FunctionCall):
+        fn_name_info = symtab.get_symbol(expr.fn_name)
+        return fn_name_info.type_.ret_typename
+
+    elif isinstance(expr, Literal):
+        lit_type = expr.type_
+        return getattr(lit_type, "typename", lit_type)
+
+    elif isinstance(expr, Function):
+        return FunctionType.get_func_typename(expr.signature)
+
+    elif isinstance(expr, PrimaryExpr):
+        if (len(expr.children) > 0 and isinstance(expr.children[0], Index)):
+            # primaryExp[Index]
+            # operand: primaryExpr, children[0]: Index
+            return symtab.get_symbol(expr.data[1]).type_.eltype.typename
+
+        else:
+            # identifier
+            return symtab.get_symbol(expr.data[1]).type_.typename
+
+    return None
+
+
 class Keyword(Node):
     """Node to store a single keyword - like return, break, continue, etc."""
 
@@ -473,7 +483,7 @@ class Type(Node):
         # type_class could be ARRAY, SLICE, FUNCTION, BasicType
         self.typename = typename
         self.storage = storage
-        super().__init__(type_class, children=[], data=(typename, storage))
+        super().__init__(type_class, children=[], data=typename)
 
     def __str__(self):
         return f"<{self.typename}>"
@@ -483,11 +493,20 @@ class FunctionType(Type):
     """Node for FunctionType"""
 
     def __init__(self, signature: Signature):
+        assert signature is not None
         self.signature = signature
-        typename = self.get_func_typename(self.signature)
+        self.ret_typename: str = FunctionType.get_ret_typename(self.signature)
+        typename = FunctionType.get_func_typename(self.signature)
         super().__init__("FUNCTION", typename)
 
-    def get_func_typename(self, signature: Signature) -> str:
+    @staticmethod
+    def get_ret_typename(signature: Signature) -> str:
+        if signature.result is not None:
+            return infer_expr_typename(signature.result)
+        return ""
+
+    @staticmethod
+    def get_func_typename(signature: Signature) -> str:
         para_types: List[str] = []
         for para in signature.parameters:
             ellipsis: str = "..." if para.vararg else ""
@@ -499,20 +518,18 @@ class FunctionType(Type):
                     typename: str = f"{ellipsis}{para_decl.type_.typename}"
                     para_types.append(typename)
 
-        result_typename: str = ""
-        if signature.result is not None:
-            result_typename = get_typename(signature.result)
-
         func_typename = "func("
         for typename in para_types:
             func_typename = f"{func_typename}{typename}, "
 
         if para_types != []:
-            func_typename = func_typename[:-2] + ") "  # replace last comma with parenthesis
+            # replace last comma with parenthesis
+            func_typename = func_typename[:-2] + ") "
         else:
             func_typename = "func()"
 
-        return f"{func_typename}{result_typename}"
+        ret_type = FunctionType.get_ret_typename(signature)
+        return f"{func_typename}{ret_type}"
 
 
 class Array(Type):
@@ -548,6 +565,51 @@ class Slice(Type):
         return f"eltype: {self.eltype.typename}"
 
 
+def infer_expr_type(expr: Union[Node | str]) -> Optional[
+        Union[Type | Array | Slice | FunctionType]
+    ]:
+
+    if isinstance(expr, Type):
+        return expr
+
+    infered_type: Union[str | Type | Array | Slice | FunctionType] = None
+
+    if isinstance(expr, (BinOp, UnaryOp, Literal)):
+        infered_type = expr.type_
+        if isinstance(infered_type, str):
+            type_info = symtab.get_symbol(infered_type)
+            if type_info is not None and hasattr(type_info.value, "storage"):
+                infered_type = type_info.value
+
+    elif isinstance(expr, FunctionCall):
+        fn_name_info = symtab.get_symbol(expr.fn_name)
+        if fn_name_info is not None:
+            infered_type = fn_name_info.type_.signature.result
+
+    elif isinstance(expr, Function):
+        infered_type = FunctionType(expr.signature)
+
+    elif isinstance(expr, str):
+        type_info = symtab.get_symbol(infered_type)
+        if type_info is not None and hasattr(type_info.type_, "storage"):
+            infered_type = type_info.type_
+
+    elif isinstance(expr, PrimaryExpr):
+        if len(expr.children) > 0 and isinstance(expr.children[0], Index):
+            # primaryExp[Index]
+            # operand: primaryExpr, children[0]: Index
+            infered_type = symtab.get_symbol(expr.data[1]).type_.eltype
+
+        else:
+            # identifier
+            infered_type = symtab.get_symbol(expr.data[1]).type_
+
+    if isinstance(infered_type, (Array, Type, Slice, FunctionType)):
+        return infered_type
+
+    return None
+
+
 class Index(Node):
     """Node for array/slice indexing"""
 
@@ -555,25 +617,6 @@ class Index(Node):
         super().__init__("INDEX", children=[expr], data=None)
 
         self.expr = expr
-
-
-class Identifier(Node):
-    """Node for identifiers"""
-
-    def __init__(self, ident_tuple, lineno):
-        super().__init__("IDENTIFIER",
-                         children=[],
-                         data=(ident_tuple[1], lineno, ident_tuple[2]))
-        # symtab.add_if_not_exists(ident_tuple[1])
-        self.ident_name = ident_tuple[1]
-        self.lineno = lineno
-        self.col_num = ident_tuple[2]
-
-    def add_symtab(self):
-        symtab.add_if_not_exists(self.ident_name)
-
-    def data_str(self):
-        return f"name: {self.ident_name}, lineno: {self.lineno}"
 
 
 class QualifiedIdent(Node):
@@ -666,41 +709,23 @@ def make_variable_decls(
 
         for ident, expr in zip(identifier_list, expression_list):
             # type inference
-            # inf_type = None
-            inf_type = "unknown"
-            if isinstance(expr, BinOp) or isinstance(expr, UnaryOp):
-                inf_type = expr.type_
-                if type_ != None:
-                    inf_type = type_
-
-            elif isinstance(expr, Literal):
-                inf_type = expr.type_
-
-            elif isinstance(expr, PrimaryExpr):
-                if len(expr.children) > 0 and isinstance(
-                        expr.children[0], Index):
-                    inf_type = symtab.get_symbol(expr.data[1]).type_.eltype
-
-                else:
-                    inf_type = symtab.get_symbol(expr.data[1]).type_.name
-
-            else:
-                print("Could not determine type: ", ident, expr)
-
+            inf_type = infer_expr_type(expr)
             if inf_type is None:
+                print(f"WARNING: failed to deduce type of expression {expr}: {type(expr)}")
                 inf_type = "unknown"
 
-            inf_typename = get_typename(inf_type)
+            inf_typename = infer_expr_typename(inf_type)
 
             # now check if the LHS and RHS types match
             if type_ is None:
                 type_ = inf_type
             else:
                 # get just the type name
-                typename = get_typename(type_)
+                typename = infer_expr_typename(type_)
 
                 if typename != inf_typename:
                     # special case for literal
+                    # Question: what's with this special case?
                     if not isinstance(expr, Literal):
                         print_error("Type Mismatch", kind="TYPE ERROR")
                         print(
