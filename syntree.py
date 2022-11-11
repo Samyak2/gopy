@@ -400,7 +400,7 @@ class Function(Node):
             symtab.update_info(name[1],
                                lineno,
                                0,
-                               type_= FunctionType(signature),
+                               type_=FunctionType(signature),
                                const=True,
                                value=self)
 
@@ -440,12 +440,17 @@ class Type(Node):
         self,
         type_class: str,
         typename: str,
-        storage: Optional[int] = None
+        storage: Optional[int] = None,
+        **kwargs
     ):
-        # type_class could be ARRAY, SLICE, FUNCTION, BasicType
+        # type_class could be ARRAY, SLICE, FUNCTION, BasicType, TypeDecl
         self.typename = typename
         self.storage = storage
-        super().__init__(type_class, children=[], data=typename)
+        super().__init__(
+                type_class,
+                data=typename,
+                children=kwargs.get("children", [])
+            )
 
     def __str__(self):
         return f"<{self.typename}>"
@@ -518,7 +523,7 @@ class Array(Type):
 class Slice(Type):
     """Node for a slice type"""
 
-    def __init__(self, eltype):
+    def __init__(self, eltype: Type):
         self.eltype = eltype
         typename = f"SLICE_{self.eltype.typename}"
         super().__init__("SLICE", typename, storage=None)
@@ -580,10 +585,7 @@ def infer_expr_typename(expr: Union[
     if isinstance(expr, Type):
         return expr.typename
 
-    elif isinstance(expr, BinOp):
-        return expr.type_
-
-    elif isinstance(expr, UnaryOp):
+    elif isinstance(expr, (BinOp, UnaryOp)):
         return expr.type_
 
     elif isinstance(expr, FunctionCall):
@@ -781,14 +783,15 @@ class IfStmt(Node):
         # signal the AST optimizer to not optimize these children
         self._no_optim = True
 
+        expr_typename = infer_expr_typename(expr)
         if isinstance(self.expr, BinOp):
-            if self.expr.type_ != "bool":
+            if expr_typename != "bool":
                 print_error("Invalid operator in condition", kind="ERROR")
                 print("Cannot use non-boolean binary operator "
                       f"{self.expr.operator}"
                       " in a condition")
                 print_line_marker_nowhitespace(lineno)
-        elif hasattr(self.expr, "type_") and getattr(self.expr, "type_") != "bool":
+        elif expr_typename != "bool":
             print_error("Invalid condition", kind="TYPE ERROR")
             print("Cannot use non-binary expression in condition")
             print_line_marker_nowhitespace(lineno)
@@ -805,7 +808,8 @@ class ForStmt(Node):
         # signal the AST optimizer to not optimize these children
         self._no_optim = True
 
-        if hasattr(clause, "type_") and getattr(clause, "type_") == "bool":
+        clause_typename = infer_expr_typename(clause)
+        if clause_typename == "bool":
             pass
         elif isinstance(clause, ForClause):
             pass
@@ -827,7 +831,8 @@ class ForClause(Node):
         # signal the AST optimizer to not optimize these children
         self._no_optim = True
 
-        if hasattr(cond, "type_") and getattr(cond, "type_") != "bool":
+        cond_typename = infer_expr_typename(cond)
+        if cond_typename != "bool":
             print_error("Invalid condition", kind="TYPE ERROR")
             print("Cannot use non-binary expression in for loop")
             print_line_marker_nowhitespace(lineno)
@@ -900,7 +905,7 @@ class TypeDef(Node):
         self.typename = typename
         self.type_ = type_
 
-        super().__init__(name="TypeDef", children=[type_], data=typename)
+        super().__init__(name="TypeDecl", children=[type_], data=typename)
 
         identifier: str = typename[1]
         symtab.add_if_not_exists(identifier)
@@ -912,22 +917,6 @@ class TypeDef(Node):
                 const=False,
                 value=type_
             )
-
-
-def get_typename(type_) -> str:
-    """Returns just the typename from given type"""
-    if isinstance(type_, str):
-        return type_
-    if isinstance(type_, Array) or isinstance(type_, Slice):
-        return type_.typename
-    if isinstance(type_, Struct):
-        raise NotImplementedError("Type name for struct not supported yet")
-    if isinstance(type_, List):
-        raise NotImplementedError("Type name for List not supported yet")
-    if isinstance(type_, Type):
-        return str(type_.typename)
-
-    raise Exception("Could not determine type from given:", type_)
 
 
 def _optimize(node: Node) -> Node:

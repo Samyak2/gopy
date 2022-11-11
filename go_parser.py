@@ -573,7 +573,13 @@ def p_TypeSpec(p):
 
 def p_TypeDef(p):
     """TypeDef : IDENTIFIER Type"""
-    p[0] = syntree.TypeDef(p[1], p[2], p.lineno(1))
+    new_type: syntree.Type = syntree.Type(
+            "TypeDecl",
+            p[1][1],
+            storage=p[2].storage,
+            children=[p[2]]
+        )
+    p[0] = syntree.TypeDef(p[1], new_type, p.lineno(1))
 
 
 def p_AliasDecl(p):

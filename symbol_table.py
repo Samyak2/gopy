@@ -150,7 +150,7 @@ class SymbolTable:
             if hasattr(type_, "storage"):
                 # every type has to have storage attribute
                 type_classes = [
-                    "BasicType", "ARRAY", "SLICE", "TypeDef", "FUNCTION"
+                    "BasicType", "ARRAY", "SLICE", "TypeDecl", "FUNCTION"
                 ]
                 if type_.name in type_classes:
                     sym.type_ = type_
@@ -249,7 +249,7 @@ class SymbolTable:
                 symbol.uses == []
                 and symbol.scope_id != "1"
                 and symbol.type_.name not in [
-                    "FUNCTION", "BasicType", "TypeDef"
+                    "FUNCTION", "BasicType", "TypeDecl"
                 ]
             ):
                 print_error("Unused variable", kind="ERROR")
