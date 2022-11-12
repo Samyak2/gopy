@@ -1,14 +1,13 @@
 import abc
-from collections import defaultdict
+import syntree
 
+from collections import defaultdict
 from symbol_table import SymbolInfo
 from typing import Any, Dict, List, Optional, Tuple
-
 from tabulate import tabulate
-
-import syntree
 from go_lexer import symtab  # type_table
 from utils import print_error, print_line_marker_nowhitespace
+from syntree import infer_expr_typename
 
 
 class Quad:
@@ -407,7 +406,6 @@ def tac_UnaryOp(
     return_val: List[Any],
 ):
     if node.operator == "++" or node.operator == "--":
-        print("found incdec")
 
         ic.add_to_list(
             Quad(new_children[0][0], new_children[0][0], 1, node.operator[0])
@@ -739,7 +737,8 @@ def tac_IfStmt(
 def tac_pre_ForStmt(ic: IntermediateCode, node: syntree.ForStmt):
     symtab.enter_scope()
 
-    if hasattr(node.clause, "type_") and getattr(node.clause, "type_") == "bool":
+    clause_typename = infer_expr_typename(node.clause)
+    if clause_typename == "bool":
         # start of loop
         start_label = ic.get_new_increment_label("for_simple_start")
         ic.add_label(start_label)

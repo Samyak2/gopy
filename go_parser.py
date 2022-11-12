@@ -894,14 +894,25 @@ def p_Type(p):
 def p_TypeName(p):
     """TypeName : IDENTIFIER
     """
-    type_name = p[1][1]
-    type_info = symtab.get_symbol(type_name)
+    def _report_err(err_msg: str, identifier: tuple) -> None:
+        print_error(err_msg, kind="TYPE ERROR")
+        print_line(p.lineno(1))
+        print_marker(identifier[2] - 1, len(identifier[1]))
+
+    identifier = p[1][1]
+    type_info = symtab.get_symbol(identifier)
     if type_info is None:
-        # TODO: handle undeclared types error
-        ...
+        err_msg = f"undefined type {identifier}"
+        _report_err(err_msg, p[1])
     else:
         p[0] = type_info.value
-        # TODO check if type_info.value is a type
+        if not hasattr(type_info.value, "storage"):
+            typename = syntree.infer_expr_typename(type_info.type_)
+            if typename is None:
+                _report_err("type inference failed", p[1])
+                typename = "(undetermined)"
+            err_msg = f"{identifier} (variable of type {typename}) is not a type"
+            _report_err(err_msg, p[1])
 
 
 def p_TypeLit(p):
@@ -1062,8 +1073,6 @@ if __name__ == "__main__":
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
 
-        # print("Type Table: ")
-        # print(type_table)
 
         symtab.reset_depth()
         # Intermediate Code gen

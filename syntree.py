@@ -464,7 +464,7 @@ class FunctionType(Type):
         self.signature = signature
         self.ret_typename: str = FunctionType.get_ret_typename(self.signature)
         typename = FunctionType.get_func_typename(self.signature)
-        super().__init__("FUNCTION", typename)
+        super().__init__("FUNCTION_TYPE", typename)
 
     @staticmethod
     def get_ret_typename(signature: Signature) -> str:
@@ -507,9 +507,6 @@ class Array(Type):
         self.length = length.value
 
         eltype_info = symtab.get_symbol(eltype.typename)
-        if eltype_info is None:
-            # TODO: handle error
-            ...
 
         eltype_storage = eltype_info.value.storage
         storage = self.length * eltype_storage
@@ -582,6 +579,7 @@ def infer_expr_typename(expr: Union[
     ]) -> Optional[str]:
     """performance type inference on expr returns optional string representing typename
     """
+
     if isinstance(expr, Type):
         return expr.typename
 

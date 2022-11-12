@@ -150,7 +150,8 @@ class SymbolTable:
             if hasattr(type_, "storage"):
                 # every type has to have storage attribute
                 type_classes = [
-                    "BasicType", "ARRAY", "SLICE", "TypeDecl", "FUNCTION"
+                    "BasicType", "ARRAY", "SLICE",
+                    "TypeDecl", "FUNCTION", "FUNCTION_TYPE"
                 ]
                 if type_.name in type_classes:
                     sym.type_ = type_
@@ -166,8 +167,8 @@ class SymbolTable:
                     sym.type_ = type_info.value
 
             else:
-                print_error()
-                print(f"Could not determine type, issue in code. Found {type_}")
+                err_msg = f"Could not determine type, issue in code. Found {type_}"
+                print_error(err_msg, kind="TYPE ERROR")
 
             if sym.type_ is None:
                 # TODO: improve error message
@@ -178,8 +179,8 @@ class SymbolTable:
                 for attr in ["name", "typename"]:
                     typename = getattr(type_, attr, typename)
 
-                print_error()
-                print(f"Type '{typename}' is not defined at line {lineno}")
+                err_msg = f"Type '{typename}' is not defined at line {lineno}"
+                print_error(err_msg, "TYPE ERROR")
                 print_line(lineno)
 
                 # line = utils.lines[lineno]

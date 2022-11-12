@@ -24,6 +24,12 @@ func sum(a, b int) int {
 }
 
 func zoro(a int, b string) float32 {
+    // types scope test
+    type boolean int
+    type al_bool0 = int
+    var integer boolean = 45
+    var bl al_bool0 = 4
+    type_def_test(integer, bl)
 	return 3.2
 }
 
@@ -55,6 +61,16 @@ func main() {
 	var array2 []int = []int{2, 4}
 	var array3 = [3]int{2, 4, 3}
     var str_slice = []string{ "hey", "there"}
+
+    // should report errors
+    var dummy t_unsure = 45
+    var again_dummy return_int = "return_int"
+
+    /* below declaration throws runtime error, but it does report error correctly
+
+    var dummy_array []zoro = []zoro{}
+
+    */
 
 	// should report error: Arguments Number Mismatch Declaration
 	sum(a, b, c)
