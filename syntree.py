@@ -77,20 +77,21 @@ class BinOp(Node):
         self.type_: str = None
 
         def get_type(expr: Node) -> str:
-            infered_type = infer_expr_typename(expr)
+            infered_type: Optional[str] = infer_expr_typename(expr)
             if infered_type is None:
                 print(traceback.format_exc())
-                raise Exception(f"type inference failed on expression '{expr}: {type(expr)}'")
+                print_error(f"type inference failed on expression '{expr}: {type(expr)}'", kind="TYPE ERROR")
 
             return infered_type
 
-        def _unpack(expr: Node) -> Node:
-            unpacked_expr: Node = expr
-            if isinstance(expr, List):
-                assert len(expr) == 1
-                for e in expr:
-                    unpacked_expr = e
-            return unpacked_expr
+        def _unpack(lst: Node) -> Node:
+            """unlists expr, if it is instance of List of length one
+            """
+            expr: Node = lst
+            if isinstance(lst, List):
+                assert len(lst) == 1
+                [expr := e for e in lst]
+            return expr
 
         x = get_type(_unpack(left))
         y = get_type(_unpack(right))
