@@ -33,20 +33,20 @@ func zoro(a int, b string) float32 {
 	return 3.2
 }
 
-func array_test(a [2]int) {
-}
+func array_test(a [2]int) {}
 
 func slice_test(a []int, b []string) {}
 
-var return_int = func() int {
+func return_int() int {
+    return 4
+}
+
+func func_int(g int, h bool) int { 
     return 4
 }
 
 func main() {
     A := [4]int{4, 5}
-    func_int := func(g int, h bool) int { 
-        return 4
-    }
     var bin bool = 4 > A[1] && 4 == 5 && 4 < func_int(4, A[1])
 	var a int = -3
 	var b int = 20 * A[0] + return_int()
@@ -57,14 +57,14 @@ func main() {
     var b4_bool bool = type_def_test(b1_boolean, b3_al_bool0)
 
 	var str string = "str"
-    var func_result int = return_int()
+    var func_result int = 4  + return_int()
 	var array2 []int = []int{2, 4}
 	var array3 = [3]int{2, 4, 3}
     var str_slice = []string{ "hey", "there"}
 
     // should report errors
     var dummy t_unsure = 45
-    var again_dummy return_int = "return_int"
+    var again_dummy A = "return_int"
 
     /* below declaration throws runtime error, but it does report error correctly
 

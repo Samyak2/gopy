@@ -246,10 +246,11 @@ class SymbolTable:
 
     def check_unused(self):
         for symbol in self.symbols:
+            node_class = getattr(symbol.type_, "name", "")
             if (
                 symbol.uses == []
                 and symbol.scope_id != "1"
-                and symbol.type_.name not in [
+                and node_class not in [
                     "FUNCTION", "BasicType", "TypeDecl"
                 ]
             ):

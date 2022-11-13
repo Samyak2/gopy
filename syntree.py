@@ -76,57 +76,62 @@ class BinOp(Node):
 
         self.type_: str = None
 
-        try:
-            def get_type(expr: Node) -> str:
-                infered_type = infer_expr_typename(expr)
-                if infered_type is None:
-                    raise Exception(f"type inference failed on expression '{expr}: {type(expr)}'")
+        def get_type(expr: Node) -> str:
+            infered_type = infer_expr_typename(expr)
+            if infered_type is None:
+                print(traceback.format_exc())
+                raise Exception(f"type inference failed on expression '{expr}: {type(expr)}'")
 
-                return infered_type
+            return infered_type
 
-            x = get_type(self.children[0])
-            y = get_type(self.children[1])
+        def _unpack(expr: Node) -> Node:
+            unpacked_expr: Node = expr
+            if isinstance(expr, List):
+                assert len(expr) == 1
+                for e in expr:
+                    unpacked_expr = e
+            return unpacked_expr
 
-            def check_type(x, y):
-                if x == "int":
-                    if y == "float64":
-                        self.type_ = "float64"
-                        return 1
+        x = get_type(_unpack(left))
+        y = get_type(_unpack(right))
 
-                return 0
+        def check_type(x, y):
+            if x == "int":
+                if y == "float64":
+                    self.type_ = "float64"
+                    return 1
 
-            if x != y:
-                val1 = check_type(x, y)
-                val2 = check_type(y, x)
-                if ((not isinstance(self.children[0], Literal)
-                    and not isinstance(self.children[1], Literal))
-                    or not (val1 | val2)):
-                    print_error(
-                        "Type Mismatch",
-                        kind="TYPE ERROR",
-                    )
-                    print(f"Cannot apply operation {self.operator}"
-                          f" on types {x} and {y}")
-                    print_line_marker_nowhitespace(self.lineno)
+            return 0
 
-                if self.is_relop:
+        if x != y:
+            val1 = check_type(x, y)
+            val2 = check_type(y, x)
+            if ((not isinstance(self.children[0], Literal)
+                and not isinstance(self.children[1], Literal))
+                or not (val1 | val2)):
+                print_error(
+                    "Type Mismatch",
+                    kind="TYPE ERROR",
+                )
+                print(f"Cannot apply operation {self.operator}"
+                      f" on types '{x}' and '{y}'")
+                print_line_marker_nowhitespace(self.lineno)
+
+            if self.is_relop:
+                self.type_ = "bool"
+
+        else:
+            if self.is_relop:
+                self.type_ = "bool"
+
+            elif self.is_logical:
+                if x == "bool":
                     self.type_ = "bool"
+                else:
+                    print_error("Invalid Operation", kind="Operation Error")
 
             else:
-                if self.is_relop:
-                    self.type_ = "bool"
-
-                elif self.is_logical:
-                    if x == "bool":
-                        self.type_ = "bool"
-                    else:
-                        print_error("Invalid Operation", kind="Operation Error")
-
-                else:
-                    self.type_ = x
-
-        except Exception:
-            print(traceback.format_exc())
+                self.type_ = x
 
 
 class Assignment(BinOp):
@@ -331,24 +336,6 @@ class FunctionCall(Node):
 
         super().__init__("FunctionCall", children=[arguments], data=fn_name)
 
-
-def print_func_err(
-    pos: Tuple[int, int],
-    width: int,
-    err_msg_call: str,
-    err_msg_decl: Optional[str] = None,
-    param_ident: Optional[Identifier] = None
-):
-    line_no = pos[0]
-    col_no = pos[1]
-    print(err_msg_call)
-    print_line(line_no)
-    print_marker(col_no - 1, width)
-    if param_ident is not None:
-        print(err_msg_decl)
-        print_line(param_ident.lineno)
-        print_marker(param_ident.col_num - 1, len(param_ident.ident_name))
-
     @staticmethod
     def get_fn_name(fn_name) -> str:
         if isinstance(fn_name, QualifiedIdent):
@@ -366,6 +353,23 @@ def print_func_err(
         if isinstance(self.fn_name, QualifiedIdent):
             return self.fn_name.data_str()
         return self.fn_name
+
+def print_func_err(
+    pos: Tuple[int, int],
+    width: int,
+    err_msg_call: str,
+    err_msg_decl: Optional[str] = None,
+    param_ident: Optional[Identifier] = None
+):
+    line_no = pos[0]
+    col_no = pos[1]
+    print(err_msg_call)
+    print_line(line_no)
+    print_marker(col_no - 1, width)
+    if param_ident is not None:
+        print(err_msg_decl)
+        print_line(param_ident.lineno)
+        print_marker(param_ident.col_num - 1, len(param_ident.ident_name))
 
 
 class Signature(Node):
@@ -403,6 +407,11 @@ class Function(Node):
                                type_=FunctionType(signature),
                                const=True,
                                value=self)
+
+    def __str__(self) -> str:
+        func_typename: str = FunctionType.get_func_typename(self.signature)
+        para_list: str = func_typename[4:]
+        return f"func {self.fn_name[1]}{para_list} {{...}}"
 
     @staticmethod
     def add_func_to_symtab(name, lineno, value=None):

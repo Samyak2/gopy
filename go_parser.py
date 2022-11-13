@@ -1073,7 +1073,6 @@ if __name__ == "__main__":
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
 
-
         symtab.reset_depth()
         # Intermediate Code gen
         ic = intermediate_codegen(ast)

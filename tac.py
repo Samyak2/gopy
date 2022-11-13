@@ -500,7 +500,7 @@ def tac_PrimaryExpr(
                 #     "int", type_table.get_type(ident.type_.eltype).storage
                 # )
                 width = syntree.Literal(
-                    "int", ident.type_.storage
+                    "int", ident.type_.storage, None
                 )
 
                 offset_t = ic.get_new_temp_var()
