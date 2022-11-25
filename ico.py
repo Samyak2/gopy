@@ -35,9 +35,11 @@ def binary_eval(q: Quad):
         elif operator == "/":
             ints = {"int", "int8", "int16", "int32", "int64"}
             floats = {"float32", "float64"}
-            if dest.type_ in ints:
+            dest_typename = dest.type_
+            assert isinstance(dest_typename, str)
+            if dest_typename in ints:
                 dest.value = op1.value // op2.value
-            elif dest.type_ in floats:
+            elif dest_typename in floats:
                 dest.value = op1.value / op2.value
             else:
                 # raise NotImplementedError(
@@ -131,7 +133,7 @@ def const_fold_const_prop_strength_red(ic: IntermediateCode):
         q = binary_eval(q)
 
         ico.add_to_list(q)
-    
+
     return ico
 
 

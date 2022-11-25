@@ -1,25 +1,23 @@
 import sys
-from typing import Tuple
-
-from pptree_mod import print_tree
-from colorama import Fore, Style
+import go_lexer
+import utils
+import syntree
 
 from ply import yacc
-
-import go_lexer
+from typing import Tuple, Dict
+from colorama import Fore, Style
+from pptree_mod import print_tree
+from tac import intermediate_codegen
+from ico import optimize_ic
+from tree_vis import draw_AST
+from symbol_table import predefined_identifiers
+from utils import print_error, print_line, print_marker
 from go_lexer import (
     required_tokens_for_parser as tokens,
     lex,
     find_column,
     symtab,
-    type_table,
 )
-import utils
-from utils import print_error, print_line, print_marker
-import syntree
-from tac import intermediate_codegen
-from ico import optimize_ic
-from tree_vis import draw_AST
 
 
 # def eval_numeric_op(p1, p2=None, op=None):
@@ -182,6 +180,9 @@ def p_Parameters(p):
     | '(' ParameterList ')'
     | '(' ParameterList ',' ')'
     """
+    if p[2] is None:
+        p[2] = syntree.List([])
+
     p[0] = p[2]
 
 
@@ -210,6 +211,28 @@ def p_ParameterDecl(p):
     | IdentifierList Type
     | IdentifierList ELLIPSIS Type
     """
+    # TODO: resolve shift/reduce conflict
+
+    # Type and IdentifierList produce shift/reduce conflict
+    # this conflict causes, parser to report syntax error on
+    # unnamed arguments.
+
+    # HOW TO PRODUCE: declare below function
+    # |
+    # |  func test(int, int, bool) {}
+    # |
+    # expected error message:
+    #
+    # SYNTAX ERROR:
+    # at line x, column y
+    #         x:     func test(int, int, bool) {}
+    #                                        ^
+    #
+
+    # CONCERNS: currently parser by default shifts to resolve
+    # shift/reduce conflict. But it is unlikely that, by merely
+    # choosing reduce instead of shift will solve the problem.
+
     if len(p) == 2:
         p[0] = syntree.ParameterDecl(p[1])
     elif len(p) == 3:
@@ -406,7 +429,7 @@ def p_IncDecStmt(p):
     """IncDecStmt : Expression INCREMENT
     | Expression DECREMENT
     """
-    p[0] = syntree.UnaryOp(p[2], p[1])
+    p[0] = syntree.UnaryOp(p[2], p[1], p.lineno(1))
 
 
 def p_Assignment(p):
@@ -550,12 +573,18 @@ def p_TypeSpec(p):
 
 def p_TypeDef(p):
     """TypeDef : IDENTIFIER Type"""
-    p[0] = syntree.TypeDef(p[1], p[2], type_table, p.lineno(1))
+    new_type: syntree.Type = syntree.Type(
+            "TypeDecl",
+            p[1][1],
+            storage=p[2].storage,
+            children=[p[2]]
+        )
+    p[0] = syntree.TypeDef(p[1], new_type, p.lineno(1))
 
 
 def p_AliasDecl(p):
     """AliasDecl : IDENTIFIER '=' Type"""
-    p[0] = syntree.TypeDef(p[1], p[3], type_table, p.lineno(1))
+    p[0] = syntree.TypeDef(p[1], p[3], p.lineno(1))
 
 
 def p_IdentifierList(p):
@@ -611,7 +640,7 @@ def p_UnaryExpr(p):
     | UnaryOp UnaryExpr
     """
     if len(p) == 3:
-        p[0] = syntree.UnaryOp(p[1], p[2])
+        p[0] = syntree.UnaryOp(p[1], p[2], lineno=p.lineno(1))
     else:
         # TODO : handle more stuff in PrimaryExpr
         # also change the PrimaryExpr class in syntree when doing so
@@ -639,12 +668,17 @@ def p_PrimaryExpr(p):
             # p[0] = syntree.PrimaryExpr(operand=None, children=[p[1]])
             p[0] = p[1]
         else:
-            p[0] = syntree.PrimaryExpr(operand=p[1])
+            # IDENTIFIER
+            p[0] = syntree.PrimaryExpr(operand=p[1], lineno=p.lineno(1))
     elif len(p) == 3:
         if isinstance(p[2], syntree.Arguments):
             p[0] = syntree.FunctionCall(p[1], p[2])
         else:
-            p[0] = syntree.PrimaryExpr(operand=None, children=[p[1], p[2]])
+            p[0] = syntree.PrimaryExpr(
+                      operand=None,
+                      lineno=p.lineno(1),
+                      children=[p[1], p[2]]
+                   )
 
 
 def p_Arguments(p):
@@ -667,6 +701,7 @@ def p_Operand(p):
     | Literal
     | '(' Expression ')'
     """
+    # operandName and Literal produce reduce/reduce conflict
     if len(p) == 2:
         p[0] = p[1]
     elif len(p) == 4:
@@ -685,8 +720,6 @@ def p_OperandName(p):
             print_error()
             print(f"Undeclared symbol '{ident[1]}' at line {lineno}")
             print_line(lineno)
-            line: str = utils.lines[lineno - 1]
-            # TODO: get correct position of token rather than searching
             pos = ident[2] - 1
             width = len(ident[1])
             print_marker(pos, width)
@@ -698,28 +731,28 @@ def p_OperandName(p):
 
 def p_QualifiedIdent(p):
     """QualifiedIdent : PackageName '.' IDENTIFIER"""
-    p[0] = syntree.QualifiedIdent(p[1], p[3])
+    p[0] = syntree.QualifiedIdent(p[1], p[3], p.lineno(3))
 
 
 def p_Literal(p):
     """Literal : BasicLit
     | FunctionLit
     | CompositeLit"""
-    # TODO : Add FunctionLit
     p[0] = p[1]
 
 
 def p_CompositeLit(p):
     """CompositeLit : LiteralType LiteralValue"""
-    p[0] = syntree.Literal(type_=p[1], value=p[2])
+    p[0] = syntree.Literal(type_=p[1], value=p[2], lineno=p.lineno(1))
 
 
 def p_LiteralType(p):
     """LiteralType : ArrayType
     | '[' '.' '.' '.' ']' ElementType
-    | TypeName
     | SliceType
     """
+    # | TypeName
+    # TypeName is not required as long as StructType is not supported
     # TODO: add MapType here
     # TODO: add StructType
     if len(p) == 2:
@@ -802,7 +835,7 @@ def p_BasicLit(p):
     | bool_lit
     """
     # TODO : Add other basic literals
-    p[0] = syntree.Literal(p[1][0], p[1][1])
+    p[0] = syntree.Literal(p[1][0], p[1][1], lineno=p.lineno(1))
 
 
 def p_FunctionLit(p):
@@ -859,35 +892,27 @@ def p_Type(p):
 
 
 def p_TypeName(p):
-    """TypeName : BasicType"""
-    # TODO: QualifiedIdent here gives R/R conflict
-    if isinstance(p[1], tuple) and p[1][0] == "identifier":
-        p[0] = p[1][1]
-    else:
-        p[0] = p[1]
-
-
-def p_BasicType(p):
-    """BasicType : INT
-    | INT8
-    | INT16
-    | INT32
-    | INT64
-    | FLOAT32
-    | FLOAT64
-    | UINT
-    | UINT8
-    | UINT16
-    | UINT32
-    | UINT64
-    | COMPLEX64
-    | COMPLEX128
-    | STRING
-    | BYTE
-    | BOOL
-    | RUNE
+    """TypeName : IDENTIFIER
     """
-    p[0] = syntree.Type(name="BasicType", children=[], data=p[1])
+    def _report_err(err_msg: str, identifier: tuple) -> None:
+        print_error(err_msg, kind="TYPE ERROR")
+        print_line(p.lineno(1))
+        print_marker(identifier[2] - 1, len(identifier[1]))
+
+    identifier = p[1][1]
+    type_info = symtab.get_symbol(identifier)
+    if type_info is None:
+        err_msg = f"undefined type {identifier}"
+        _report_err(err_msg, p[1])
+    else:
+        p[0] = type_info.value
+        if not hasattr(type_info.value, "storage"):
+            typename = syntree.infer_expr_typename(type_info.type_)
+            if typename is None:
+                _report_err("type inference failed", p[1])
+                typename = "(undetermined)"
+            err_msg = f"{identifier} (variable of type {typename}) is not a type"
+            _report_err(err_msg, p[1])
 
 
 def p_TypeLit(p):
@@ -967,6 +992,10 @@ def p_SliceType(p):
 
 def p_PointerType(p):
     """PointerType : '*' BaseType"""
+    # TODO: encapsulate error reporting code
+    print_error("PointerType is not supported")
+    print_line(p.lineno(1))
+    print_marker(p.lexpos(1), width=1)  # width = len("*")
 
 
 def p_BaseType(p):
@@ -976,6 +1005,9 @@ def p_BaseType(p):
 
 def p_FunctionType(p):
     """FunctionType : KW_FUNC Signature"""
+    print_error("FunctionType is not supported")
+    print_line(p.lineno(1))
+    print_marker(p.lexpos(1), width=4)  # width = len("func")
 
 
 def p_empty(p):
@@ -986,13 +1018,27 @@ def p_empty(p):
 def p_error(p: lex.LexToken):
     print(f"{Fore.RED}SYNTAX ERROR:{Style.RESET_ALL}")
     if p is not None:
-        col = find_column(p)
+        col = find_column(p.lexpos)
         print(f"at line {p.lineno}, column {col}")
         print_line(p.lineno)
         # print(" " * 10, " \t", " " * (col - 1), "^", sep="")
         print_marker(col - 1, len(p.value))
     else:
         print("Unexpected end of file")
+
+
+def declare_variables(pre_dec: Dict[str, int]):
+    # TODO: add string type
+    for typename, storage in pre_dec.items():
+        symtab.add_if_not_exists(typename)
+        symtab.declare_new_variable(
+            symbol=typename,
+            lineno=None,
+            col_num=None,
+            type_=None,
+            const=False,
+            value=syntree.Type("BasicType", typename, storage)
+        )
 
 
 parser = yacc.yacc(debug=True)
@@ -1007,6 +1053,7 @@ if __name__ == "__main__":
         lines = input_code.split("\n")
         go_lexer.lines = lines
         utils.lines = lines
+        declare_variables(predefined_identifiers)
         result = parser.parse(input_code, tracking=True, debug=False)
         # print(result)
 
@@ -1025,9 +1072,6 @@ if __name__ == "__main__":
         print(symtab)
         with open("symbol_table.txt", "wt", encoding="utf-8") as symtab_file:
             print(symtab, file=symtab_file)
-
-        print("Type Table: ")
-        print(type_table)
 
         symtab.reset_depth()
         # Intermediate Code gen

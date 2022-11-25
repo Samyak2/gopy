@@ -5,13 +5,6 @@ import (
     "strconv"
 )
 
-func quickSort(arr []int, low, high int) {
-    if low < high {
-        var pivot = partition(arr, low, high)
-        quickSort(arr, low, pivot)
-        quickSort(arr, pivot + 1, high)
-    }
-}
 
 func partition(arr []int, low, high int) int {
     var pivot = arr[low]
@@ -37,6 +30,14 @@ func partition(arr []int, low, high int) int {
     arr[j] = pivot
 
     return j
+}
+
+func quickSort(arr []int, low, high int) {
+    if low < high {
+        var pivot = partition(arr, low, high)
+        quickSort(arr, low, pivot)
+        quickSort(arr, pivot + 1, high)
+    }
 }
 
 func printArray(arr []int) {

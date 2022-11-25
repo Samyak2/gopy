@@ -1,12 +1,10 @@
 import sys
-
 import colorama
-from colorama import Fore, Style
+import utils
 
 from ply import lex
-
-from symbol_table import SymbolTable, TypeTable
-import utils
+from colorama import Fore, Style
+from symbol_table import SymbolTable
 from utils import print_line, print_marker, print_lexer_error
 
 colorama.init()
@@ -19,9 +17,9 @@ if input_code[len(input_code) - 1] != "\n":
 
 
 # Find column number of token
-def find_column(token):
-    line_start = input_code.rfind("\n", 0, token.lexpos) + 1
-    return (token.lexpos - line_start) + 1
+def find_column(lexpos: int):
+    line_start = input_code.rfind("\n", 0, lexpos) + 1
+    return (lexpos - line_start) + 1
 
 
 # Lexing states
@@ -104,34 +102,10 @@ keywords = {
 
 # List of types
 # types -> (symbol, storage in bytes)
-types = {
-    #For INT
-    "int": ("INT", 8),
-    "int8": ("INT8", 1),
-    "int16": ("INT16", 2),
-    "int32": ("INT32", 4),
-    "int64": ("INT64", 8),
-    #For Float
-    "float32": ("FLOAT32", 4),
-    "float64": ("FLOAT64", 8),
-    #For UINT
-    "uint": ("UINT", 8),
-    "uint8": ("UINT8", 1),
-    "uint16": ("UINT16", 2),
-    "uint32": ("UINT32", 4),
-    "uint64": ("UINT64", 8),
-    #For Complex
-    "complex64": ("COMPLEX64", 8),
-    "complex128": ("COMPLEX128", 16),
-    #For Misc
-    "string": ("STRING", None),
-    "byte": ("BYTE", 1),
-    "bool": ("BOOL", 1),
-    "rune": ("RUNE", 4)
-}
+# types = {}
 
 # updating list of tokens with keywords and types
-tokens = tokens + tuple(keywords.values()) + tuple(i[0] for i in types.values())
+tokens = tokens + tuple(keywords.values())
 unused_tokens = {
     "AMPERSAND",
     "AMP_CARET_EQ",
@@ -214,28 +188,6 @@ t_LT = r"<"
 t_LT_EQ = r"<="
 t_GT = r">"
 t_GT_EQ = r">="
-# INT type
-t_INT = r"int"
-t_INT8 = r"int8"
-t_INT16 = r"int16"
-t_INT32 = r"int32"
-t_INT64 = r"int64"
-#FLOAT Type
-t_FLOAT32 = r"float32"
-t_FLOAT64 = r"float64"
-#UNIT Type
-t_UINT = r"uint"
-t_UINT8 = r"uint8"
-t_UINT16 = r"uint16"
-t_UINT32 = r"uint32"
-t_UINT64 = r"uint64"
-#Complex Type
-t_COMPLEX64 = r"complex64"
-t_COMPLEX128 = r"complex128"
-#MISC Type
-t_BOOL = r"bool"
-t_RUNE = r"rune"
-t_BYTE = r"byte"
 t_ELLIPSIS = r"\.\.\."
 
 # tokens with actions
@@ -247,7 +199,7 @@ def t_ANY_UNCLOSED_MULTI_COMMENT(t):
     r"/\*(.|\n)*"
 
     print_lexer_error("Unclosed Multiline comment")
-    col = find_column(t)
+    col = find_column(t.lexpos)
     print(f"at line {t.lineno}, column {col}")
     print(
         f"{Fore.GREEN}{t.lineno:>10}:\t{Style.RESET_ALL}",
@@ -347,7 +299,7 @@ def t_STRING_LIT(t):
     if "\n" in t.value:
         print_lexer_error("string cannot contain line breaks")
         lineno = t.lexer.lineno
-        pos = find_column(t)
+        pos = find_column(t.lexpos)
         splits = list(t.value.split("\n"))
         for i, line_ in enumerate(splits):
             print_line(lineno)
@@ -409,11 +361,9 @@ def t_IDENTIFIER(t):
 
     if t.value in keywords:
         t.type = keywords[t.value]
-    elif t.value in types:
-        t.type = types[t.value][0]
     else:
         t.type = "IDENTIFIER"
-        t.value = ("identifier", t.value, find_column(t))
+        t.value = ("identifier", t.value, find_column(t.lexpos))
 
     t.lexer.begin('InsertSemi')
     return t
@@ -422,7 +372,7 @@ def t_IDENTIFIER(t):
 # Error handling rule for ANY state
 def t_ANY_error(t):
     print_lexer_error(f"Illegal character {t.value[0]}")
-    col = find_column(t)
+    col = find_column(t.lexpos)
     print(f"at line {t.lineno}, column {col}")
     print(
         f"{Fore.GREEN}{t.lineno:>10}:\t{Style.RESET_ALL}",
@@ -443,8 +393,7 @@ lexer.input(input_code)
 lines = input_code.split("\n")
 utils.lines = lines
 
-type_table = TypeTable()
-symtab = SymbolTable(type_table)
+symtab = SymbolTable()
 
 if __name__ == "__main__":
     # Tokenize

@@ -1,126 +1,46 @@
+import utils
+
 from dataclasses import dataclass, field
 from collections import defaultdict
 from tabulate import tabulate
 from typing import Dict, Optional, List, Any
-
-import utils
 from utils import print_marker, print_line, print_error
 
 
-@dataclass
-class TypeInfo:
-    """Stores information for a particular type"""
+predefined_identifiers = {
+    # for int
+    "int": 8,
+    "int8": 1,
+    "int16": 2,
+    "int32": 4,
+    "int64": 8,
 
-    name: str
-    lineno: Optional[int] = None
-    col_num: Optional[int] = None
-    storage: Optional[int] = None
-    eltype: Any = None
+    # for float
+    "float32": 4,
+    "float64": 8,
 
-    def __str__(self):
-        s = f"Type({self.name}"
+    # for uint
+    "uint": 8,
+    "uint8": 1,
+    "uint16": 2,
+    "uint32": 4,
+    "uint64": 8,
 
-        if self.lineno is not None:
-            s += f", line={self.lineno}"
+    # for complex
+    "complex64": 8,
+    "complex128": 16,
 
-        if self.col_num is not None:
-            s += f", col={self.col_num}"
+    # string
+    "string": None,
 
-        if self.storage is not None:
-            s += f", storage={self.storage}"
+    # for misc
+    "byte": 1,
+    "bool": 1,
+    "rune": 4,
 
-        s += ")"
-
-        return s
-
-
-class TypeTable:
-    """Store information of all types - predefined and user defined"""
-
-    _predefined = {
-        # For INT
-        "int": 8,
-        "int8": 1,
-        "int16": 2,
-        "int32": 4,
-        "int64": 8,
-        # For Float
-        "float32": 4,
-        "float64": 8,
-        # For UINT
-        "uint": 8,
-        "uint8": 1,
-        "uint16": 2,
-        "uint32": 4,
-        "uint64": 8,
-        # For Complex
-        "complex64": 8,
-        "complex128": 16,
-        # For Misc
-        "byte": 1,
-        "bool": 1,
-        "rune": 4,
-    }
-
-    def __init__(self):
-        self.type_map: Dict[str, TypeInfo] = {}
-
-        for typename, storage in self._predefined.items():
-            self.add_type(typename, None, None, storage=storage)
-
-        self.add_type("FUNCTION", None, None, None)
-        self.add_type("unknown", None, None, None)
-        self.add_type("string", None, None, None, eltype="rune")
-
-    def is_defined(self, name: str):
-        """Check if a type is defined"""
-        return name in self.type_map
-
-    def get_type(self, name: str) -> TypeInfo:
-        return self.type_map[name]
-
-    def add_type(self, name: str, lineno, col_num, storage, eltype=None, check=True):
-        """Add a new type definition with the details"""
-
-        if check and self.is_defined(name):
-            print_error()
-            print(f"Re-declaration of type '{name}' at line {lineno}")
-            print_line(lineno)
-
-            pos = col_num - 1
-            width = len(name)
-            print_marker(pos, width)
-
-            other_type = self.get_type(name)
-            print(f"{name} previously declared at line {other_type.lineno}")
-            print_line(other_type.lineno)
-
-            pos = other_type.col_num - 1
-            print_marker(pos, width)
-
-        new_type = TypeInfo(name, lineno, col_num, storage, eltype)
-
-        self.type_map[name] = new_type
-
-    def __str__(self):
-        return str(
-            tabulate(
-                [
-                    [
-                        symbol.name,
-                        symbol.storage,
-                        symbol.eltype,
-                    ]
-                    for _, symbol in self.type_map.items()
-                ],
-                headers=[
-                    "Type Name",
-                    "Storage",
-                    "Element Type",
-                ],
-                tablefmt="psql",
-            )
-        )
+    # unknown
+    "unknown": 0
+}
 
 
 @dataclass
@@ -131,7 +51,7 @@ class SymbolInfo:
     scope_id: str
     lineno: Optional[int] = None
     col_num: Optional[int] = None
-    type_: Optional[TypeInfo] = None
+    type_: Optional[Any] = None
     # storage: Optional[int] = None
     # node: Optional[Node] = None
     const: bool = False
@@ -144,11 +64,9 @@ class SymbolTable:
     """Stores all identifiers, literals and information
     related to them"""
 
-    def __init__(self, type_table: TypeTable):
+    def __init__(self):
         self.symbols: List[SymbolInfo] = []
         self.reset_depth()
-
-        self.type_table = type_table
 
     def reset_depth(self):
         self.stack: List[Dict[str, SymbolInfo]] = [{}]
@@ -207,63 +125,68 @@ class SymbolTable:
                 return symtab_[symbol]
 
     def update_info(
-        self, symbol: str, lineno, col_num=None, type_=None, const=None, value=None
+        self,
+        symbol: str,
+        lineno,
+        col_num=None,
+        type_=None,
+        const=None,
+        value=None
     ):
         sym = self.get_symbol(symbol)
         sym.lineno = lineno
         sym.type_ = None
         sym.col_num = col_num
-        # TODO: infer type from value if not given
-        typename = None
-        composite_type = False
-        eltype = None
-
-        if type_ is not None:
-            # sym.storage = self.storage[type_.data]
-            valid_type = True
-            typename = ""
-
-            # type_ can sometimes be syntree.Type
-            if hasattr(type_, "data") and hasattr(type_, "name"):
-                if type_.name == "BasicType":
-                    typename = type_.data
-                elif type_.name == "ARRAY" or type_.name == "SLICE":
-                    typename = type_.typename
-                    composite_type = True
-                    eltype = type_.eltype
-                else:
-                    print(f"Unknown node {type_}. Could not determine type")
-                    valid_type = False
-            elif isinstance(type_, str):
-                typename = type_
-            else:
-                print(f"Could not determine type, issue in code. Found {type_}")
-                valid_type = False
-
-            if valid_type:
-
-                if not self.type_table.is_defined(typename):
-                    print_error()
-                    print(f"Type '{typename}' is not defined at line {lineno}")
-                    print_line(lineno)
-
-                    line = utils.lines[lineno]
-                    pos = line.find(typename)
-                    width = len(typename)
-
-                    print_marker(pos, width)
-                else:
-                    sym.type_ = self.type_table.get_type(typename)
-
-            # elif composite_type:
-
-            #     self.type_table.add_type(f"{typename}_{eltype}")
 
         if value is not None:
             sym.value = value
 
         if const is not None:
             sym.const = const
+
+        # TODO: improve messages
+        if type_ is not None:
+            # TODO: use isinstance instead of hasattr
+            if hasattr(type_, "storage"):
+                # every type has to have storage attribute
+                type_classes = [
+                    "BasicType", "ARRAY", "SLICE",
+                    "TypeDecl", "FUNCTION", "FUNCTION_TYPE"
+                ]
+                if type_.name in type_classes:
+                    sym.type_ = type_
+                else:
+                    print(f"Unknown node {type_}. Could not determine type")
+
+            elif isinstance(type_, str):
+                # has to be indentifier
+                type_info: Optional[SymbolInfo] = self.get_symbol(type_)
+                if type_info is not None and hasattr(type_info.value, "storage"):
+                    # checking for storage attribute is enough
+                    # because, only syntree.Type has it
+                    sym.type_ = type_info.value
+
+            else:
+                err_msg = f"Could not determine type, issue in code. Found {type_}"
+                print_error(err_msg, kind="TYPE ERROR")
+
+            if sym.type_ is None:
+                # TODO: improve error message
+                # CONCERNS: it is not straight forward to locate type_
+                # while reporting error, because it's type is unknown
+                typename: str = type_
+
+                for attr in ["name", "typename"]:
+                    typename = getattr(type_, attr, typename)
+
+                err_msg = f"Type '{typename}' is not defined at line {lineno}"
+                print_error(err_msg, "TYPE ERROR")
+                print_line(lineno)
+
+                # line = utils.lines[lineno]
+                # pos = line.find(typename)
+                # width = len(typename)
+                # print_marker(pos, width)
 
     def exists_in_cur_symtab(self, symbol: str) -> bool:
         return symbol in self.stack[-1]
@@ -313,17 +236,23 @@ class SymbolTable:
             print_marker(pos, width)
         else:
             self.update_info(
-                symbol, lineno, col_num=col_num, type_=type_, const=const, value=value
+                symbol,
+                lineno,
+                col_num=col_num,
+                type_=type_,
+                const=const,
+                value=value
             )
 
     def check_unused(self):
-        func_type = self.type_table.get_type("FUNCTION")
-
         for symbol in self.symbols:
+            node_class = getattr(symbol.type_, "name", "")
             if (
                 symbol.uses == []
                 and symbol.scope_id != "1"
-                and symbol.type_ != func_type
+                and node_class not in [
+                    "FUNCTION", "BasicType", "TypeDecl"
+                ]
             ):
                 print_error("Unused variable", kind="ERROR")
                 print(
