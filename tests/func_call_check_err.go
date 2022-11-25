@@ -1,10 +1,5 @@
 package main
 
-/* global variable declaration */
-// var a int = 20
-//
-/* function to add two integers */
-
 // type definitions
 type boolean bool
 
@@ -82,7 +77,7 @@ func main() {
 	// should report error: Arguments Type Mismatch Declaration
 	// and/or Arguments Number Mismatch Declaration
     type_def_test(b1_boolean, b2_al_bool2)
-    type_def_test(b3_al_bool0, b1_boolean) // should report any errors on this
+    type_def_test(b3_al_bool0, b1_boolean) // should not report any errors on this
     type_def_test(b3_al_bool0, b4_bool)
     zoro(4.0, func_result)
     sum(sum(2, 4), bin)

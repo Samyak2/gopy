@@ -85,8 +85,10 @@ class BinOp(Node):
             return infered_type
 
         def _unpack(lst: Node) -> Node:
-            """unlists expr, if it is instance of List of length one
+            """unlists lst, if it is instance of List of length one
             """
+            # an ugly patch, this will allow opportunity
+            # for single assignment type checking
             expr: Node = lst
             if isinstance(lst, List):
                 assert len(lst) == 1
@@ -587,7 +589,7 @@ def infer_expr_type(expr: Union[Node | str]) -> Optional[
 def infer_expr_typename(expr: Union[
         BinOp | UnaryOp | PrimaryExpr | Function | Type | FunctionCall
     ]) -> Optional[str]:
-    """performance type inference on expr returns optional string representing typename
+    """performs type inference on expr, returns optional string representing typename
     """
 
     if isinstance(expr, Type):
